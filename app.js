@@ -33,6 +33,7 @@ function renderDocument(){
   $('highInput').value=state.high;$('lowInput').value=state.low;$('offsetInput').value=((state.high+state.low)/2).toFixed(1);$('amplitudeInput').value=(state.high-state.low).toFixed(1);
   renderFrequency();$('phaseInput').value=state.phase;$('dutyInput').value=state.duty;$('dutyValue').textContent=state.duty+'%';renderTiming();
   document.querySelector('.preset.active')?.classList.remove('active');document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');$('propertyTitle').textContent=titles[state.type]||'Custom waveform';draw();
+  $('applyBtn').disabled=true;
 }
 function parseProject(raw){
   if(!raw||raw.schema!=='arbdraw.waveform'||raw.version!==1||!raw.waveform)throw new Error('This is not a supported ArbDraw project.');
@@ -72,7 +73,9 @@ function generate(type=state.type) {
     default: return mid;
   }}); pushHistory(); draw();if(!$('samplesView').classList.contains('hidden'))renderSamples();
 }
-function pushHistory(){ state.history.push([...state.data]); if(state.history.length>30)state.history.shift(); state.redo=[]; }
+function cloneWaveform(source=projectDocument.waveform){return {...source,values:[...source.values]}}
+function restoreWaveform(snapshot){projectDocument.waveform=cloneWaveform(snapshot);renderDocument()}
+function pushHistory(){state.history.push(cloneWaveform());if(state.history.length>30)state.history.shift();state.redo=[]}
 function resize(){ const r=canvas.getBoundingClientRect(), d=devicePixelRatio||1; if(canvas.width!==Math.round(r.width*d)||canvas.height!==Math.round(r.height*d)){canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d)} draw(); }
 function voltageBounds(){if(state.high!==state.low)return {high:state.high,low:state.low};const span=Math.max(5,Math.abs(state.high));return {high:state.high+span,low:state.low-span}}
 function draw(){ const w=canvas.width,h=canvas.height,d=devicePixelRatio||1; if(!w||!h)return; ctx.clearRect(0,0,w,h); ctx.fillStyle='#090d0f';ctx.fillRect(0,0,w,h); const pad={l:58*d,r:18*d,t:20*d,b:39*d},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,bounds=voltageBounds();
@@ -109,16 +112,23 @@ function renderTiming(){state.sampleRate=state.samples/state.duration/1000;$('sa
 function renderFrequency(){$('frequencyInput').value=Number(state.frequency.toPrecision(10));$('periodInput').value=Number((1e6/state.frequency).toPrecision(10))}
 function formatRate(value){return value>=100?value.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}):value>=1?value.toFixed(3):value.toPrecision(4)}
 function formatDuration(value){if(value<.001)return (value*1e6).toFixed(2)+' ns';if(value<1)return (value*1000).toFixed(3)+' µs';if(value<1000)return value.toFixed(3)+' ms';return (value/1000).toFixed(3)+' s'}
-function syncInputs(){state.high=+$('highInput').value;state.low=+$('lowInput').value;if(state.high<=state.low)state.high=state.low+.1;state.frequency=Math.max(.000001,+$('frequencyInput').value);state.cycles=state.frequency*state.duration/1000;state.phase=+$('phaseInput').value;state.duty=+$('dutyInput').value;$('amplitudeInput').value=(state.high-state.low).toFixed(1);$('offsetInput').value=((state.high+state.low)/2).toFixed(1);$('dutyValue').textContent=state.duty+'%';renderFrequency();renderTiming();}
+function syncInputs(){state.high=+$('highInput').value;state.low=+$('lowInput').value;if(state.high<state.low)[state.high,state.low]=[state.low,state.high];state.frequency=Math.max(.000001,+$('frequencyInput').value);state.cycles=state.frequency*state.duration/1000;state.phase=+$('phaseInput').value;state.duty=+$('dutyInput').value;$('highInput').value=state.high;$('lowInput').value=state.low;$('amplitudeInput').value=(state.high-state.low).toFixed(1);$('offsetInput').value=((state.high+state.low)/2).toFixed(1);$('dutyValue').textContent=state.duty+'%';renderFrequency();renderTiming();}
 
 function beginTimingEdit(control){if(control.classList.contains('editing'))return;document.querySelector('.timing-control.editing')?.classList.remove('editing');const kind=control.dataset.timing,input=kind==='rate'?$('rateEdit'):$('samplesEdit');input.value=kind==='rate'?state.sampleRate:state.samples;control.classList.add('editing');input.focus();input.select()}
 function commitTimingEdit(control,cancel=false){if(!control.classList.contains('editing'))return;const kind=control.dataset.timing,input=kind==='rate'?$('rateEdit'):$('samplesEdit'),value=Number(input.value);control.classList.remove('editing');if(cancel||!Number.isFinite(value)||value<=0)return;if(kind==='rate'){state.sampleRate=Math.max(.000001,value);state.duration=state.samples/(state.sampleRate*1000);state.cycles=state.frequency*state.duration/1000;renderTiming();draw()}else{state.samples=Math.max(2,Math.round(value));state.duration=state.samples/(state.sampleRate*1000);state.cycles=state.frequency*state.duration/1000;renderTiming();generate()}}
 document.querySelectorAll('.timing-control.editable').forEach(control=>{const input=control.querySelector('input');control.addEventListener('click',()=>beginTimingEdit(control));control.addEventListener('keydown',event=>{if(!control.classList.contains('editing')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();beginTimingEdit(control)}});input.addEventListener('click',event=>event.stopPropagation());input.addEventListener('blur',()=>commitTimingEdit(control));input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();input.blur()}if(event.key==='Escape'){event.preventDefault();commitTimingEdit(control,true);control.focus()}})});
-$('applyBtn').onclick=()=>{syncInputs();generate()};$('dutyInput').oninput=()=>{$('dutyValue').textContent=$('dutyInput').value+'%'};
-$('frequencyInput').addEventListener('input',()=>{const value=+$('frequencyInput').value;if(value>0)$('periodInput').value=Number((1e6/value).toPrecision(10))});
-$('periodInput').addEventListener('input',()=>{const value=+$('periodInput').value;if(value>0)$('frequencyInput').value=Number((1e6/value).toPrecision(10))});
-$('amplitudeInput').onchange=()=>{const mid=(+$('highInput').value + +$('lowInput').value)/2,a=+$('amplitudeInput').value/2;$('highInput').value=mid+a;$('lowInput').value=mid-a};$('offsetInput').onchange=()=>{const a=(+$('highInput').value - +$('lowInput').value)/2,m=+$('offsetInput').value;$('highInput').value=m+a;$('lowInput').value=m-a};
-$('undoBtn').onclick=()=>{if(state.history.length>1){state.redo.push(state.history.pop());state.data=[...state.history.at(-1)];draw()}};$('redoBtn').onclick=()=>{if(state.redo.length){state.data=state.redo.pop();state.history.push([...state.data]);draw()}};
+function propertiesDiffer(){const values=[+$('highInput').value,+$('lowInput').value,+$('frequencyInput').value,+$('phaseInput').value,+$('dutyInput').value],current=[state.high,state.low,state.frequency,state.phase,state.duty];return values.some((value,index)=>!Number.isFinite(value)||Math.abs(value-current[index])>Math.max(1,Math.abs(current[index]))*1e-10)}
+function propertiesValid(){return [$('highInput'),$('lowInput'),$('frequencyInput'),$('phaseInput'),$('dutyInput')].every(input=>Number.isFinite(+input.value))&&+$('frequencyInput').value>0}
+function refreshApplyState(){$('applyBtn').disabled=!propertiesValid()||!propertiesDiffer()}
+function applyProperties(){if(!propertiesValid()||!propertiesDiffer()){refreshApplyState();return}syncInputs();generate();$('applyBtn').disabled=true}
+$('applyBtn').onclick=applyProperties;
+$('dutyInput').oninput=()=>{$('dutyValue').textContent=$('dutyInput').value+'%';refreshApplyState()};
+$('frequencyInput').addEventListener('input',()=>{const value=+$('frequencyInput').value;if(value>0)$('periodInput').value=Number((1e6/value).toPrecision(10));refreshApplyState()});
+$('periodInput').addEventListener('input',()=>{const value=+$('periodInput').value;if(value>0)$('frequencyInput').value=Number((1e6/value).toPrecision(10));refreshApplyState()});
+$('amplitudeInput').oninput=()=>{const mid=(+$('highInput').value + +$('lowInput').value)/2,a=Math.max(0,+$('amplitudeInput').value)/2;$('highInput').value=mid+a;$('lowInput').value=mid-a;refreshApplyState()};
+$('offsetInput').oninput=()=>{const a=(+$('highInput').value - +$('lowInput').value)/2,m=+$('offsetInput').value;$('highInput').value=m+a;$('lowInput').value=m-a;refreshApplyState()};
+document.querySelectorAll('.inspector input').forEach(input=>{if(!['dutyInput','frequencyInput','periodInput','amplitudeInput','offsetInput'].includes(input.id))input.addEventListener('input',refreshApplyState);input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();input.blur()}});input.addEventListener('blur',()=>{if(propertiesDiffer())applyProperties()})});
+$('undoBtn').onclick=()=>{if(state.history.length>1){state.redo.push(state.history.pop());restoreWaveform(state.history.at(-1))}};$('redoBtn').onclick=()=>{if(state.redo.length){const snapshot=state.redo.pop();state.history.push(cloneWaveform(snapshot));restoreWaveform(snapshot)}};
 $('zoomIn').onclick=()=>{state.high*=.8;state.low*=.8;draw()};$('zoomOut').onclick=()=>{state.high*=1.25;state.low*=1.25;draw()};$('fitView').onclick=()=>{syncInputs();draw()};
 $('exportBtn').onclick=()=>{const csv='time_s,voltage_v\n'+state.data.map((v,i)=>`${i/(state.samples-1)*state.duration/1000},${v}`).join('\n'),blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='arbdraw-waveform.csv';a.click();URL.revokeObjectURL(a.href);showToast('Waveform exported as CSV')};
 new ResizeObserver(resize).observe(canvas);renderDocument();generate();
