@@ -9,9 +9,9 @@ globalThis.ARBDRAW_DEFAULTS = {
   lowLevelV: -5,
   offsetV: 0,
   amplitudeVpp: 10,
-  sampleRateMSa: 2500,
-  sampleCount: 10000,
-  frequencyHz: 500000,
+  sampleRateMSa: 1250,
+  sampleCount: 1000,
+  frequencyHz: 2500000,
   phaseDegrees: 0,
   dutyCyclePercent: 50
 };
