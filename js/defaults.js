@@ -5,10 +5,10 @@
  * directly from disk. Values use volts, hertz, and degrees.
  */
 globalThis.ARBDRAW_DEFAULTS = {
-  highLevelV: 5,
-  highLevelUnit: 'V',
-  lowLevelV: -5,
-  lowLevelUnit: 'V',
+  highLevelV: 500,
+  highLevelUnit: 'mV',
+  lowLevelV: -500,
+  lowLevelUnit: 'mV',
   offsetV: 0,
   offsetUnit: 'V',
   amplitudeVpp: 10,

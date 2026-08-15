@@ -25,6 +25,8 @@ Then open `http://localhost:8000`.
 
 The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth. Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values. Use **Open** to restore a project from a JSON file or pasted JSON text.
 
+See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field reference, units, import rules, timing formulas, and a Python reader example.
+
 Transient UI state such as the selected drawing tool, zoom, and undo history is intentionally not stored in the project document.
 
 ## Editing defaults
