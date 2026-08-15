@@ -139,6 +139,32 @@ function canvasPoint(e) {
     ),
   };
 }
+
+function pointerIsNearWaveform(e) {
+  if (!state.data.length) return false;
+  const r = canvas.getBoundingClientRect();
+  const d = devicePixelRatio || 1;
+  const pad = { l: 58 * d, r: 18 * d, t: 20 * d, b: 39 * d };
+  const x = (e.clientX - r.left) * d;
+  const y = (e.clientY - r.top) * d;
+  const plotWidth = canvas.width - pad.l - pad.r;
+  const plotHeight = canvas.height - pad.t - pad.b;
+  if (x < pad.l || x > canvas.width - pad.r || y < pad.t || y > canvas.height - pad.b) {
+    return false;
+  }
+
+  const samplePosition = ((x - pad.l) / plotWidth) * (state.data.length - 1);
+  const leftIndex = Math.floor(samplePosition);
+  const rightIndex = Math.min(state.data.length - 1, leftIndex + 1);
+  const interpolation = samplePosition - leftIndex;
+  const voltage =
+    state.data[leftIndex] + (state.data[rightIndex] - state.data[leftIndex]) * interpolation;
+  const bounds = voltageBounds();
+  const waveformY =
+    pad.t + ((bounds.high - voltage) / (bounds.high - bounds.low)) * plotHeight;
+  return Math.abs(y - waveformY) <= 7 * d;
+}
+
 function editAt(pt, last) {
   if (state.tool === 'pan') return;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
@@ -194,6 +220,7 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
+  canvas.classList.toggle('waveform-hover', pointerIsNearWaveform(e));
   $('cursorReadout').style.display = 'block';
   $('cursorReadout').innerHTML =
     `${((p.i / (state.samples - 1)) * state.duration).toFixed(3)} ms &nbsp; ${p.v.toFixed(3)} V`;
@@ -209,6 +236,7 @@ canvas.addEventListener('pointerup', (e) => {
   state.lineStart = null;
 });
 canvas.addEventListener('pointerleave', () => {
+  canvas.classList.remove('waveform-hover');
   $('cursorReadout').style.display = 'none';
 });
 

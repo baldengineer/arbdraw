@@ -1,13 +1,13 @@
 // Read-only waveform viewer rendering and independent scope controls.
 const scopeCanvas = document.querySelector('#scopeCanvas');
 const scopeCtx = scopeCanvas.getContext('2d');
+const scopeFitCycleCount = 2;
 const scopeState = {
   voltsPerDiv: 2,
   verticalPosition: 0,
   verticalDivisions: DEFAULT_VALUES.waveformVerticalDivisions,
   timePerDivMs: null,
   timeStartMs: 0,
-  cycles: 2,
   fitted: false,
 };
 let scopeVoltageUnitScale = 1;
@@ -51,7 +51,10 @@ function renderScopeTime() {
   $('scopeTimeDiv').value = Number((scopeState.timePerDivMs / unit.scale).toPrecision(8));
 }
 function fittedScopeTime() {
-  return Math.min(1000, Math.max(1e-9, nextUpper125((state.duration * scopeState.cycles) / 10)));
+  return Math.min(
+    1000,
+    Math.max(1e-9, nextUpper125((state.duration * scopeFitCycleCount) / 10)),
+  );
 }
 function refreshScopeTime() {
   scopeState.timePerDivMs = fittedScopeTime();
@@ -123,17 +126,35 @@ function drawScope() {
   scopeCtx.clip();
   scopeCtx.strokeStyle = DEFAULT_VALUES.waveformColor;
   scopeCtx.shadowColor = DEFAULT_VALUES.waveformColor;
-  scopeCtx.shadowBlur = 5 * d;
   scopeCtx.lineWidth = 1.5 * d;
-  scopeCtx.beginPath();
-  for (let cycle = 0; cycle < scopeState.cycles; cycle++)
-    state.data.forEach((value, index) => {
+  const firstVisibleCycle = Math.max(0, Math.floor(scopeState.timeStartMs / state.duration));
+  const lastVisibleCycle = Math.ceil((scopeState.timeStartMs + timeSpan) / state.duration);
+  const visibleCycleCount = Math.max(1, lastVisibleCycle - firstVisibleCycle);
+  const maximumRenderedCycles = Math.max(1, Math.ceil(pw / d));
+  const cycleStep = Math.max(1, Math.ceil(visibleCycleCount / maximumRenderedCycles));
+  const cycleWidthPixels = (state.duration / timeSpan) * (pw / d);
+  const maximumSamplesPerCycle = Math.max(2, Math.ceil(cycleWidthPixels * 2));
+  const sampleStep = Math.max(
+    1,
+    Math.ceil((state.data.length - 1) / maximumSamplesPerCycle),
+  );
+
+  for (let cycle = firstVisibleCycle; cycle < lastVisibleCycle; cycle += cycleStep) {
+    scopeCtx.globalAlpha = cycle % 2 === 0 ? 1 : 0.55;
+    scopeCtx.shadowBlur = cycle % 2 === 0 ? 5 * d : 2 * d;
+    scopeCtx.beginPath();
+    const drawSample = (index) => {
+      const value = state.data[index];
       const time = cycle * state.duration + (index / (state.data.length - 1)) * state.duration,
         x = pad.l + ((time - scopeState.timeStartMs) / timeSpan) * pw,
         y = pad.t + ((mid + voltageSpan / 2 - value) / voltageSpan) * ph;
-      index || cycle ? scopeCtx.lineTo(x, y) : scopeCtx.moveTo(x, y);
-    });
-  scopeCtx.stroke();
+      index ? scopeCtx.lineTo(x, y) : scopeCtx.moveTo(x, y);
+    };
+    for (let index = 0; index < state.data.length; index += sampleStep) drawSample(index);
+    if ((state.data.length - 1) % sampleStep !== 0) drawSample(state.data.length - 1);
+    scopeCtx.stroke();
+  }
+  scopeCtx.globalAlpha = 1;
   scopeCtx.restore();
 }
 
@@ -210,11 +231,7 @@ function finishScopeZoom(event, applyZoom) {
     Math.max(1e-9, nextUpper125((selectedTimeEnd - selectedTimeStart) / 10)),
   );
   const newTimeSpan = scopeState.timePerDivMs * 10;
-  const waveformSpan = state.duration * scopeState.cycles;
-  scopeState.timeStartMs = Math.max(
-    0,
-    Math.min(selectedTimeCenter - newTimeSpan / 2, Math.max(0, waveformSpan - newTimeSpan)),
-  );
+  scopeState.timeStartMs = Math.max(0, selectedTimeCenter - newTimeSpan / 2);
   scopeState.voltsPerDiv = nextUpper125(
     Math.abs(selectedVoltageTop - selectedVoltageBottom) / scopeState.verticalDivisions,
   );
@@ -241,11 +258,7 @@ function zoomOutScope() {
 
   scopeState.timePerDivMs = Math.min(1000, nextUpper125(scopeState.timePerDivMs * 2));
   const newTimeSpan = scopeState.timePerDivMs * 10;
-  const waveformSpan = state.duration * scopeState.cycles;
-  scopeState.timeStartMs = Math.max(
-    0,
-    Math.min(currentTimeCenter - newTimeSpan / 2, Math.max(0, waveformSpan - newTimeSpan)),
-  );
+  scopeState.timeStartMs = Math.max(0, currentTimeCenter - newTimeSpan / 2);
   scopeState.voltsPerDiv = nextUpper125(scopeState.voltsPerDiv * 2);
   scopeState.fitted = true;
 
@@ -462,20 +475,6 @@ $('scopeTimeDiv').addEventListener('keydown', (event) => {
   if (!unit || event.ctrlKey || event.metaKey || event.altKey) return;
   event.preventDefault();
   selectScopeTimeUnit(unit.scale, unit.label);
-});
-$('scopeCycles').addEventListener('change', () => {
-  const value = Math.max(1, Math.round(Number($('scopeCycles').value)));
-  if (Number.isFinite(value)) {
-    scopeState.cycles = value;
-    $('scopeCycles').value = value;
-    refreshScopeTime();
-  } else $('scopeCycles').value = scopeState.cycles;
-});
-$('scopeCycles').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    $('scopeCycles').blur();
-  }
 });
 scopeCanvas.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;

@@ -7,6 +7,5 @@
 - Wire up the Phase control.
 - Create a JSON structure for input-box properties.
 - Add Waveform viewer right-click defaults for 0 and 50%.
-- Repeat waveform cycles enough to fill the viewer, with alternating cycles faded or drawn in a different color.
 - Add a row below Sample Rate and Samples for maximum One Cycle settings, enabled or disabled by the One Cycle button.
 - BEM Color Palette
