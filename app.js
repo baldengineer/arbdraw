@@ -69,7 +69,7 @@ $('chooseProjectBtn').onclick=()=>$('projectFileInput').click();
 $('projectFileInput').onchange=async event=>{const file=event.target.files[0];if(file){$('projectJsonInput').value=await file.text();$('openError').textContent=''}};
 $('importProjectBtn').onclick=()=>{try{loadProject(JSON.parse($('projectJsonInput').value));$('openDialog').close()}catch(error){$('openError').textContent=error instanceof SyntaxError?'The pasted text is not valid JSON.':error.message}};
 
-function generate(type=state.type) {
+function generate(type=state.type,recordHistory=true) {
   state.type=type; const n=state.samples, mid=(state.high+state.low)/2, amp=(state.high-state.low)/2, phase=state.phase*Math.PI/180;
   state.data=Array.from({length:n},(_,i)=>{ const t=i/(n-1), p=(t*state.cycles+state.phase/360)%1; switch(type){
     case 'sine': return mid+amp*Math.sin(2*Math.PI*state.cycles*t+phase);
@@ -80,7 +80,7 @@ function generate(type=state.type) {
     case 'dc': return mid;
     case 'noise': return mid+(Math.random()*2-1)*amp;
     default: return mid;
-  }}); pushHistory(); draw();if(!$('samplesView').classList.contains('hidden'))renderSamples();
+  }});if(recordHistory)pushHistory();draw();if(!$('samplesView').classList.contains('hidden'))renderSamples();
 }
 function cloneWaveform(source=projectDocument.waveform){return {...source,values:[...source.values]}}
 function restoreWaveform(snapshot){projectDocument.waveform=cloneWaveform(snapshot);renderDocument()}
@@ -133,7 +133,8 @@ document.querySelectorAll('.timing-control.editable').forEach(control=>{const in
 function propertiesDiffer(){const values=[inputVoltage('highInput'),inputVoltage('lowInput'),inputFrequency(),+$('phaseInput').value,+$('dutyInput').value],current=[state.high,state.low,state.frequency,state.phase,state.duty];return values.some((value,index)=>!Number.isFinite(value)||Math.abs(value-current[index])>Math.max(1,Math.abs(current[index]))*1e-10)}
 function propertiesValid(){return [$('highInput'),$('lowInput'),$('frequencyInput'),$('phaseInput'),$('dutyInput')].every(input=>Number.isFinite(+input.value))&&inputFrequency()>0}
 function applyProperties(){if(!propertiesValid()||!propertiesDiffer())return;syncInputs();generate()}
-$('dutyInput').oninput=()=>{$('dutyValue').textContent=$('dutyInput').value+'%'};
+$('dutyInput').oninput=()=>{if($('dutyInput').disabled)return;state.duty=+$('dutyInput').value;$('dutyValue').textContent=state.duty+'%';generate(state.type,false)};
+$('dutyInput').addEventListener('change',()=>pushHistory());
 $('frequencyInput').addEventListener('input',()=>{const value=inputFrequency();if(value>0)$('periodInput').value=displayPeriod(value)});
 $('periodInput').addEventListener('input',()=>{const value=inputPeriodFrequency();if(value>0)$('frequencyInput').value=displayFrequency(value)});
 $('amplitudeInput').oninput=()=>{const mid=(inputVoltage('highInput')+inputVoltage('lowInput'))/2,a=Math.max(0,+$('amplitudeInput').value)*amplitudeUnitScale/2;$('highInput').value=displayVoltage('highInput',mid+a);$('lowInput').value=displayVoltage('lowInput',mid-a)};
