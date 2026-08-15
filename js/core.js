@@ -103,6 +103,10 @@ function normalizeDefaults(source = {}) {
     dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
+    waveformVerticalDivisions: Math.max(
+      2,
+      Math.round(finite('waveformVerticalDivisions', 10)),
+    ),
   });
 }
 

@@ -33,6 +33,7 @@ document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#scopePositionUnitMenu,#scopePositionUnitBtn'))
     closeScopePositionUnitMenu();
   if (!event.target.closest?.('#scopeTimeUnitMenu,#scopeTimeUnitBtn')) closeScopeTimeUnitMenu();
+  if (!event.target.closest?.('#scopeDivisionMenu,#scopeVerticalControl')) closeScopeDivisionMenu();
   if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn')) closeFunctionSelectMenu();
 });
 document.addEventListener('keydown', (event) => {
@@ -44,6 +45,7 @@ document.addEventListener('keydown', (event) => {
     closeScopeVoltageUnitMenu();
     closeScopePositionUnitMenu();
     closeScopeTimeUnitMenu();
+    closeScopeDivisionMenu();
     closeFunctionSelectMenu();
   }
 });
@@ -55,5 +57,6 @@ window.addEventListener('blur', () => {
   closeScopeVoltageUnitMenu();
   closeScopePositionUnitMenu();
   closeScopeTimeUnitMenu();
+  closeScopeDivisionMenu();
   closeFunctionSelectMenu();
 });

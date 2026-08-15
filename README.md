@@ -29,4 +29,4 @@ Transient UI state such as the selected drawing tool, zoom, and undo history is 
 
 ## Editing defaults
 
-Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, frequency, phase, and duty cycle. Default duration is calculated from sample count and sample rate. It is a JavaScript object rather than fetched JSON so it also works when `index.html` is opened directly from disk.
+Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, frequency, phase, duty cycle, display colors, and the Waveform viewer's vertical division count. Default duration is calculated from sample count and sample rate. It is a JavaScript object rather than fetched JSON so it also works when `index.html` is opened directly from disk.

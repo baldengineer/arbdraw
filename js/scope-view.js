@@ -4,6 +4,7 @@ const scopeCtx = scopeCanvas.getContext('2d');
 const scopeState = {
   voltsPerDiv: 2,
   verticalPosition: 0,
+  verticalDivisions: DEFAULT_VALUES.waveformVerticalDivisions,
   timePerDivMs: null,
   cycles: 2,
   fitted: false,
@@ -20,13 +21,12 @@ function nextUpper125(value) {
   return 10 * power;
 }
 function fittedVerticalScale() {
-  return nextUpper125(
-    Math.max(
-      0.000001,
-      Math.abs(state.high - scopeState.verticalPosition),
-      Math.abs(state.low - scopeState.verticalPosition),
-    ) / 4,
+  const maximumOffset = Math.max(
+    0.000001,
+    Math.abs(state.high - scopeState.verticalPosition),
+    Math.abs(state.low - scopeState.verticalPosition),
   );
+  return nextUpper125(maximumOffset / (scopeState.verticalDivisions / 2));
 }
 function refreshScopeVertical() {
   scopeState.voltsPerDiv = fittedVerticalScale();
@@ -81,7 +81,7 @@ function drawScope() {
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
     timeSpan = timePerDiv * 10,
-    voltageSpan = voltsPerDiv * 8;
+    voltageSpan = voltsPerDiv * scopeState.verticalDivisions;
   scopeCtx.clearRect(0, 0, w, h);
   scopeCtx.fillStyle = '#090d0f';
   scopeCtx.fillRect(0, 0, w, h);
@@ -89,10 +89,10 @@ function drawScope() {
   scopeCtx.lineWidth = d;
   scopeCtx.textBaseline = 'middle';
   scopeCtx.textAlign = 'right';
-  for (let y = 0; y <= 8; y++) {
-    const py = pad.t + (ph * y) / 8,
+  for (let y = 0; y <= scopeState.verticalDivisions; y++) {
+    const py = pad.t + (ph * y) / scopeState.verticalDivisions,
       value = mid + voltageSpan / 2 - y * voltsPerDiv;
-    scopeCtx.strokeStyle = y === 4 ? '#49605f' : '#223033';
+    scopeCtx.strokeStyle = y === scopeState.verticalDivisions / 2 ? '#49605f' : '#223033';
     scopeCtx.beginPath();
     scopeCtx.moveTo(pad.l, py);
     scopeCtx.lineTo(w - pad.r, py);
@@ -135,6 +135,31 @@ function drawScope() {
 }
 $('scopeRefreshBtn').onclick = refreshScopeTime;
 $('scopeVerticalRefreshBtn').onclick = refreshScopeVertical;
+$('scopeVerticalControl').addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  const menu = $('scopeDivisionMenu');
+  menu.style.left = Math.min(event.clientX, innerWidth - 155) + 'px';
+  menu.style.top = Math.min(event.clientY, innerHeight - 82) + 'px';
+  menu.classList.add('open');
+  menu.querySelectorAll('button').forEach((option) => {
+    option.setAttribute(
+      'aria-checked',
+      String(+option.dataset.divisions === scopeState.verticalDivisions),
+    );
+  });
+});
+function closeScopeDivisionMenu() {
+  $('scopeDivisionMenu').classList.remove('open');
+}
+$('scopeDivisionMenu')
+  .querySelectorAll('button')
+  .forEach((option) => {
+    option.onclick = () => {
+      scopeState.verticalDivisions = +option.dataset.divisions;
+      refreshScopeVertical();
+      closeScopeDivisionMenu();
+    };
+  });
 for (const [id, key] of [
   ['scopeVoltsDiv', 'voltsPerDiv'],
   ['scopeTimeDiv', 'timePerDivMs'],
@@ -321,7 +346,9 @@ scopeCanvas.addEventListener('pointermove', (event) => {
     x = Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)),
     y = Math.max(0, Math.min(1, (event.clientY - r.top) / r.height)),
     time = x * scopeState.timePerDivMs * 10,
-    voltage = scopeState.verticalPosition + (0.5 - y) * scopeState.voltsPerDiv * 8;
+    voltage =
+      scopeState.verticalPosition +
+      (0.5 - y) * scopeState.voltsPerDiv * scopeState.verticalDivisions;
   $('scopeCursorReadout').style.display = 'block';
   $('scopeCursorReadout').innerHTML =
     `${time.toPrecision(5)} ms &nbsp; ${voltage.toPrecision(5)} V`;

@@ -26,4 +26,5 @@ globalThis.ARBDRAW_DEFAULTS = {
   dutyCycleUnit: '%',
   editorColor: '#7bffb2',
   waveformColor: '#ffe45e',
+  waveformVerticalDivisions: 10,
 };

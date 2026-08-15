@@ -14,7 +14,6 @@ function renderDocument() {
   renderTiming();
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');
-  $('propertyTitle').textContent = titles[state.type] || 'Custom waveform';
   updateDutyAvailability(state.type);
   updateFunctionSelect(state.type);
   draw();

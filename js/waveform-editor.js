@@ -166,7 +166,6 @@ function updateDutyAvailability(type) {
 function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
-  $('propertyTitle').textContent = titles[type];
   updateDutyAvailability(type);
   updateFunctionSelect(type);
 }

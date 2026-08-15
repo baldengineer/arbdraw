@@ -50,7 +50,7 @@
         <div id="waveformView" class="scope-view panel view-panel hidden" role="tabpanel" aria-labelledby="waveformTab">
           <div class="scope-toolbar">
             <div class="scope-controls" aria-label="Waveform display controls">
-              <label>Vertical <div class="unit-input scope-control"><input id="scopeVoltsDiv" type="number" min="0.000001" step="any" value="2" aria-label="Vertical scale"><button id="scopeVoltageUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V/div</button></div></label>
+              <label>Vertical <div id="scopeVerticalControl" class="unit-input scope-control"><input id="scopeVoltsDiv" type="number" min="0.000001" step="any" value="2" aria-label="Vertical scale"><button id="scopeVoltageUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V/div</button></div></label>
               <label>Position <div class="unit-input scope-control scope-position-control"><input id="scopeVerticalPosition" type="number" step="any" value="0" aria-label="Vertical position"><button id="scopePositionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
               <button id="scopeVerticalRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh vertical scale" title="Refresh vertical scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
               <span class="scope-control-separator" aria-hidden="true"></span>
@@ -95,7 +95,7 @@
       </section>
 
       <aside class="inspector panel">
-        <div class="panel-heading inspector-heading"><div class="property-heading-row"><span class="eyebrow">PROPERTIES</span><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div><h2 id="propertyTitle">Sine wave</h2></div>
+        <div class="panel-heading inspector-heading"><div class="property-heading-row"><span class="eyebrow">PROPERTIES</span><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div></div>
         <div class="section function-section">
           <div class="section-title">Function</div>
           <label>Waveshape <button id="functionSelectBtn" class="function-select-button" type="button" aria-haspopup="menu" aria-expanded="false"><canvas aria-hidden="true"></canvas><span>Sine</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button></label>
@@ -137,6 +137,7 @@
   <div id="scopeVoltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V/div" role="menuitem">V/div</button><button data-scale="0.001" data-label="mV/div" role="menuitem">mV/div</button></div>
   <div id="scopePositionUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button></div>
   <div id="scopeTimeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.000000001" data-label="ps/div" role="menuitem">ps/div</button><button data-scale="0.000001" data-label="ns/div" role="menuitem">ns/div</button><button data-scale="0.001" data-label="µs/div" role="menuitem">µs/div</button><button data-scale="1" data-label="ms/div" role="menuitem">ms/div</button><button data-scale="1000" data-label="s/div" role="menuitem">s/div</button></div>
+  <div id="scopeDivisionMenu" class="context-menu scope-division-menu" role="menu" aria-label="Vertical divisions"><button data-divisions="8" role="menuitemradio">8 divisions</button><button data-divisions="10" role="menuitemradio">10 divisions</button></div>
   <div id="functionSelectMenu" class="context-menu function-select-menu" role="menu">
     <button data-wave="custom" role="menuitem"><canvas aria-hidden="true"></canvas><span>Custom</span></button>
     <button data-wave="sine" role="menuitem"><canvas aria-hidden="true"></canvas><span>Sine</span></button>
