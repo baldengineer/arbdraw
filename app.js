@@ -5,15 +5,19 @@ const scopeCtx = scopeCanvas.getContext('2d');
 function normalizeDefaults(source={}){
   const finite=(key,fallback)=>Number.isFinite(Number(source[key]))?Number(source[key]):fallback;
   const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(String(source[key]||''))?String(source[key]):fallback;
-  const offsetV=finite('offsetV',0),amplitudeVpp=Math.max(0,finite('amplitudeVpp',10));
-  let highLevelV=finite('highLevelV',offsetV+amplitudeVpp/2),lowLevelV=finite('lowLevelV',offsetV-amplitudeVpp/2);
+  const voltageUnits={V:1,mV:.001,'µV':.000001},amplitudeUnits={Vpp:1,mVpp:.001,'µVpp':.000001},frequencyUnits={mHz:.001,Hz:1,kHz:1e3,MHz:1e6,GHz:1e9},periodUnits={Ms:1e6,s:1,ms:.001,'µs':1e-6,ns:1e-9},sampleRateUnits={'Sa/s':1e-6,'kSa/s':.001,'MSa/s':1,'GSa/s':1e3},sampleCountUnits={pts:1,kpts:1e3,Mpts:1e6};
+  const unit=(key,units,fallback)=>Object.hasOwn(units,source[key])?source[key]:fallback;
+  const highLevelUnit=unit('highLevelUnit',voltageUnits,'V'),lowLevelUnit=unit('lowLevelUnit',voltageUnits,'V'),offsetUnit=unit('offsetUnit',voltageUnits,'V'),amplitudeUnit=unit('amplitudeUnit',amplitudeUnits,'Vpp'),frequencyUnit=unit('frequencyUnit',frequencyUnits,'Hz'),periodUnit=unit('periodUnit',periodUnits,'µs'),sampleRateUnit=unit('sampleRateUnit',sampleRateUnits,'MSa/s'),sampleCountUnit=unit('sampleCountUnit',sampleCountUnits,'pts');
+  const offsetV=finite('offsetV',0)*voltageUnits[offsetUnit],amplitudeVpp=Math.max(0,finite('amplitudeVpp',10)*amplitudeUnits[amplitudeUnit]);
+  let highLevelV=finite('highLevelV',(offsetV+amplitudeVpp/2)/voltageUnits[highLevelUnit])*voltageUnits[highLevelUnit],lowLevelV=finite('lowLevelV',(offsetV-amplitudeVpp/2)/voltageUnits[lowLevelUnit])*voltageUnits[lowLevelUnit];
   if(highLevelV<lowLevelV)[highLevelV,lowLevelV]=[lowLevelV,highLevelV];
-  return Object.freeze({highLevelV,lowLevelV,offsetV,amplitudeVpp,sampleRateMSa:Math.max(.000001,finite('sampleRateMSa',2500)),sampleCount:Math.max(2,Math.round(finite('sampleCount',10000))),frequencyHz:Math.max(.000001,finite('frequencyHz',750000)),phaseDegrees:finite('phaseDegrees',0),dutyCyclePercent:Math.min(95,Math.max(5,finite('dutyCyclePercent',50))),editorColor:color('editorColor','#7bffb2'),waveformColor:color('waveformColor','#ffe45e')});
+  return Object.freeze({highLevelV,lowLevelV,offsetV,amplitudeVpp,highLevelUnit,lowLevelUnit,offsetUnit,amplitudeUnit,frequencyUnit,periodUnit,sampleRateUnit,sampleCountUnit,phaseUnit:String(source.phaseUnit||'°'),dutyCycleUnit:String(source.dutyCycleUnit||'%'),sampleRateMSa:Math.max(.000001,finite('sampleRateMSa',2500/sampleRateUnits[sampleRateUnit])*sampleRateUnits[sampleRateUnit]),sampleCount:Math.max(2,Math.round(finite('sampleCount',10000/sampleCountUnits[sampleCountUnit])*sampleCountUnits[sampleCountUnit])),frequencyHz:Math.max(.000001,finite('frequencyHz',750000/frequencyUnits[frequencyUnit])*frequencyUnits[frequencyUnit]),phaseDegrees:finite('phaseDegrees',0),dutyCyclePercent:Math.min(95,Math.max(5,finite('dutyCyclePercent',50))),editorColor:color('editorColor','#7bffb2'),waveformColor:color('waveformColor','#ffe45e')});
 }
 const DEFAULT_VALUES=normalizeDefaults(globalThis.ARBDRAW_DEFAULTS);
-let amplitudeUnitScale=1;
-const voltageUnitScales={highInput:1,lowInput:1,offsetInput:1};
-let frequencyUnitScale=1,periodUnitScale=.000001;
+const voltageScaleByLabel={V:1,mV:.001,'µV':.000001},amplitudeScaleByLabel={Vpp:1,mVpp:.001,'µVpp':.000001},frequencyScaleByLabel={mHz:.001,Hz:1,kHz:1e3,MHz:1e6,GHz:1e9},periodScaleByLabel={Ms:1e6,s:1,ms:.001,'µs':1e-6,ns:1e-9};
+let amplitudeUnitScale=amplitudeScaleByLabel[DEFAULT_VALUES.amplitudeUnit];
+const voltageUnitScales={highInput:voltageScaleByLabel[DEFAULT_VALUES.highLevelUnit],lowInput:voltageScaleByLabel[DEFAULT_VALUES.lowLevelUnit],offsetInput:voltageScaleByLabel[DEFAULT_VALUES.offsetUnit]};
+let frequencyUnitScale=frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],periodUnitScale=periodScaleByLabel[DEFAULT_VALUES.periodUnit];
 function displayAmplitude(volts){return Number((volts/amplitudeUnitScale).toPrecision(10))}
 function displayVoltage(inputId,volts){return Number((volts/voltageUnitScales[inputId]).toPrecision(10))}
 function inputVoltage(inputId){return +$(inputId).value*voltageUnitScales[inputId]}
@@ -30,6 +34,7 @@ const documentFields={type:'type',high:'highVoltage',low:'lowVoltage',duration:'
 Object.entries(documentFields).forEach(([stateKey,documentKey])=>Object.defineProperty(state,stateKey,{get:()=>projectDocument.waveform[documentKey],set:value=>projectDocument.waveform[documentKey]=value}));
 const titles = {sine:'Sine wave',square:'Square wave',triangle:'Triangle wave',ramp:'Ramp wave',pulse:'Pulse wave',dc:'DC level',noise:'White noise',custom:'Custom waveform'};
 const $ = id => document.getElementById(id);
+$('amplitudeUnitBtn').textContent=DEFAULT_VALUES.amplitudeUnit;$('frequencyUnitBtn').textContent=DEFAULT_VALUES.frequencyUnit;$('periodUnitBtn').textContent=DEFAULT_VALUES.periodUnit;document.querySelector('.voltage-unit-button[data-input="highInput"]').textContent=DEFAULT_VALUES.highLevelUnit;document.querySelector('.voltage-unit-button[data-input="lowInput"]').textContent=DEFAULT_VALUES.lowLevelUnit;document.querySelector('.voltage-unit-button[data-input="offsetInput"]').textContent=DEFAULT_VALUES.offsetUnit;
 
 function setTheme(theme) {
   document.documentElement.dataset.theme=theme;

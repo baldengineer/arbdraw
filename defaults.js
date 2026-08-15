@@ -6,14 +6,24 @@
  */
 globalThis.ARBDRAW_DEFAULTS = {
   highLevelV: 5,
+  highLevelUnit: 'V',
   lowLevelV: -5,
+  lowLevelUnit: 'V',
   offsetV: 0,
+  offsetUnit: 'V',
   amplitudeVpp: 10,
+  amplitudeUnit: 'Vpp',
   sampleRateMSa: 1250,
+  sampleRateUnit: 'MSa/s',
   sampleCount: 1000,
-  frequencyHz: 2500000,
+  sampleCountUnit: 'pts',
+  frequencyHz: 2.5,
+  frequencyUnit: 'MHz',
+  periodUnit: 'ns',
   phaseDegrees: 0,
+  phaseUnit: '°',
   dutyCyclePercent: 50,
+  dutyCycleUnit: '%',
   editorColor: '#7bffb2',
   waveformColor: '#ffe45e'
 };
