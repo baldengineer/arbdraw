@@ -4,19 +4,17 @@ function normalizeDefaults(source = {}) {
     Number.isFinite(Number(source[key])) ? Number(source[key]) : fallback;
 
   const color = (key, fallback) =>
-    /^#[0-9a-f]{6}$/i.test(String(source[key] || ''))
-      ? String(source[key])
-      : fallback;
+    /^#[0-9a-f]{6}$/i.test(String(source[key] || '')) ? String(source[key]) : fallback;
 
   const voltageUnits = {
     V: 1,
     mV: 0.001,
-    'µV': 0.000001,
+    µV: 0.000001,
   };
   const amplitudeUnits = {
     Vpp: 1,
     mVpp: 0.001,
-    'µVpp': 0.000001,
+    µVpp: 0.000001,
   };
   const frequencyUnits = {
     mHz: 0.001,
@@ -29,7 +27,7 @@ function normalizeDefaults(source = {}) {
     Ms: 1e6,
     s: 1,
     ms: 0.001,
-    'µs': 1e-6,
+    µs: 1e-6,
     ns: 1e-9,
   };
   const sampleRateUnits = {
@@ -57,21 +55,14 @@ function normalizeDefaults(source = {}) {
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
-  const amplitudeVpp = Math.max(
-    0,
-    finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit],
-  );
+  const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
 
   let highLevelV =
-    finite(
-      'highLevelV',
-      (offsetV + amplitudeVpp / 2) / voltageUnits[highLevelUnit],
-    ) * voltageUnits[highLevelUnit];
+    finite('highLevelV', (offsetV + amplitudeVpp / 2) / voltageUnits[highLevelUnit]) *
+    voltageUnits[highLevelUnit];
   let lowLevelV =
-    finite(
-      'lowLevelV',
-      (offsetV - amplitudeVpp / 2) / voltageUnits[lowLevelUnit],
-    ) * voltageUnits[lowLevelUnit];
+    finite('lowLevelV', (offsetV - amplitudeVpp / 2) / voltageUnits[lowLevelUnit]) *
+    voltageUnits[lowLevelUnit];
 
   if (highLevelV < lowLevelV) {
     [highLevelV, lowLevelV] = [lowLevelV, highLevelV];
@@ -94,32 +85,22 @@ function normalizeDefaults(source = {}) {
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
       0.000001,
-      finite(
-        'sampleRateMSa',
-        2500 / sampleRateUnits[sampleRateUnit],
-      ) * sampleRateUnits[sampleRateUnit],
+      finite('sampleRateMSa', 2500 / sampleRateUnits[sampleRateUnit]) *
+        sampleRateUnits[sampleRateUnit],
     ),
     sampleCount: Math.max(
       2,
       Math.round(
-        finite(
-          'sampleCount',
-          10000 / sampleCountUnits[sampleCountUnit],
-        ) * sampleCountUnits[sampleCountUnit],
+        finite('sampleCount', 10000 / sampleCountUnits[sampleCountUnit]) *
+          sampleCountUnits[sampleCountUnit],
       ),
     ),
     frequencyHz: Math.max(
       0.000001,
-      finite(
-        'frequencyHz',
-        750000 / frequencyUnits[frequencyUnit],
-      ) * frequencyUnits[frequencyUnit],
+      finite('frequencyHz', 750000 / frequencyUnits[frequencyUnit]) * frequencyUnits[frequencyUnit],
     ),
     phaseDegrees: finite('phaseDegrees', 0),
-    dutyCyclePercent: Math.min(
-      95,
-      Math.max(5, finite('dutyCyclePercent', 50)),
-    ),
+    dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
   });
@@ -128,8 +109,7 @@ function normalizeDefaults(source = {}) {
 const DEFAULT_VALUES = normalizeDefaults(globalThis.ARBDRAW_DEFAULTS);
 
 function createDefaultDocument() {
-  const durationMs =
-    DEFAULT_VALUES.sampleCount / (DEFAULT_VALUES.sampleRateMSa * 1000);
+  const durationMs = DEFAULT_VALUES.sampleCount / (DEFAULT_VALUES.sampleRateMSa * 1000);
 
   return {
     schema: 'arbdraw.waveform',
