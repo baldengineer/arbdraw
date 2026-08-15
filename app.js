@@ -4,6 +4,14 @@ const state = { type:'sine', tool:'pencil', high:5, low:-5, duration:1, cycles:3
 const titles = {sine:'Sine wave',square:'Square wave',triangle:'Triangle wave',ramp:'Ramp wave',pulse:'Pulse wave',dc:'DC level',noise:'White noise',free:'Custom waveform'};
 const $ = id => document.getElementById(id);
 
+function setTheme(theme) {
+  document.documentElement.dataset.theme=theme;
+  localStorage.setItem('arbdraw-theme',theme);
+  document.querySelectorAll('.theme-option').forEach(button=>button.classList.toggle('active',button.dataset.theme===theme));
+}
+setTheme(localStorage.getItem('arbdraw-theme')||'dark');
+document.querySelectorAll('.theme-option').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.theme)));
+
 function generate(type=state.type) {
   state.type=type; const n=state.samples, mid=(state.high+state.low)/2, amp=(state.high-state.low)/2, phase=state.phase*Math.PI/180;
   state.data=Array.from({length:n},(_,i)=>{ const t=i/(n-1), p=(t*state.cycles+state.phase/360)%1; switch(type){
