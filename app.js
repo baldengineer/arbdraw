@@ -1,6 +1,14 @@
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');
-function createDefaultDocument(){return {schema:'arbdraw.waveform',version:1,name:'Waveform 01',waveform:{type:'sine',highVoltage:5,lowVoltage:-5,durationMs:.004,sampleRateMSa:2500,frequencyHz:750000,cycles:3,phaseDegrees:0,dutyCyclePercent:50,sampleCount:10000,values:[]}}}
+function normalizeDefaults(source={}){
+  const finite=(key,fallback)=>Number.isFinite(Number(source[key]))?Number(source[key]):fallback;
+  const offsetV=finite('offsetV',0),amplitudeVpp=Math.max(0,finite('amplitudeVpp',10));
+  let highLevelV=finite('highLevelV',offsetV+amplitudeVpp/2),lowLevelV=finite('lowLevelV',offsetV-amplitudeVpp/2);
+  if(highLevelV<lowLevelV)[highLevelV,lowLevelV]=[lowLevelV,highLevelV];
+  return Object.freeze({highLevelV,lowLevelV,offsetV,amplitudeVpp,sampleRateMSa:Math.max(.000001,finite('sampleRateMSa',2500)),sampleCount:Math.max(2,Math.round(finite('sampleCount',10000))),frequencyHz:Math.max(.000001,finite('frequencyHz',750000)),phaseDegrees:finite('phaseDegrees',0),dutyCyclePercent:Math.min(95,Math.max(5,finite('dutyCyclePercent',50)))});
+}
+const DEFAULT_VALUES=normalizeDefaults(globalThis.ARBDRAW_DEFAULTS);
+function createDefaultDocument(){const durationMs=DEFAULT_VALUES.sampleCount/(DEFAULT_VALUES.sampleRateMSa*1000);return {schema:'arbdraw.waveform',version:1,name:'Waveform 01',waveform:{type:'sine',highVoltage:DEFAULT_VALUES.highLevelV,lowVoltage:DEFAULT_VALUES.lowLevelV,durationMs,sampleRateMSa:DEFAULT_VALUES.sampleRateMSa,frequencyHz:DEFAULT_VALUES.frequencyHz,cycles:DEFAULT_VALUES.frequencyHz*durationMs/1000,phaseDegrees:DEFAULT_VALUES.phaseDegrees,dutyCyclePercent:DEFAULT_VALUES.dutyCyclePercent,sampleCount:DEFAULT_VALUES.sampleCount,values:[]}}}
 let projectDocument=createDefaultDocument();
 const state = { tool:'pencil', zoom:1, history:[], redo:[], drawing:false, lineStart:null };
 const documentFields={type:'type',high:'highVoltage',low:'lowVoltage',duration:'durationMs',sampleRate:'sampleRateMSa',frequency:'frequencyHz',cycles:'cycles',phase:'phaseDegrees',duty:'dutyCyclePercent',samples:'sampleCount',data:'values'};
@@ -112,4 +120,4 @@ $('amplitudeInput').onchange=()=>{const mid=(+$('highInput').value + +$('lowInpu
 $('undoBtn').onclick=()=>{if(state.history.length>1){state.redo.push(state.history.pop());state.data=[...state.history.at(-1)];draw()}};$('redoBtn').onclick=()=>{if(state.redo.length){state.data=state.redo.pop();state.history.push([...state.data]);draw()}};
 $('zoomIn').onclick=()=>{state.high*=.8;state.low*=.8;draw()};$('zoomOut').onclick=()=>{state.high*=1.25;state.low*=1.25;draw()};$('fitView').onclick=()=>{syncInputs();draw()};
 $('exportBtn').onclick=()=>{const csv='time_s,voltage_v\n'+state.data.map((v,i)=>`${i/(state.samples-1)*state.duration/1000},${v}`).join('\n'),blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='arbdraw-waveform.csv';a.click();URL.revokeObjectURL(a.href);showToast('Waveform exported as CSV')};
-new ResizeObserver(resize).observe(canvas);syncInputs();generate();
+new ResizeObserver(resize).observe(canvas);renderDocument();generate();
