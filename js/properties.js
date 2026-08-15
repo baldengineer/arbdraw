@@ -425,11 +425,52 @@ function openTimingUnitMenu(kind) {
       option.setAttribute('aria-checked', String(+option.dataset.scale === scale)),
     );
 }
+
+const frequencyDisplayUnits = [
+  { scale: 1e9, label: 'GHz' },
+  { scale: 1e6, label: 'MHz' },
+  { scale: 1e3, label: 'kHz' },
+  { scale: 1, label: 'Hz' },
+  { scale: 0.001, label: 'mHz' },
+];
+
+const periodDisplayUnits = [
+  { scale: 1e6, label: 'Ms' },
+  { scale: 1, label: 's' },
+  { scale: 0.001, label: 'ms' },
+  { scale: 0.000001, label: 'µs' },
+  { scale: 0.000000001, label: 'ns' },
+];
+
+function displayUnitFor(value, units) {
+  return units.find((unit) => value >= unit.scale) || units.at(-1);
+}
+
 function selectTimingUnit(kind, scale, label) {
-  if (kind === 'frequency') frequencyUnitScale = scale;
-  else periodUnitScale = scale;
-  $(kind + 'UnitBtn').textContent = label;
-  $(kind + 'Input').dispatchEvent(new Event('input', { bubbles: true }));
+  if (kind === 'frequency') {
+    frequencyUnitScale = scale;
+    $('frequencyUnitBtn').textContent = label;
+
+    const hertz = inputFrequency();
+    if (Number.isFinite(hertz) && hertz > 0) {
+      const periodUnit = displayUnitFor(1 / hertz, periodDisplayUnits);
+      periodUnitScale = periodUnit.scale;
+      $('periodUnitBtn').textContent = periodUnit.label;
+      $('periodInput').value = displayPeriod(hertz);
+    }
+  } else {
+    periodUnitScale = scale;
+    $('periodUnitBtn').textContent = label;
+
+    const hertz = inputPeriodFrequency();
+    if (Number.isFinite(hertz) && hertz > 0) {
+      const frequencyUnit = displayUnitFor(hertz, frequencyDisplayUnits);
+      frequencyUnitScale = frequencyUnit.scale;
+      $('frequencyUnitBtn').textContent = frequencyUnit.label;
+      $('frequencyInput').value = displayFrequency(hertz);
+    }
+  }
+
   applyProperties();
   closeTimingUnitMenus();
 }
