@@ -17,7 +17,7 @@
           <button class="theme-option" data-theme="contrast">Contrast</button>
         </div>
         <span class="divider"></span>
-        <button class="ghost">New</button><button class="ghost">Open</button><button class="ghost">Save</button>
+        <button id="newBtn" class="ghost">New</button><button id="openBtn" class="ghost">Open</button><button id="saveBtn" class="ghost">Save</button>
         <span class="divider"></span><button id="undoBtn" class="icon-btn" title="Undo">↶</button><button id="redoBtn" class="icon-btn" title="Redo">↷</button>
         <button id="exportBtn" class="primary">Export waveform</button>
       </div>
@@ -64,9 +64,13 @@
         </div>
 
         <div class="statusbar panel">
-          <div><span class="status-label">SAMPLES</span><strong id="sampleStatus">1,024</strong></div>
-          <div><span class="status-label">DURATION</span><strong id="durationStatus">1.000 ms</strong></div>
-          <div><span class="status-label">SAMPLE RATE</span><strong id="rateStatus">1.024 MSa/s</strong></div>
+          <div class="timing-control editable" data-timing="rate" role="button" tabindex="0" aria-label="Edit sample rate">
+            <span class="status-label">SAMPLE RATE</span><strong id="rateStatus">2,500.0 MSa/s</strong><div class="status-edit"><input id="rateEdit" type="number" min="0.000001" step="0.001"><span>MSa/s</span></div>
+          </div>
+          <div class="timing-control editable" data-timing="samples" role="button" tabindex="0" aria-label="Edit sample count">
+            <span class="status-label">SAMPLES</span><strong id="sampleStatus">10,000</strong><div class="status-edit"><input id="samplesEdit" type="number" min="2" step="1"><span>pts</span></div>
+          </div>
+          <div class="timing-control duration-control"><span class="status-label">DURATION</span><strong id="durationStatus">4.000 µs</strong></div>
           <div class="spacer"></div><div class="valid"><span>✓</span> Waveform valid</div>
         </div>
       </section>
@@ -82,19 +86,31 @@
         </div>
         <div class="section">
           <div class="section-title">Timing</div>
-          <label>Duration <div class="unit-input"><input id="durationInput" type="number" step="0.1" min="0.1" value="1"><span>ms</span></div></label>
+          <label>Duration <div class="unit-input"><input id="durationInput" type="number" step="0.001" min="0.000001" value="0.004"><span>ms</span></div></label>
           <label>Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" max="20" value="3"><span>cycles</span></div></label>
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
           <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="5" max="95" value="50"></label>
         </div>
         <div class="section">
           <div class="section-title">Resolution</div>
-          <label>Samples <div class="unit-input"><select id="samplesInput"><option>256</option><option>512</option><option selected>1024</option><option>2048</option><option>4096</option><option>8192</option></select><span>pts</span></div></label>
+          <label>Samples <div class="unit-input"><select id="samplesInput"><option>256</option><option>512</option><option>1024</option><option>2048</option><option>4096</option><option>8192</option><option selected>10000</option></select><span>pts</span></div></label>
         </div>
         <button id="applyBtn" class="primary wide">Apply parameters</button>
       </aside>
     </main>
   </div>
+  <dialog id="openDialog" class="open-dialog">
+    <form method="dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">OPEN PROJECT</span><h2>Import ArbDraw JSON</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p>Choose a saved project file or paste its JSON below.</p>
+      <input id="projectFileInput" type="file" accept="application/json,.json,.arbdraw" hidden>
+      <button id="chooseProjectBtn" type="button" class="file-choice">Choose JSON file</button>
+      <div class="or-divider"><span>or paste JSON</span></div>
+      <textarea id="projectJsonInput" spellcheck="false" placeholder="{ &quot;schema&quot;: &quot;arbdraw.waveform&quot;, ... }"></textarea>
+      <div id="openError" class="open-error" role="alert"></div>
+      <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="importProjectBtn" type="button" class="primary">Open project</button></div>
+    </form>
+  </dialog>
   <div id="toast" class="toast">Waveform exported as CSV</div>
   <script src="app.js"></script>
 </body>
