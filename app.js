@@ -15,6 +15,9 @@ function setTheme(theme) {
 }
 setTheme(localStorage.getItem('arbdraw-theme')||'dark');
 document.querySelectorAll('.theme-option').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.theme)));
+function setLibraryCollapsed(collapsed){document.querySelector('.workspace').classList.toggle('library-collapsed',collapsed);$('libraryToggle').setAttribute('aria-label',collapsed?'Expand preset library':'Collapse preset library');$('libraryToggle').title=collapsed?'Expand presets':'Collapse presets';localStorage.setItem('arbdraw-library-collapsed',String(collapsed));setTimeout(resize,220)}
+setLibraryCollapsed(localStorage.getItem('arbdraw-library-collapsed')==='true');
+$('libraryToggle').onclick=()=>setLibraryCollapsed(!document.querySelector('.workspace').classList.contains('library-collapsed'));
 
 function showToast(message){$('toast').textContent=message;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}
 function renderDocument(){

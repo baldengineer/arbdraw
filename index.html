@@ -24,10 +24,11 @@
     </header>
 
     <main class="workspace">
-      <aside class="library panel">
-        <div class="panel-heading"><div><span class="eyebrow">LIBRARY</span><h2>Waveforms</h2></div><button class="icon-btn">＋</button></div>
+      <aside id="presetLibrary" class="library panel">
+        <div class="panel-heading"><div><span class="eyebrow">LIBRARY</span><h2>Presets</h2></div><button id="libraryToggle" class="icon-btn library-toggle" aria-label="Collapse preset library" title="Collapse presets">«</button></div>
         <div class="search"><span>⌕</span><input placeholder="Search presets"></div>
         <div class="preset-grid" id="presetGrid">
+          <button class="preset custom-preset" data-wave="custom"><canvas></canvas><span>Custom</span></button>
           <button class="preset active" data-wave="sine"><canvas></canvas><span>Sine</span></button>
           <button class="preset" data-wave="square"><canvas></canvas><span>Square</span></button>
           <button class="preset" data-wave="triangle"><canvas></canvas><span>Triangle</span></button>
@@ -35,9 +36,7 @@
           <button class="preset" data-wave="pulse"><canvas></canvas><span>Pulse</span></button>
           <button class="preset" data-wave="dc"><canvas></canvas><span>DC</span></button>
           <button class="preset" data-wave="noise"><canvas></canvas><span>Noise</span></button>
-          <button class="preset" data-wave="custom"><canvas></canvas><span>Custom</span></button>
         </div>
-        <div class="saved-section"><span class="eyebrow">MY WAVEFORMS</span><div class="empty-state"><span>◇</span><p>Saved shapes will appear here</p></div></div>
       </aside>
 
       <section class="editor-column">
