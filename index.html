@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArbDraw - Waveform Editor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">A</span><span>ArbDraw</span><span class="badge">UNTITLED</span></div>
+      <div class="file-actions">
+        <button class="ghost">New</button><button class="ghost">Open</button><button class="ghost">Save</button>
+        <span class="divider"></span><button id="undoBtn" class="icon-btn" title="Undo">↶</button><button id="redoBtn" class="icon-btn" title="Redo">↷</button>
+        <button id="exportBtn" class="primary">Export waveform</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="library panel">
+        <div class="panel-heading"><div><span class="eyebrow">LIBRARY</span><h2>Waveforms</h2></div><button class="icon-btn">＋</button></div>
+        <div class="search"><span>⌕</span><input placeholder="Search presets"></div>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset active" data-wave="sine"><canvas></canvas><span>Sine</span></button>
+          <button class="preset" data-wave="square"><canvas></canvas><span>Square</span></button>
+          <button class="preset" data-wave="triangle"><canvas></canvas><span>Triangle</span></button>
+          <button class="preset" data-wave="ramp"><canvas></canvas><span>Ramp</span></button>
+          <button class="preset" data-wave="pulse"><canvas></canvas><span>Pulse</span></button>
+          <button class="preset" data-wave="dc"><canvas></canvas><span>DC</span></button>
+          <button class="preset" data-wave="noise"><canvas></canvas><span>Noise</span></button>
+          <button class="preset" data-wave="free"><canvas></canvas><span>Blank</span></button>
+        </div>
+        <div class="saved-section"><span class="eyebrow">MY WAVEFORMS</span><div class="empty-state"><span>◇</span><p>Saved shapes will appear here</p></div></div>
+      </aside>
+
+      <section class="editor-column">
+        <div class="document-bar">
+          <div><input class="document-name" value="Waveform 01" aria-label="Waveform name"><span class="save-state">● All changes saved</span></div>
+          <div class="view-tabs"><button class="active">Waveform</button><button>Samples</button></div>
+        </div>
+
+        <div class="editor-wrap panel">
+          <div class="toolrail" id="toolrail">
+            <button class="tool active" data-tool="pencil" title="Draw">✎</button>
+            <button class="tool" data-tool="line" title="Line">╱</button>
+            <button class="tool" data-tool="erase" title="Erase">⌫</button>
+            <button class="tool" data-tool="pan" title="Pan">✥</button>
+            <span></span>
+            <button class="tool" id="zoomIn" title="Zoom in">＋</button>
+            <button class="tool" id="zoomOut" title="Zoom out">−</button>
+            <button class="tool" id="fitView" title="Fit view">⌗</button>
+          </div>
+          <div class="canvas-area">
+            <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
+            <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
+          </div>
+        </div>
+
+        <div class="statusbar panel">
+          <div><span class="status-label">SAMPLES</span><strong id="sampleStatus">1,024</strong></div>
+          <div><span class="status-label">DURATION</span><strong id="durationStatus">1.000 ms</strong></div>
+          <div><span class="status-label">SAMPLE RATE</span><strong id="rateStatus">1.024 MSa/s</strong></div>
+          <div class="spacer"></div><div class="valid"><span>✓</span> Waveform valid</div>
+        </div>
+      </section>
+
+      <aside class="inspector panel">
+        <div class="panel-heading"><div><span class="eyebrow">PROPERTIES</span><h2 id="propertyTitle">Sine wave</h2></div><button class="icon-btn">•••</button></div>
+        <div class="section">
+          <div class="section-title">Amplitude</div>
+          <label>High level <div class="unit-input"><input id="highInput" type="number" step="0.1" value="5"><span>V</span></div></label>
+          <label>Low level <div class="unit-input"><input id="lowInput" type="number" step="0.1" value="-5"><span>V</span></div></label>
+          <label>Offset <div class="unit-input"><input id="offsetInput" type="number" step="0.1" value="0"><span>V</span></div></label>
+          <label>Amplitude <div class="unit-input"><input id="amplitudeInput" type="number" step="0.1" min="0.1" value="10"><span>Vpp</span></div></label>
+        </div>
+        <div class="section">
+          <div class="section-title">Timing</div>
+          <label>Duration <div class="unit-input"><input id="durationInput" type="number" step="0.1" min="0.1" value="1"><span>ms</span></div></label>
+          <label>Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" max="20" value="3"><span>cycles</span></div></label>
+          <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
+          <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="5" max="95" value="50"></label>
+        </div>
+        <div class="section">
+          <div class="section-title">Resolution</div>
+          <label>Samples <div class="unit-input"><select id="samplesInput"><option>256</option><option>512</option><option selected>1024</option><option>2048</option><option>4096</option><option>8192</option></select><span>pts</span></div></label>
+        </div>
+        <button id="applyBtn" class="primary wide">Apply parameters</button>
+      </aside>
+    </main>
+  </div>
+  <div id="toast" class="toast">Waveform exported as CSV</div>
+  <script src="app.js"></script>
+</body>
+</html>
