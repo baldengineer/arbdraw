@@ -230,6 +230,45 @@ function finishScopeZoom(event, applyZoom) {
   renderScopeTime();
   drawScope();
 }
+
+function closeScopeZoomMenu() {
+  $('scopeZoomMenu').classList.remove('open');
+}
+
+function zoomOutScope() {
+  const currentTimeSpan = scopeState.timePerDivMs * 10;
+  const currentTimeCenter = scopeState.timeStartMs + currentTimeSpan / 2;
+
+  scopeState.timePerDivMs = Math.min(1000, nextUpper125(scopeState.timePerDivMs * 2));
+  const newTimeSpan = scopeState.timePerDivMs * 10;
+  const waveformSpan = state.duration * scopeState.cycles;
+  scopeState.timeStartMs = Math.max(
+    0,
+    Math.min(currentTimeCenter - newTimeSpan / 2, Math.max(0, waveformSpan - newTimeSpan)),
+  );
+  scopeState.voltsPerDiv = nextUpper125(scopeState.voltsPerDiv * 2);
+  scopeState.fitted = true;
+
+  $('scopeVoltsDiv').value = Number(
+    (scopeState.voltsPerDiv / scopeVoltageUnitScale).toPrecision(8),
+  );
+  renderScopeTime();
+  drawScope();
+  closeScopeZoomMenu();
+}
+
+$('scopeZoomAllBtn').onclick = () => {
+  refreshScope();
+  closeScopeZoomMenu();
+};
+$('scopeZoomOutBtn').onclick = zoomOutScope;
+$('scopeCanvas').addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  const menu = $('scopeZoomMenu');
+  menu.style.left = Math.min(event.clientX, innerWidth - 155) + 'px';
+  menu.style.top = Math.min(event.clientY, innerHeight - 82) + 'px';
+  menu.classList.add('open');
+});
 $('scopeRefreshBtn').onclick = refreshScopeTime;
 $('scopeVerticalRefreshBtn').onclick = refreshScopeVertical;
 $('scopeVerticalControl').addEventListener('contextmenu', (event) => {

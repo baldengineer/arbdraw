@@ -34,6 +34,7 @@ document.addEventListener('pointerdown', (event) => {
     closeScopePositionUnitMenu();
   if (!event.target.closest?.('#scopeTimeUnitMenu,#scopeTimeUnitBtn')) closeScopeTimeUnitMenu();
   if (!event.target.closest?.('#scopeDivisionMenu,#scopeVerticalControl')) closeScopeDivisionMenu();
+  if (!event.target.closest?.('#scopeZoomMenu')) closeScopeZoomMenu();
   if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn')) closeFunctionSelectMenu();
 });
 document.addEventListener('keydown', (event) => {
@@ -46,6 +47,7 @@ document.addEventListener('keydown', (event) => {
     closeScopePositionUnitMenu();
     closeScopeTimeUnitMenu();
     closeScopeDivisionMenu();
+    closeScopeZoomMenu();
     closeFunctionSelectMenu();
   }
 });
@@ -58,5 +60,6 @@ window.addEventListener('blur', () => {
   closeScopePositionUnitMenu();
   closeScopeTimeUnitMenu();
   closeScopeDivisionMenu();
+  closeScopeZoomMenu();
   closeFunctionSelectMenu();
 });

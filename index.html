@@ -27,7 +27,7 @@
       <section class="editor-column">
         <div class="document-bar">
           <div class="project-identity"><span class="project-kind">PROJECT</span><span class="waveform-valid-icon" role="img" aria-label="Waveform valid" title="Waveform valid">✓</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div>
-          <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
+          <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
         <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
@@ -138,6 +138,7 @@
   <div id="scopePositionUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button></div>
   <div id="scopeTimeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.000000001" data-label="ps/div" role="menuitem">ps/div</button><button data-scale="0.000001" data-label="ns/div" role="menuitem">ns/div</button><button data-scale="0.001" data-label="µs/div" role="menuitem">µs/div</button><button data-scale="1" data-label="ms/div" role="menuitem">ms/div</button><button data-scale="1000" data-label="s/div" role="menuitem">s/div</button></div>
   <div id="scopeDivisionMenu" class="context-menu scope-division-menu" role="menu" aria-label="Vertical divisions"><button data-divisions="8" role="menuitemradio">8 divisions</button><button data-divisions="10" role="menuitemradio">10 divisions</button></div>
+  <div id="scopeZoomMenu" class="context-menu" role="menu" aria-label="Waveform zoom"><button id="scopeZoomAllBtn" role="menuitem">Zoom All</button><button id="scopeZoomOutBtn" role="menuitem">Zoom Out</button></div>
   <div id="functionSelectMenu" class="context-menu function-select-menu" role="menu">
     <button data-wave="custom" role="menuitem"><canvas aria-hidden="true"></canvas><span>Custom</span></button>
     <button data-wave="sine" role="menuitem"><canvas aria-hidden="true"></canvas><span>Sine</span></button>
