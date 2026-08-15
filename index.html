@@ -19,7 +19,7 @@
         <span class="divider"></span>
         <button id="newBtn" class="ghost">New</button><button id="openBtn" class="ghost">Open</button><button id="saveBtn" class="ghost">Save</button>
         <span class="divider"></span><button id="undoBtn" class="icon-btn" title="Undo">↶</button><button id="redoBtn" class="icon-btn" title="Redo">↷</button>
-        <button id="exportBtn" class="primary">Export waveform</button>
+        <button id="exportBtn" class="primary" disabled title="Waveform export is not available yet">Export waveform</button>
       </div>
     </header>
 
@@ -42,7 +42,7 @@
       <section class="editor-column">
         <div class="document-bar">
           <div class="project-identity"><span class="project-kind">PROJECT</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly><span class="save-state">● All changes saved</span></div>
-          <div class="view-tabs" role="tablist" aria-label="Editor view"><button id="waveformTab" class="active" role="tab" aria-selected="true" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button></div>
+          <div class="view-tabs" role="tablist" aria-label="Editor view"><button id="waveformTab" class="active" role="tab" aria-selected="true" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
         <div id="waveformView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="waveformTab">
@@ -71,6 +71,11 @@
               <tbody id="samplesTableBody"></tbody>
             </table>
           </div>
+        </div>
+
+        <div id="jsonView" class="json-view panel view-panel hidden" role="tabpanel" aria-labelledby="jsonTab">
+          <div class="samples-heading"><div><span class="eyebrow">PROJECT DATA</span><h3>ArbDraw JSON</h3><span id="jsonStats" class="json-stats">Calculating size…</span></div><button id="copyJsonBtn" class="copy-json-button">Copy to clipboard</button></div>
+          <pre id="jsonOutput" class="json-output" tabindex="0"></pre>
         </div>
 
         <div class="statusbar panel">
