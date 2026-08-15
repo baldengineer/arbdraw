@@ -59,7 +59,7 @@ function generate(type=state.type) {
     case 'dc': return mid;
     case 'noise': return mid+(Math.random()*2-1)*amp;
     default: return mid;
-  }}); pushHistory(); draw();
+  }}); pushHistory(); draw();if(!$('samplesView').classList.contains('hidden'))renderSamples();
 }
 function pushHistory(){ state.history.push([...state.data]); if(state.history.length>30)state.history.shift(); state.redo=[]; }
 function resize(){ const r=canvas.getBoundingClientRect(), d=devicePixelRatio||1; if(canvas.width!==Math.round(r.width*d)||canvas.height!==Math.round(r.height*d)){canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d)} draw(); }
@@ -80,6 +80,17 @@ canvas.addEventListener('pointerup',e=>{if(state.drawing&&state.tool==='line')ed
 document.querySelectorAll('.preset').forEach(b=>{drawMini(b.querySelector('canvas'),b.dataset.wave);b.onclick=()=>{selectPreset(b.dataset.wave);if(b.dataset.wave==='custom'){state.type='custom';state.high=0;state.low=0;state.duration=100;state.sampleRate=state.samples/(state.duration*1000);renderDocument();generate('custom')}else generate(b.dataset.wave)}});
 function drawMini(c,type){const x=c.getContext('2d'),w=c.width=110,h=c.height=42;x.strokeStyle='#ff6b2c';x.lineWidth=2;x.beginPath();for(let i=0;i<w;i++){let t=i/(w-1),p=(t*2)%1,y=.5;if(type==='sine')y=.5-.34*Math.sin(t*Math.PI*4);if(type==='square'||type==='pulse')y=p<.5?.2:.8;if(type==='triangle')y=.2+.6*Math.abs(2*p-1);if(type==='ramp')y=.8-.6*p;if(type==='dc')y=.5;if(type==='noise')y=.2+Math.random()*.6;if(type==='custom')y=.5;i?x.lineTo(i,y*h):x.moveTo(i,y*h)}x.stroke()}
 document.querySelectorAll('.tool[data-tool]').forEach(b=>b.onclick=()=>{document.querySelector('.tool.active')?.classList.remove('active');b.classList.add('active');state.tool=b.dataset.tool});
+function formatSampleTime(index){const seconds=index/(state.samples-1)*state.duration/1000;return seconds===0?'0':seconds.toExponential(9)}
+function renderSamples(){
+  $('tableCount').textContent=state.samples.toLocaleString()+' points';
+  const rows=new Array(state.samples);for(let i=0;i<state.samples;i++)rows[i]=`<tr><td>${formatSampleTime(i)}</td><td><input class="sample-voltage" type="number" step="any" data-index="${i}" value="${Number(state.data[i]??0).toPrecision(10)}" aria-label="Voltage at sample ${i+1}"></td></tr>`;
+  $('samplesTableBody').innerHTML=rows.join('');
+}
+function setEditorTab(tab){const samples=tab==='samples';$('waveformTab').classList.toggle('active',!samples);$('samplesTab').classList.toggle('active',samples);$('waveformTab').setAttribute('aria-selected',String(!samples));$('samplesTab').setAttribute('aria-selected',String(samples));$('waveformView').classList.toggle('hidden',samples);$('samplesView').classList.toggle('hidden',!samples);if(samples)renderSamples();else resize()}
+$('waveformTab').onclick=()=>setEditorTab('waveform');$('samplesTab').onclick=()=>setEditorTab('samples');
+function updateSampleVoltage(input,recordHistory=false){const index=+input.dataset.index,value=Number(input.value);if(!Number.isFinite(value))return;state.data[index]=value;state.high=Math.max(state.high,value);state.low=Math.min(state.low,value);$('highInput').value=state.high;$('lowInput').value=state.low;$('amplitudeInput').value=(state.high-state.low).toFixed(3);$('offsetInput').value=((state.high+state.low)/2).toFixed(3);markCustom();if(recordHistory)pushHistory();draw()}
+$('samplesTableBody').addEventListener('input',event=>{const input=event.target.closest('.sample-voltage');if(input)updateSampleVoltage(input)});
+$('samplesTableBody').addEventListener('change',event=>{const input=event.target.closest('.sample-voltage');if(input)updateSampleVoltage(input,true)});
 function renderTiming(){state.sampleRate=state.samples/state.duration/1000;$('sampleStatus').textContent=state.samples.toLocaleString();$('durationStatus').textContent=formatDuration(state.duration);$('rateStatus').textContent=formatRate(state.sampleRate)+' MSa/s';}
 function renderFrequency(){$('frequencyInput').value=Number(state.frequency.toPrecision(10));$('periodInput').value=Number((1e6/state.frequency).toPrecision(10))}
 function formatRate(value){return value>=100?value.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}):value>=1?value.toFixed(3):value.toPrecision(4)}

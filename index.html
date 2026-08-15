@@ -43,10 +43,10 @@
       <section class="editor-column">
         <div class="document-bar">
           <div class="project-identity"><span class="project-kind">PROJECT</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly><span class="save-state">● All changes saved</span></div>
-          <div class="view-tabs"><button class="active">Waveform</button><button>Samples</button></div>
+          <div class="view-tabs" role="tablist" aria-label="Editor view"><button id="waveformTab" class="active" role="tab" aria-selected="true" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button></div>
         </div>
 
-        <div class="editor-wrap panel">
+        <div id="waveformView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="waveformTab">
           <div class="toolrail" id="toolrail">
             <button class="tool active" data-tool="pencil" title="Draw">✎</button>
             <button class="tool" data-tool="line" title="Line">╱</button>
@@ -60,6 +60,16 @@
           <div class="canvas-area">
             <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
             <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
+          </div>
+        </div>
+
+        <div id="samplesView" class="samples-view panel view-panel hidden" role="tabpanel" aria-labelledby="samplesTab">
+          <div class="samples-heading"><div><span class="eyebrow">POINT DATA</span><h3>Waveform samples</h3></div><span id="tableCount" class="table-count">10,000 points</span></div>
+          <div class="samples-scroll">
+            <table class="samples-table">
+              <thead><tr><th>Time (s)</th><th>Voltage (V)</th></tr></thead>
+              <tbody id="samplesTableBody"></tbody>
+            </table>
           </div>
         </div>
 
