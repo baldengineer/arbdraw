@@ -6,6 +6,7 @@ const scopeState = {
   verticalPosition: 0,
   verticalDivisions: DEFAULT_VALUES.waveformVerticalDivisions,
   timePerDivMs: null,
+  timeStartMs: 0,
   cycles: 2,
   fitted: false,
 };
@@ -54,6 +55,7 @@ function fittedScopeTime() {
 }
 function refreshScopeTime() {
   scopeState.timePerDivMs = fittedScopeTime();
+  scopeState.timeStartMs = 0;
   scopeState.fitted = true;
   renderScopeTime();
   drawScope();
@@ -61,6 +63,7 @@ function refreshScopeTime() {
 function refreshScope() {
   scopeState.voltsPerDiv = fittedVerticalScale();
   scopeState.timePerDivMs = fittedScopeTime();
+  scopeState.timeStartMs = 0;
   scopeState.fitted = true;
   $('scopeVoltsDiv').value = Number(
     (scopeState.voltsPerDiv / scopeVoltageUnitScale).toPrecision(8),
@@ -104,7 +107,7 @@ function drawScope() {
   scopeCtx.textBaseline = 'top';
   for (let x = 0; x <= 10; x++) {
     const px = pad.l + (pw * x) / 10,
-      time = x * timePerDiv;
+      time = scopeState.timeStartMs + x * timePerDiv;
     scopeCtx.strokeStyle = x === 0 ? '#405053' : '#1e2c2f';
     scopeCtx.beginPath();
     scopeCtx.moveTo(px, pad.t);
@@ -126,12 +129,106 @@ function drawScope() {
   for (let cycle = 0; cycle < scopeState.cycles; cycle++)
     state.data.forEach((value, index) => {
       const time = cycle * state.duration + (index / (state.data.length - 1)) * state.duration,
-        x = pad.l + (time / timeSpan) * pw,
+        x = pad.l + ((time - scopeState.timeStartMs) / timeSpan) * pw,
         y = pad.t + ((mid + voltageSpan / 2 - value) / voltageSpan) * ph;
       index || cycle ? scopeCtx.lineTo(x, y) : scopeCtx.moveTo(x, y);
     });
   scopeCtx.stroke();
   scopeCtx.restore();
+}
+
+function scopePlotPoint(event) {
+  const bounds = scopeCanvas.getBoundingClientRect();
+  const pad = { left: 62, right: 18, top: 20, bottom: 39 };
+  const x = Math.max(pad.left, Math.min(bounds.width - pad.right, event.clientX - bounds.left));
+  const y = Math.max(pad.top, Math.min(bounds.height - pad.bottom, event.clientY - bounds.top));
+  return {
+    x,
+    y,
+    timeFraction: (x - pad.left) / (bounds.width - pad.left - pad.right),
+    voltageFraction: (y - pad.top) / (bounds.height - pad.top - pad.bottom),
+  };
+}
+
+function updateScopeCursor(event) {
+  const point = scopePlotPoint(event);
+  const time =
+    scopeState.timeStartMs + point.timeFraction * scopeState.timePerDivMs * 10;
+  const voltage =
+    scopeState.verticalPosition +
+    (0.5 - point.voltageFraction) *
+      scopeState.voltsPerDiv *
+      scopeState.verticalDivisions;
+  $('scopeCursorReadout').style.display = 'block';
+  $('scopeCursorReadout').innerHTML =
+    `${time.toPrecision(5)} ms &nbsp; ${voltage.toPrecision(5)} V`;
+}
+
+let scopeZoomDrag = null;
+
+function renderScopeZoomSelection(currentPoint) {
+  const selection = $('scopeZoomSelection');
+  selection.style.left = Math.min(scopeZoomDrag.start.x, currentPoint.x) + 'px';
+  selection.style.top = Math.min(scopeZoomDrag.start.y, currentPoint.y) + 'px';
+  selection.style.width = Math.abs(currentPoint.x - scopeZoomDrag.start.x) + 'px';
+  selection.style.height = Math.abs(currentPoint.y - scopeZoomDrag.start.y) + 'px';
+  selection.classList.add('open');
+}
+
+function finishScopeZoom(event, applyZoom) {
+  if (!scopeZoomDrag || event.pointerId !== scopeZoomDrag.pointerId) return;
+  const end = scopePlotPoint(event);
+  const start = scopeZoomDrag.start;
+  const width = Math.abs(end.x - start.x);
+  const height = Math.abs(end.y - start.y);
+  const selection = $('scopeZoomSelection');
+
+  if (scopeCanvas.hasPointerCapture(event.pointerId)) {
+    scopeCanvas.releasePointerCapture(event.pointerId);
+  }
+  scopeZoomDrag = null;
+  selection.classList.remove('open');
+
+  if (!applyZoom || width < 8 || height < 8) return;
+
+  const timeSpan = scopeState.timePerDivMs * 10;
+  const voltageSpan = scopeState.voltsPerDiv * scopeState.verticalDivisions;
+  const leftFraction = Math.min(start.timeFraction, end.timeFraction);
+  const rightFraction = Math.max(start.timeFraction, end.timeFraction);
+  const topFraction = Math.min(start.voltageFraction, end.voltageFraction);
+  const bottomFraction = Math.max(start.voltageFraction, end.voltageFraction);
+  const selectedTimeStart = scopeState.timeStartMs + leftFraction * timeSpan;
+  const selectedTimeEnd = scopeState.timeStartMs + rightFraction * timeSpan;
+  const selectedTimeCenter = (selectedTimeStart + selectedTimeEnd) / 2;
+  const selectedVoltageTop =
+    scopeState.verticalPosition + (0.5 - topFraction) * voltageSpan;
+  const selectedVoltageBottom =
+    scopeState.verticalPosition + (0.5 - bottomFraction) * voltageSpan;
+
+  scopeState.timePerDivMs = Math.min(
+    1000,
+    Math.max(1e-9, nextUpper125((selectedTimeEnd - selectedTimeStart) / 10)),
+  );
+  const newTimeSpan = scopeState.timePerDivMs * 10;
+  const waveformSpan = state.duration * scopeState.cycles;
+  scopeState.timeStartMs = Math.max(
+    0,
+    Math.min(selectedTimeCenter - newTimeSpan / 2, Math.max(0, waveformSpan - newTimeSpan)),
+  );
+  scopeState.voltsPerDiv = nextUpper125(
+    Math.abs(selectedVoltageTop - selectedVoltageBottom) / scopeState.verticalDivisions,
+  );
+  scopeState.verticalPosition = (selectedVoltageTop + selectedVoltageBottom) / 2;
+  scopeState.fitted = true;
+
+  $('scopeVoltsDiv').value = Number(
+    (scopeState.voltsPerDiv / scopeVoltageUnitScale).toPrecision(8),
+  );
+  $('scopeVerticalPosition').value = Number(
+    (scopeState.verticalPosition / scopePositionUnitScale).toPrecision(8),
+  );
+  renderScopeTime();
+  drawScope();
 }
 $('scopeRefreshBtn').onclick = refreshScopeTime;
 $('scopeVerticalRefreshBtn').onclick = refreshScopeVertical;
@@ -341,18 +438,22 @@ $('scopeCycles').addEventListener('keydown', (event) => {
     $('scopeCycles').blur();
   }
 });
-scopeCanvas.addEventListener('pointermove', (event) => {
-  const r = scopeCanvas.getBoundingClientRect(),
-    x = Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)),
-    y = Math.max(0, Math.min(1, (event.clientY - r.top) / r.height)),
-    time = x * scopeState.timePerDivMs * 10,
-    voltage =
-      scopeState.verticalPosition +
-      (0.5 - y) * scopeState.voltsPerDiv * scopeState.verticalDivisions;
-  $('scopeCursorReadout').style.display = 'block';
-  $('scopeCursorReadout').innerHTML =
-    `${time.toPrecision(5)} ms &nbsp; ${voltage.toPrecision(5)} V`;
+scopeCanvas.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  const start = scopePlotPoint(event);
+  scopeZoomDrag = { pointerId: event.pointerId, start };
+  scopeCanvas.setPointerCapture(event.pointerId);
+  renderScopeZoomSelection(start);
 });
+scopeCanvas.addEventListener('pointermove', (event) => {
+  updateScopeCursor(event);
+  if (scopeZoomDrag && event.pointerId === scopeZoomDrag.pointerId) {
+    renderScopeZoomSelection(scopePlotPoint(event));
+  }
+});
+scopeCanvas.addEventListener('pointerup', (event) => finishScopeZoom(event, true));
+scopeCanvas.addEventListener('pointercancel', (event) => finishScopeZoom(event, false));
 scopeCanvas.addEventListener('pointerleave', () => {
-  $('scopeCursorReadout').style.display = 'none';
+  if (!scopeZoomDrag) $('scopeCursorReadout').style.display = 'none';
 });
