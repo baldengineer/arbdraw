@@ -40,7 +40,7 @@
 
       <section class="editor-column">
         <div class="document-bar">
-          <div class="project-identity"><span class="project-kind">PROJECT</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly><span class="save-state">● All changes saved</span></div>
+          <div class="project-identity"><span class="project-kind">PROJECT</span><span class="waveform-valid-icon" role="img" aria-label="Waveform valid" title="Waveform valid">✓</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div>
           <div class="view-tabs" role="tablist" aria-label="Editor view"><button id="waveformTab" class="active" role="tab" aria-selected="true" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
@@ -85,7 +85,6 @@
             <span class="status-label">SAMPLES</span><strong id="sampleStatus">10,000</strong><div class="status-edit"><input id="samplesEdit" type="number" min="2" step="1"><span>pts</span></div>
           </div>
           <div class="timing-control duration-control"><span class="status-label">DURATION</span><strong id="durationStatus">4.000 µs</strong></div>
-          <div class="spacer"></div><div class="valid"><span>✓</span> Waveform valid</div>
         </div>
       </section>
 
