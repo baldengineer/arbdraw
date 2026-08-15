@@ -159,8 +159,16 @@ function samplesForOneCycle(rateMSa,frequencyHz){return Math.max(2,Math.ceil(rat
 $('oneCycleBtn').onclick=()=>{let rate=state.sampleRate,samples=samplesForOneCycle(rate,state.frequency),steps=0;while(samples>state.samples&&steps++<100){rate=nextLower125(rate);samples=samplesForOneCycle(rate,state.frequency)}if(!Number.isFinite(rate)||rate<=0||!Number.isFinite(samples)||rate===state.sampleRate&&samples===state.samples)return;state.sampleRate=rate;state.samples=samples;state.duration=state.samples/(state.sampleRate*1000);state.cycles=state.frequency*state.duration/1000;renderTiming();generate()};
 function propertiesDiffer(){const values=[inputVoltage('highInput'),inputVoltage('lowInput'),inputFrequency(),+$('phaseInput').value,+$('dutyInput').value],current=[state.high,state.low,state.frequency,state.phase,state.duty];return values.some((value,index)=>!Number.isFinite(value)||Math.abs(value-current[index])>Math.max(1,Math.abs(current[index]))*1e-10)}
 function propertiesValid(){return [$('highInput'),$('lowInput'),$('frequencyInput'),$('phaseInput'),$('dutyInput')].every(input=>Number.isFinite(+input.value))&&inputFrequency()>0}
-function applyProperties(){if(!propertiesValid()||!propertiesDiffer())return;syncInputs();generate()}
-$('dutyInput').oninput=()=>{if($('dutyInput').disabled)return;state.duty=+$('dutyInput').value;$('dutyValue').textContent=state.duty+'%';generate(state.type,false)};
+function valueChanged(value,current){return Math.abs(value-current)>Math.max(1,Math.abs(current))*1e-10}
+function applyProperties(){
+  if(!propertiesValid()||!propertiesDiffer())return;
+  const amplitudeChanged=valueChanged(inputVoltage('highInput'),state.high)||valueChanged(inputVoltage('lowInput'),state.low);
+  const timingChanged=valueChanged(inputFrequency(),state.frequency)||valueChanged(+$('phaseInput').value,state.phase)||valueChanged(+$('dutyInput').value,state.duty);
+  syncInputs();generate();
+  if(amplitudeChanged)refreshScopeTime();
+  if(timingChanged)refreshScopeVertical();
+}
+$('dutyInput').oninput=()=>{if($('dutyInput').disabled)return;state.duty=+$('dutyInput').value;$('dutyValue').textContent=state.duty+'%';generate(state.type,false);refreshScopeVertical()};
 $('dutyInput').addEventListener('change',()=>pushHistory());
 $('frequencyInput').addEventListener('input',()=>{const value=inputFrequency();if(value>0)$('periodInput').value=displayPeriod(value)});
 $('periodInput').addEventListener('input',()=>{const value=inputPeriodFrequency();if(value>0)$('frequencyInput').value=displayFrequency(value)});
