@@ -41,10 +41,10 @@
       <section class="editor-column">
         <div class="document-bar">
           <div class="project-identity"><span class="project-kind">PROJECT</span><span class="waveform-valid-icon" role="img" aria-label="Waveform valid" title="Waveform valid">✓</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div>
-          <div class="view-tabs" role="tablist" aria-label="Editor view"><button id="waveformTab" class="active" role="tab" aria-selected="true" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
+          <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Waveform</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
-        <div id="waveformView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="waveformTab">
+        <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
           <div class="toolrail" id="toolrail">
             <button class="tool active" data-tool="pencil" title="Draw">✎</button>
             <button class="tool" data-tool="line" title="Line">╱</button>
@@ -57,6 +57,22 @@
           </div>
           <div class="canvas-area">
             <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
+            <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
+          </div>
+        </div>
+
+        <div id="waveformView" class="scope-view panel view-panel hidden" role="tabpanel" aria-labelledby="waveformTab">
+          <div class="scope-toolbar">
+            <div><span class="eyebrow">OSCILLOSCOPE</span><strong>Read-only waveform view</strong></div>
+            <div class="scope-controls" aria-label="Oscilloscope display controls">
+              <label>Vertical <div class="unit-input scope-control"><input id="scopeVoltsDiv" type="number" min="0.000001" step="any" value="2" aria-label="Vertical scale"><button id="scopeVoltageUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V/div</button></div></label>
+              <label>Time <div class="unit-input scope-control"><input id="scopeTimeDiv" type="number" min="0.000000001" step="any" value="0.00008" aria-label="Milliseconds per division"><span>ms/div</span></div></label>
+              <label>Cycles <div class="unit-input scope-control scope-cycles-control"><input id="scopeCycles" type="number" min="1" step="1" value="2" aria-label="Displayed waveform cycles"><span>cycles</span></div></label>
+              <button id="scopeFitBtn" class="scope-fit-button" type="button">Fit</button>
+            </div>
+          </div>
+          <div class="scope-display-area">
+            <div class="scope-frame scope-readonly"><canvas id="scopeCanvas"></canvas><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
             <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
           </div>
         </div>
@@ -126,6 +142,7 @@
   <div id="voltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button><button data-scale="0.000001" data-label="µV" role="menuitem">µV</button></div>
   <div id="frequencyUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.001" data-label="mHz" role="menuitem">mHz</button><button data-scale="1" data-label="Hz" role="menuitem">Hz</button><button data-scale="1000" data-label="kHz" role="menuitem">kHz</button><button data-scale="1000000" data-label="MHz" role="menuitem">MHz</button><button data-scale="1000000000" data-label="GHz" role="menuitem">GHz</button></div>
   <div id="periodUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1000000" data-label="Ms" role="menuitem">Ms</button><button data-scale="1" data-label="s" role="menuitem">s</button><button data-scale="0.001" data-label="ms" role="menuitem">ms</button><button data-scale="0.000001" data-label="µs" role="menuitem">µs</button><button data-scale="0.000000001" data-label="ns" role="menuitem">ns</button></div>
+  <div id="scopeVoltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V/div" role="menuitem">V/div</button><button data-scale="0.001" data-label="mV/div" role="menuitem">mV/div</button></div>
   <div id="toast" class="toast">Waveform exported as CSV</div>
   <script src="defaults.js"></script>
   <script src="app.js"></script>

@@ -13,5 +13,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   sampleCount: 1000,
   frequencyHz: 2500000,
   phaseDegrees: 0,
-  dutyCyclePercent: 50
+  dutyCyclePercent: 50,
+  editorColor: '#7bffb2',
+  waveformColor: '#ffe45e'
 };
