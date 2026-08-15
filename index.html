@@ -63,12 +63,13 @@
 
         <div id="waveformView" class="scope-view panel view-panel hidden" role="tabpanel" aria-labelledby="waveformTab">
           <div class="scope-toolbar">
-            <div><span class="eyebrow">OSCILLOSCOPE</span><strong>Read-only waveform view</strong></div>
-            <div class="scope-controls" aria-label="Oscilloscope display controls">
+            <div class="scope-controls" aria-label="Waveform display controls">
               <label>Vertical <div class="unit-input scope-control"><input id="scopeVoltsDiv" type="number" min="0.000001" step="any" value="2" aria-label="Vertical scale"><button id="scopeVoltageUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V/div</button></div></label>
+              <button id="scopeVerticalRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh vertical scale" title="Refresh vertical scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
+              <span class="scope-control-separator" aria-hidden="true"></span>
               <label>Time <div class="unit-input scope-control"><input id="scopeTimeDiv" type="number" min="0.000000001" step="any" value="0.00008" aria-label="Milliseconds per division"><span>ms/div</span></div></label>
               <label>Cycles <div class="unit-input scope-control scope-cycles-control"><input id="scopeCycles" type="number" min="1" step="1" value="2" aria-label="Displayed waveform cycles"><span>cycles</span></div></label>
-              <button id="scopeRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh waveform view" title="Refresh waveform view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
+              <button id="scopeRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh time scale" title="Refresh time scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
             </div>
           </div>
           <div class="scope-display-area">
