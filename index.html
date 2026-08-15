@@ -86,7 +86,7 @@
       </section>
 
       <aside class="inspector panel">
-        <div class="panel-heading"><div><span class="eyebrow">PROPERTIES</span><h2 id="propertyTitle">Sine wave</h2></div><button class="icon-btn">•••</button></div>
+        <div class="panel-heading"><div><span class="eyebrow">PROPERTIES</span><h2 id="propertyTitle">Sine wave</h2></div><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div>
         <div class="section">
           <div class="section-title">Amplitude</div>
           <label>High level <div class="unit-input"><input id="highInput" type="number" step="0.1" value="5"><span>V</span></div></label>
@@ -101,7 +101,6 @@
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
           <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="5" max="95" value="50"></label>
         </div>
-        <button id="applyBtn" class="primary wide" disabled>Apply</button>
       </aside>
     </main>
   </div>
@@ -117,6 +116,7 @@
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="importProjectBtn" type="button" class="primary">Open project</button></div>
     </form>
   </dialog>
+  <div id="propertyContextMenu" class="context-menu" role="menu"><button id="setFieldDefaultBtn" role="menuitem">Set to Default</button></div>
   <div id="toast" class="toast">Waveform exported as CSV</div>
   <script src="defaults.js"></script>
   <script src="app.js"></script>

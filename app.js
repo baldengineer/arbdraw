@@ -33,7 +33,6 @@ function renderDocument(){
   $('highInput').value=state.high;$('lowInput').value=state.low;$('offsetInput').value=((state.high+state.low)/2).toFixed(1);$('amplitudeInput').value=(state.high-state.low).toFixed(1);
   renderFrequency();$('phaseInput').value=state.phase;$('dutyInput').value=state.duty;$('dutyValue').textContent=state.duty+'%';renderTiming();
   document.querySelector('.preset.active')?.classList.remove('active');document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');$('propertyTitle').textContent=titles[state.type]||'Custom waveform';draw();
-  $('applyBtn').disabled=true;
 }
 function parseProject(raw){
   if(!raw||raw.schema!=='arbdraw.waveform'||raw.version!==1||!raw.waveform)throw new Error('This is not a supported ArbDraw project.');
@@ -119,16 +118,25 @@ function commitTimingEdit(control,cancel=false){if(!control.classList.contains('
 document.querySelectorAll('.timing-control.editable').forEach(control=>{const input=control.querySelector('input');control.addEventListener('click',()=>beginTimingEdit(control));control.addEventListener('keydown',event=>{if(!control.classList.contains('editing')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();beginTimingEdit(control)}});input.addEventListener('click',event=>event.stopPropagation());input.addEventListener('blur',()=>commitTimingEdit(control));input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();input.blur()}if(event.key==='Escape'){event.preventDefault();commitTimingEdit(control,true);control.focus()}})});
 function propertiesDiffer(){const values=[+$('highInput').value,+$('lowInput').value,+$('frequencyInput').value,+$('phaseInput').value,+$('dutyInput').value],current=[state.high,state.low,state.frequency,state.phase,state.duty];return values.some((value,index)=>!Number.isFinite(value)||Math.abs(value-current[index])>Math.max(1,Math.abs(current[index]))*1e-10)}
 function propertiesValid(){return [$('highInput'),$('lowInput'),$('frequencyInput'),$('phaseInput'),$('dutyInput')].every(input=>Number.isFinite(+input.value))&&+$('frequencyInput').value>0}
-function refreshApplyState(){$('applyBtn').disabled=!propertiesValid()||!propertiesDiffer()}
-function applyProperties(){if(!propertiesValid()||!propertiesDiffer()){refreshApplyState();return}syncInputs();generate();$('applyBtn').disabled=true}
-$('applyBtn').onclick=applyProperties;
-$('dutyInput').oninput=()=>{$('dutyValue').textContent=$('dutyInput').value+'%';refreshApplyState()};
-$('frequencyInput').addEventListener('input',()=>{const value=+$('frequencyInput').value;if(value>0)$('periodInput').value=Number((1e6/value).toPrecision(10));refreshApplyState()});
-$('periodInput').addEventListener('input',()=>{const value=+$('periodInput').value;if(value>0)$('frequencyInput').value=Number((1e6/value).toPrecision(10));refreshApplyState()});
-$('amplitudeInput').oninput=()=>{const mid=(+$('highInput').value + +$('lowInput').value)/2,a=Math.max(0,+$('amplitudeInput').value)/2;$('highInput').value=mid+a;$('lowInput').value=mid-a;refreshApplyState()};
-$('offsetInput').oninput=()=>{const a=(+$('highInput').value - +$('lowInput').value)/2,m=+$('offsetInput').value;$('highInput').value=m+a;$('lowInput').value=m-a;refreshApplyState()};
-document.querySelectorAll('.inspector input').forEach(input=>{if(!['dutyInput','frequencyInput','periodInput','amplitudeInput','offsetInput'].includes(input.id))input.addEventListener('input',refreshApplyState);input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();input.blur()}});input.addEventListener('blur',()=>{if(propertiesDiffer())applyProperties()})});
-$('undoBtn').onclick=()=>{if(state.history.length>1){state.redo.push(state.history.pop());restoreWaveform(state.history.at(-1))}};$('redoBtn').onclick=()=>{if(state.redo.length){const snapshot=state.redo.pop();state.history.push(cloneWaveform(snapshot));restoreWaveform(snapshot)}};
+function applyProperties(){if(!propertiesValid()||!propertiesDiffer())return;syncInputs();generate()}
+$('dutyInput').oninput=()=>{$('dutyValue').textContent=$('dutyInput').value+'%'};
+$('frequencyInput').addEventListener('input',()=>{const value=+$('frequencyInput').value;if(value>0)$('periodInput').value=Number((1e6/value).toPrecision(10))});
+$('periodInput').addEventListener('input',()=>{const value=+$('periodInput').value;if(value>0)$('frequencyInput').value=Number((1e6/value).toPrecision(10))});
+$('amplitudeInput').oninput=()=>{const mid=(+$('highInput').value + +$('lowInput').value)/2,a=Math.max(0,+$('amplitudeInput').value)/2;$('highInput').value=mid+a;$('lowInput').value=mid-a};
+$('offsetInput').oninput=()=>{const a=(+$('highInput').value - +$('lowInput').value)/2,m=+$('offsetInput').value;$('highInput').value=m+a;$('lowInput').value=m-a};
+document.querySelectorAll('.inspector input').forEach(input=>{input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();input.blur()}});input.addEventListener('blur',applyProperties)});
+const propertyDefaultMap={highInput:'highLevelV',lowInput:'lowLevelV',offsetInput:'offsetV',amplitudeInput:'amplitudeVpp',frequencyInput:'frequencyHz',periodInput:'frequencyHz',phaseInput:'phaseDegrees',dutyInput:'dutyCyclePercent'};
+function setPropertyInputDefault(input){const key=propertyDefaultMap[input.id];if(!key)return;input.value=input.id==='periodInput'?Number((1e6/DEFAULT_VALUES.frequencyHz).toPrecision(10)):DEFAULT_VALUES[key];input.dispatchEvent(new Event('input',{bubbles:true}));applyProperties()}
+$('defaultAllBtn').onclick=()=>{$('highInput').value=DEFAULT_VALUES.highLevelV;$('lowInput').value=DEFAULT_VALUES.lowLevelV;$('offsetInput').value=DEFAULT_VALUES.offsetV;$('amplitudeInput').value=DEFAULT_VALUES.amplitudeVpp;$('frequencyInput').value=DEFAULT_VALUES.frequencyHz;$('periodInput').value=Number((1e6/DEFAULT_VALUES.frequencyHz).toPrecision(10));$('phaseInput').value=DEFAULT_VALUES.phaseDegrees;$('dutyInput').value=DEFAULT_VALUES.dutyCyclePercent;$('dutyValue').textContent=DEFAULT_VALUES.dutyCyclePercent+'%';applyProperties()};
+let contextPropertyInput=null;
+document.querySelectorAll('.inspector input').forEach(input=>input.addEventListener('contextmenu',event=>{event.preventDefault();contextPropertyInput=input;const menu=$('propertyContextMenu'),width=150,height=42;menu.style.left=Math.min(event.clientX,innerWidth-width-8)+'px';menu.style.top=Math.min(event.clientY,innerHeight-height-8)+'px';menu.classList.add('open');$('setFieldDefaultBtn').focus()}));
+function closePropertyContextMenu(){$('propertyContextMenu').classList.remove('open')}
+$('setFieldDefaultBtn').onclick=()=>{if(contextPropertyInput)setPropertyInputDefault(contextPropertyInput);closePropertyContextMenu()};
+document.addEventListener('pointerdown',event=>{if(!$('propertyContextMenu').contains(event.target))closePropertyContextMenu()});document.addEventListener('keydown',event=>{if(event.key==='Escape')closePropertyContextMenu()});window.addEventListener('blur',closePropertyContextMenu);
+function undoWaveform(){if(state.history.length>1){state.redo.push(state.history.pop());restoreWaveform(state.history.at(-1))}}
+function redoWaveform(){if(state.redo.length){const snapshot=state.redo.pop();state.history.push(cloneWaveform(snapshot));restoreWaveform(snapshot)}}
+$('undoBtn').onclick=undoWaveform;$('redoBtn').onclick=redoWaveform;
+document.addEventListener('keydown',event=>{const editing=event.target.matches?.('input, textarea, select, [contenteditable="true"]');if(editing)return;const modifier=event.ctrlKey||event.metaKey;if(!modifier)return;const key=event.key.toLowerCase();if(key==='z'&&!event.shiftKey){event.preventDefault();undoWaveform()}else if((key==='z'&&event.shiftKey)||(key==='y'&&event.ctrlKey)){event.preventDefault();redoWaveform()}});
 $('zoomIn').onclick=()=>{state.high*=.8;state.low*=.8;draw()};$('zoomOut').onclick=()=>{state.high*=1.25;state.low*=1.25;draw()};$('fitView').onclick=()=>{syncInputs();draw()};
 $('exportBtn').onclick=()=>{const csv='time_s,voltage_v\n'+state.data.map((v,i)=>`${i/(state.samples-1)*state.duration/1000},${v}`).join('\n'),blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='arbdraw-waveform.csv';a.click();URL.revokeObjectURL(a.href);showToast('Waveform exported as CSV')};
 new ResizeObserver(resize).observe(canvas);renderDocument();generate();
