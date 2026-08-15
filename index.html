@@ -78,13 +78,15 @@
         </div>
 
         <div class="statusbar panel">
-          <div class="timing-control editable" data-timing="rate" role="button" tabindex="0" aria-label="Edit sample rate">
-            <span class="status-label">SAMPLE RATE</span><strong id="rateStatus">2,500.0 MSa/s</strong><div class="status-edit"><input id="rateEdit" type="number" min="0.000001" step="0.001"><span>MSa/s</span></div>
+          <div class="status-timing-field">
+            <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number" min="0.000001" step="0.001" value="1250"><span>MSa/s</span></div>
           </div>
-          <div class="timing-control editable" data-timing="samples" role="button" tabindex="0" aria-label="Edit sample count">
-            <span class="status-label">SAMPLES</span><strong id="sampleStatus">10,000</strong><div class="status-edit"><input id="samplesEdit" type="number" min="2" step="1"><span>pts</span></div>
+          <div class="status-timing-field">
+            <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number" min="2" step="1" value="1000"><span>pts</span></div>
           </div>
-          <div class="timing-control duration-control"><span class="status-label">DURATION</span><strong id="durationStatus">4.000 µs</strong></div>
+          <div class="status-timing-field">
+            <span class="status-label">DURATION</span><div class="unit-input status-input calculated"><input id="durationEdit" aria-label="Calculated duration" type="text" value="0.800" readonly><span id="durationUnit">µs</span></div>
+          </div>
         </div>
       </section>
 
