@@ -431,21 +431,3 @@ $('zoomOut').onclick = () => {
   state.low *= 1.25;
   draw();
 };
-$('fitView').onclick = () => {
-  syncInputs();
-  draw();
-};
-$('exportBtn').onclick = () => {
-  const csv =
-      'time_s,voltage_v\n' +
-      state.data
-        .map((v, i) => `${((i / (state.samples - 1)) * waveformDurationMs()) / 1000},${v}`)
-        .join('\n'),
-    blob = new Blob([csv], { type: 'text/csv' }),
-    a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'arbdraw-waveform.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('Waveform exported as CSV');
-};

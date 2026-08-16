@@ -8,38 +8,20 @@
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span><span class="badge">UNTITLED</span></div>
-      <div class="file-actions">
-        <div class="theme-picker" role="group" aria-label="Color theme">
-          <button class="theme-option active" data-theme="dark">Dark</button>
-          <button class="theme-option" data-theme="light">Light</button>
-          <button class="theme-option" data-theme="contrast">Contrast</button>
-        </div>
-        <span class="divider"></span>
-        <button id="newBtn" class="ghost">New</button><button id="openBtn" class="ghost">Open</button><button id="saveBtn" class="ghost">Save</button>
-        <span class="divider"></span><button id="undoBtn" class="icon-btn" title="Undo">↶</button><button id="redoBtn" class="icon-btn" title="Redo">↷</button>
-        <button id="exportBtn" class="primary" disabled title="Waveform export is not available yet">Export waveform</button>
-      </div>
-    </header>
-
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="project-identity"><span class="project-kind">PROJECT</span><span class="waveform-valid-icon" role="img" aria-label="Waveform valid" title="Waveform valid">✓</span><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div><span class="project-actions"><button id="newBtn" class="ghost" type="button">New</button><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="openBtn" class="ghost" type="button">Open</button><button id="saveBtn" class="ghost" type="button">Save</button><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
         <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
           <div class="toolrail" id="toolrail">
             <button class="tool active" data-tool="pencil" title="Draw">✎</button>
-            <button class="tool" data-tool="line" title="Line">╱</button>
             <button class="tool" data-tool="erase" title="Erase">⌫</button>
-            <button class="tool" data-tool="pan" title="Pan">✥</button>
             <span></span>
             <button class="tool" id="zoomIn" title="Zoom in">＋</button>
             <button class="tool" id="zoomOut" title="Zoom out">−</button>
-            <button class="tool" id="fitView" title="Fit view">⌗</button>
           </div>
           <div class="canvas-area">
             <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
@@ -128,6 +110,14 @@
           <label>Stop Bits <div class="unit-input"><select id="serialStopBits"><option value="1" selected>1</option><option value="2">2</option></select></div></label>
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
           <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
+        </div>
+        <div class="section theme-section">
+          <div class="section-title">Theme</div>
+          <div class="theme-picker" role="group" aria-label="Color theme">
+            <button class="theme-option active" data-theme="dark">Dark</button>
+            <button class="theme-option" data-theme="light">Light</button>
+            <button class="theme-option" data-theme="contrast">Contrast</button>
+          </div>
         </div>
       </aside>
     </main>

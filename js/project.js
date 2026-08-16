@@ -103,13 +103,20 @@ projectNameInput.addEventListener('keydown', (event) => {
     projectNameInput.blur();
   }
 });
-$('newBtn').onclick = () => {
+$('confirmNewBtn').onclick = () => {
+  $('newConfirm').hidden = true;
   projectDocument = createDefaultDocument();
   state.history = [];
   state.redo = [];
   renderDocument();
   generate();
   showToast('New project created');
+};
+$('newBtn').onclick = () => {
+  $('newConfirm').hidden = false;
+};
+$('cancelNewBtn').onclick = () => {
+  $('newConfirm').hidden = true;
 };
 $('saveBtn').onclick = () => {
   projectDocument.name =
