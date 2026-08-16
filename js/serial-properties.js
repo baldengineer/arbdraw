@@ -7,26 +7,25 @@ function serialSettings() {
 }
 
 function serialPayloadValues(payload) {
-  const text = String(payload).trim();
-  if (!text) return [0];
+  const value = String(payload);
+  const trimmedValue = value.trim();
 
-  const tokens = text.split(/[\s,]+/).filter(Boolean);
-  if (tokens.length > 1 && tokens.every((token) => /^(?:0x[\da-f]+|0b[01]+|\d+)$/i.test(token))) {
-    return tokens.map((token) => {
-      if (/^0x/i.test(token)) return Number.parseInt(token.slice(2), 16);
-      if (/^0b/i.test(token)) return Number.parseInt(token.slice(2), 2);
-      return Number.parseInt(token, 10);
-    });
+  if (!/^0x/i.test(trimmedValue)) {
+    return [...new TextEncoder().encode(value)];
   }
 
-  if (/^0x[\da-f]+$/i.test(text)) {
-    let hex = text.slice(2);
+  const tokens = trimmedValue.split(/[\s,]+/).filter(Boolean);
+  if (tokens.length > 1 && tokens.every((token) => /^0x[\da-f]+$/i.test(token))) {
+    return tokens.map((token) => Number.parseInt(token.slice(2), 16));
+  }
+
+  if (/^0x[\da-f]+$/i.test(trimmedValue)) {
+    let hex = trimmedValue.slice(2);
     if (hex.length % 2) hex = `0${hex}`;
     return hex.match(/.{2}/g).map((byte) => Number.parseInt(byte, 16));
   }
-  if (/^0b[01]+$/i.test(text)) return [Number.parseInt(text.slice(2), 2)];
-  if (/^\d+$/.test(text)) return [Number.parseInt(text, 10)];
-  return [...new TextEncoder().encode(text)];
+
+  return [...new TextEncoder().encode(value)];
 }
 
 function serialParityBit(bits, parity) {
@@ -100,6 +99,7 @@ function renderSerialProperties() {
   $('serialStopBits').value = String(serial.stopBits);
   $('serialPayload').value = serial.payload;
   $('serialBinaryPattern').value = serialBitPattern().join('');
+  $('serialBinaryControl').hidden = !DEFAULT_VALUES.serial_debug;
   updateSerialPropertiesVisibility();
 }
 

@@ -161,9 +161,9 @@ When `invertData` is `true`, only payload data bits are emitted with inverted lo
 and idle bits retain their documented logic levels. The Binary field shows the final physical bit
 sequence whether or not inversion is enabled.
 
-Payloads may be written as hexadecimal (`0xAA` or `0xAA 0x55`), binary (`0b10101010`), decimal,
-or ordinary text. Text payloads are encoded as UTF-8 bytes before the selected word-size mask is
-applied.
+Payloads beginning with `0x` are interpreted as hexadecimal (`0xAA` or `0xAA 0x55`). Every other
+payload is treated as an ASCII-compatible UTF-8 string and transmitted in full, one encoded byte at
+a time, before the selected word-size mask is applied.
 
 Each generated serial bit occupies `1 / baud` seconds on the frequency-derived waveform time axis.
 If the complete serial frame ends before the waveform buffer, all remaining samples are set to the
@@ -172,7 +172,8 @@ the buffer.
 
 When `binaryPattern` is nonempty, it is the authoritative bit sequence used for waveform generation.
 Editing another structured Serial control clears this override and rebuilds the sequence from the
-protocol, framing, and payload settings.
+protocol, framing, and payload settings. Its Binary editor is hidden by default; set
+`serial_debug: true` in `js/defaults.js` to show it.
 
 `type` describes how ArbDraw should regenerate the waveform when valid sample data is unavailable. When `values` is valid, it remains the statement of record for the actual waveform points.
 

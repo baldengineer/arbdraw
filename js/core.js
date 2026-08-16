@@ -126,6 +126,7 @@ function normalizeDefaults(source = {}) {
     serialBinaryPattern: /^[01]+$/.test(String(source.serialBinaryPattern || ''))
       ? String(source.serialBinaryPattern)
       : '',
+    serial_debug: source.serial_debug === true,
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
     waveformVerticalDivisions: Math.max(
