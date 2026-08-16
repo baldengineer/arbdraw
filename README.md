@@ -23,7 +23,7 @@ Then open `http://localhost:8000`.
 - Automatic V/mV axis scaling and scroll-wheel adjustment of numeric properties
 - Undo and redo for waveform changes
 - Viewer, sample-table, and JSON representations of the current waveform
-- Conditional Serial metadata controls for protocol, word size, parity, start bit, and stop bit
+- Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 
 ## Project files
 

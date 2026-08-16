@@ -117,11 +117,17 @@
         <div id="serialProperties" class="section serial-section" hidden>
           <div class="section-title">Serial</div>
           <label>Protocol <div class="unit-input"><select id="serialProtocol"><option value="UART">UART</option><option value="I2C">I2C</option></select></div></label>
+          <label>Baud <div class="unit-input"><input id="serialBaud" type="number" min="1" step="1" value="115200" list="serialBaudRates"></div></label>
           <label>Word Size <div class="unit-input"><select id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
+          <label>Bit Order <div class="unit-input"><select id="serialBitOrder"><option value="LSB" selected>LSB</option><option value="MSB">MSB</option></select></div></label>
+          <label>Invert Data <input id="serialInvertData" class="switch-input" type="checkbox"><span class="switch-control" aria-hidden="true"></span></label>
           <label>Parity <div class="unit-input"><select id="serialParity"><option value="odd">Odd</option><option value="even">Even</option><option value="none" selected>None</option></select></div></label>
           <label>Start Bit <input id="serialStartBit" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
-          <label>Stop Bit <input id="serialStopBit" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>Pre Idle <div class="unit-input"><input id="serialPreIdle" type="number" min="0" step="1" value="1"></div></label>
+          <label>Post Idle <div class="unit-input"><input id="serialPostIdle" type="number" min="0" step="1" value="1"></div></label>
+          <label>Stop Bits <div class="unit-input"><select id="serialStopBits"><option value="1" selected>1</option><option value="2">2</option></select></div></label>
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
+          <label>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
         </div>
       </aside>
     </main>
@@ -159,6 +165,7 @@
     <button data-wave="dc" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>DC</span></button>
     <button data-wave="noise" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Noise</span></button>
   </div>
+  <datalist id="serialBaudRates"><option value="300"></option><option value="1200"></option><option value="2400"></option><option value="4800"></option><option value="9600"></option><option value="19200"></option><option value="38400"></option><option value="57600"></option><option value="115200"></option><option value="230400"></option><option value="460800"></option><option value="921600"></option></datalist>
   <div id="toast" class="toast">Waveform exported as CSV</div>
   <script src="js/defaults.js"></script>
   <script src="js/core.js"></script>

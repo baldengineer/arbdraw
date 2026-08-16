@@ -136,14 +136,43 @@ When `type` is `serial`, the `serial` object stores the selected protocol and fr
 | Field | Type | Allowed values | Default |
 | --- | --- | --- | --- |
 | `protocol` | string | `UART`, `I2C` | `UART` |
+| `baud` | integer | Any positive integer | `57600` |
 | `wordSize` | integer | `7`, `8` | `8` |
+| `bitOrder` | string | `LSB`, `MSB` | `LSB` |
+| `invertData` | boolean | `true`, `false` | `false` |
 | `parity` | string | `odd`, `even`, `none` | `none` |
 | `startBit` | boolean | `true`, `false` | `true` |
-| `stopBit` | boolean | `true`, `false` | `true` |
+| `preIdleBits` | integer | Zero or greater | `1` |
+| `postIdleBits` | integer | Zero or greater | `10` |
+| `stopBits` | integer | `1`, `2` | `1` |
 | `payload` | string | Any string | `0xAA` |
+| `binaryPattern` | string | A string containing only `0` and `1`, or empty | Empty |
 
 The object remains part of the project document when another waveform type is active, allowing the
 Serial settings to be restored if Serial is selected again.
+
+For UART, ArbDraw emits each payload word in the selected bit order with the enabled start bit and selected number of stop bits,
+and the selected parity bit. Pre Idle and Post Idle add the requested number of high-level bit times
+around the complete sequence. For I2C, words use the selected bit order with an ACK-low slot after each
+word. The enabled start state begins the payload and the selected number of high stop states ends the complete I2C payload. Logic zero
+uses `lowVoltage`; logic one uses `highVoltage`.
+
+When `invertData` is `true`, only payload data bits are emitted with inverted logic. Framing, parity,
+and idle bits retain their documented logic levels. The Binary field shows the final physical bit
+sequence whether or not inversion is enabled.
+
+Payloads may be written as hexadecimal (`0xAA` or `0xAA 0x55`), binary (`0b10101010`), decimal,
+or ordinary text. Text payloads are encoded as UTF-8 bytes before the selected word-size mask is
+applied.
+
+Each generated serial bit occupies `1 / baud` seconds on the frequency-derived waveform time axis.
+If the complete serial frame ends before the waveform buffer, all remaining samples are set to the
+high-level serial idle state. Frames longer than the available time span are clipped at the end of
+the buffer.
+
+When `binaryPattern` is nonempty, it is the authoritative bit sequence used for waveform generation.
+Editing another structured Serial control clears this override and rebuilds the sequence from the
+protocol, framing, and payload settings.
 
 `type` describes how ArbDraw should regenerate the waveform when valid sample data is unavailable. When `values` is valid, it remains the statement of record for the actual waveform points.
 

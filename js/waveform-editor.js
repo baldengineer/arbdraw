@@ -6,7 +6,10 @@ function generate(type = state.type, recordHistory = true) {
   const n = state.samples,
     mid = (state.high + state.low) / 2,
     amp = (state.high - state.low) / 2,
-    phase = (state.phase * Math.PI) / 180;
+    phase = (state.phase * Math.PI) / 180,
+    serialBits = type === 'serial' ? serialBitPattern() : null,
+    serialBaud = type === 'serial' ? serialSettings().baud : null,
+    bufferDurationSeconds = waveformDurationMs() / 1000;
   state.data = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1),
       p = (t * state.cycles + state.phase / 360) % 1;
@@ -25,6 +28,13 @@ function generate(type = state.type, recordHistory = true) {
         return mid;
       case 'noise':
         return mid + (Math.random() * 2 - 1) * amp;
+      case 'serial':
+        {
+          const elapsedSeconds = (i / (n - 1)) * bufferDurationSeconds;
+          const bitIndex = Math.floor(elapsedSeconds * serialBaud);
+          if (bitIndex >= serialBits.length) return state.high;
+          return serialBits[bitIndex] ? state.high : state.low;
+        }
       default:
         return mid;
     }

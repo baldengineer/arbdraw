@@ -105,15 +105,27 @@ function normalizeDefaults(source = {}) {
     serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
       ? source.serialProtocol
       : 'UART',
+    serialBaud: Math.max(1, Math.round(finite('serialBaud', 115200))),
     serialWordSize: [7, 8].includes(Number(source.serialWordSize))
       ? Number(source.serialWordSize)
       : 8,
+    serialBitOrder: ['LSB', 'MSB'].includes(source.serialBitOrder)
+      ? source.serialBitOrder
+      : 'LSB',
+    serialInvertData: source.serialInvertData === true,
     serialParity: ['odd', 'even', 'none'].includes(source.serialParity)
       ? source.serialParity
       : 'none',
     serialStartBit: source.serialStartBit !== false,
-    serialStopBit: source.serialStopBit !== false,
+    serialPreIdleBits: Math.max(0, Math.round(finite('serialPreIdleBits', 1))),
+    serialPostIdleBits: Math.max(0, Math.round(finite('serialPostIdleBits', 1))),
+    serialStopBits: [1, 2].includes(Number(source.serialStopBits))
+      ? Number(source.serialStopBits)
+      : 1,
     serialPayload: String(source.serialPayload ?? '0xAA'),
+    serialBinaryPattern: /^[01]+$/.test(String(source.serialBinaryPattern || ''))
+      ? String(source.serialBinaryPattern)
+      : '',
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
     waveformVerticalDivisions: Math.max(
@@ -144,11 +156,17 @@ function createDefaultDocument() {
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
       serial: {
         protocol: DEFAULT_VALUES.serialProtocol,
+        baud: DEFAULT_VALUES.serialBaud,
         wordSize: DEFAULT_VALUES.serialWordSize,
+        bitOrder: DEFAULT_VALUES.serialBitOrder,
+        invertData: DEFAULT_VALUES.serialInvertData,
         parity: DEFAULT_VALUES.serialParity,
         startBit: DEFAULT_VALUES.serialStartBit,
-        stopBit: DEFAULT_VALUES.serialStopBit,
+        preIdleBits: DEFAULT_VALUES.serialPreIdleBits,
+        postIdleBits: DEFAULT_VALUES.serialPostIdleBits,
+        stopBits: DEFAULT_VALUES.serialStopBits,
         payload: DEFAULT_VALUES.serialPayload,
+        binaryPattern: DEFAULT_VALUES.serialBinaryPattern,
       },
       sampleCount: DEFAULT_VALUES.sampleCount,
       values: [],
@@ -206,15 +224,38 @@ function normalizeSerialSettings(source = {}, fallback = DEFAULT_VALUES) {
   if (!source || typeof source !== 'object') source = {};
   return {
     protocol: ['UART', 'I2C'].includes(source.protocol) ? source.protocol : fallback.serialProtocol,
+    baud:
+      Number.isFinite(Number(source.baud)) && Number(source.baud) > 0
+        ? Math.round(Number(source.baud))
+        : fallback.serialBaud,
     wordSize: [7, 8].includes(Number(source.wordSize))
       ? Number(source.wordSize)
       : fallback.serialWordSize,
+    bitOrder: ['LSB', 'MSB'].includes(source.bitOrder)
+      ? source.bitOrder
+      : fallback.serialBitOrder,
+    invertData: typeof source.invertData === 'boolean'
+      ? source.invertData
+      : fallback.serialInvertData,
     parity: ['odd', 'even', 'none'].includes(source.parity)
       ? source.parity
       : fallback.serialParity,
     startBit: typeof source.startBit === 'boolean' ? source.startBit : fallback.serialStartBit,
-    stopBit: typeof source.stopBit === 'boolean' ? source.stopBit : fallback.serialStopBit,
+    preIdleBits:
+      Number.isFinite(Number(source.preIdleBits)) && Number(source.preIdleBits) >= 0
+        ? Math.round(Number(source.preIdleBits))
+        : fallback.serialPreIdleBits,
+    postIdleBits:
+      Number.isFinite(Number(source.postIdleBits)) && Number(source.postIdleBits) >= 0
+        ? Math.round(Number(source.postIdleBits))
+        : fallback.serialPostIdleBits,
+    stopBits: [1, 2].includes(Number(source.stopBits))
+      ? Number(source.stopBits)
+      : fallback.serialStopBits,
     payload: typeof source.payload === 'string' ? source.payload : fallback.serialPayload,
+    binaryPattern: /^[01]+$/.test(String(source.binaryPattern || ''))
+      ? String(source.binaryPattern)
+      : fallback.serialBinaryPattern,
   };
 }
 

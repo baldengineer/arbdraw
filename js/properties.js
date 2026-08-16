@@ -206,11 +206,13 @@ function valueChanged(value, current) {
 }
 function applyProperties() {
   if (!propertiesValid() || !propertiesDiffer()) return;
+  const frequencyChanged = valueChanged(inputFrequency(), state.frequency);
   const amplitudeChanged =
     valueChanged(inputVoltage('highInput'), state.high) ||
     valueChanged(inputVoltage('lowInput'), state.low);
   const waveformChanged =
     amplitudeChanged ||
+    (state.type === 'serial' && frequencyChanged) ||
     valueChanged(+$('cyclesInput').value, state.cycles) ||
     valueChanged(+$('phaseInput').value, state.phase) ||
     valueChanged(+$('dutyInput').value, state.duty);
@@ -266,7 +268,8 @@ document.querySelectorAll('.inspector input[type="number"]').forEach((input) => 
       if (event.deltaY < 0) input.stepUp();
       else input.stepDown();
       input.dispatchEvent(new Event('input', { bubbles: true }));
-      applyProperties();
+      if (input.closest('.serial-section')) commitSerialProperties();
+      else applyProperties();
     },
     { passive: false },
   );
@@ -323,6 +326,7 @@ $('defaultAllBtn').onclick = () => {
 let contextPropertyInput = null;
 document.querySelectorAll('.inspector input').forEach((input) =>
   input.addEventListener('contextmenu', (event) => {
+    if (input.closest('.serial-section')) return;
     event.preventDefault();
     contextPropertyInput = input;
     const menu = $('propertyContextMenu'),
