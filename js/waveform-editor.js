@@ -74,14 +74,19 @@ function draw() {
   const pad = { l: 58 * d, r: 18 * d, t: 20 * d, b: 39 * d },
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
-    bounds = voltageBounds();
+    bounds = voltageBounds(),
+    waveformDuration = waveformDurationMs(),
+    timeUnit = axisTimeUnitFor(waveformDuration),
+    voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
+  $('editorTimeAxisLabel').textContent = `TIME (${timeUnit.label})`;
+  $('editorVoltageAxisLabel').textContent = `VOLTAGE (${voltageUnit.label})`;
   ctx.font = `${10 * d}px ui-monospace`;
   ctx.lineWidth = 1 * d;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (let y = 0; y <= 8; y++) {
     const py = pad.t + (ph * y) / 8,
-      val = bounds.high - ((bounds.high - bounds.low) * y) / 8;
+      val = (bounds.high - ((bounds.high - bounds.low) * y) / 8) / voltageUnit.scaleV;
     ctx.strokeStyle = y === 4 ? '#49605f' : '#223033';
     ctx.beginPath();
     ctx.moveTo(pad.l, py);
@@ -100,7 +105,11 @@ function draw() {
     ctx.lineTo(px, h - pad.b);
     ctx.stroke();
     ctx.fillStyle = '#718083';
-    ctx.fillText(((state.duration * x) / 10).toFixed(2), px, h - pad.b + 10 * d);
+    ctx.fillText(
+      Number((((waveformDuration * x) / 10) / timeUnit.scaleMs).toPrecision(4)),
+      px,
+      h - pad.b + 10 * d,
+    );
   }
   if (!state.data.length) return;
   ctx.save();
@@ -220,10 +229,13 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
+  const timeUnit = axisTimeUnitFor(waveformDurationMs());
+  const bounds = voltageBounds();
+  const voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
   canvas.classList.toggle('waveform-hover', pointerIsNearWaveform(e));
   $('cursorReadout').style.display = 'block';
   $('cursorReadout').innerHTML =
-    `${((p.i / (state.samples - 1)) * state.duration).toFixed(3)} ms &nbsp; ${p.v.toFixed(3)} V`;
+    `${(((p.i / (state.samples - 1)) * waveformDurationMs()) / timeUnit.scaleMs).toPrecision(5)} ${timeUnit.label} &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
   if (state.drawing) {
     editAt(p, state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null);
     state.lastPoint = p;
@@ -387,7 +399,7 @@ $('exportBtn').onclick = () => {
   const csv =
       'time_s,voltage_v\n' +
       state.data
-        .map((v, i) => `${((i / (state.samples - 1)) * state.duration) / 1000},${v}`)
+        .map((v, i) => `${((i / (state.samples - 1)) * waveformDurationMs()) / 1000},${v}`)
         .join('\n'),
     blob = new Blob([csv], { type: 'text/csv' }),
     a = document.createElement('a');

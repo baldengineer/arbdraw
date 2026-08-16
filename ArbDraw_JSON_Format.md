@@ -64,7 +64,7 @@ Unknown top-level fields are ignored.
 | `durationMs` | number | ms | Derived record duration. ArbDraw recalculates this during import. |
 | `sampleRateMSa` | number | MSa/s | Sample rate in millions of samples per second. `1` means 1,000,000 samples/second. |
 | `frequencyHz` | number | Hz | Nominal waveform frequency. |
-| `cycles` | number | cycles | Derived cycle count. ArbDraw recalculates this during import. |
+| `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
@@ -79,6 +79,7 @@ Treat these fields as authoritative:
 - `sampleCount`
 - `sampleRateMSa`
 - `frequencyHz`
+- `cycles`
 - `values`
 
 ArbDraw derives the record duration as:
@@ -87,22 +88,18 @@ ArbDraw derives the record duration as:
 durationMs = sampleCount / (sampleRateMSa × 1000)
 ```
 
-ArbDraw derives the number of cycles as:
-
-```text
-cycles = frequencyHz × durationMs / 1000
-```
-
-An imported `durationMs` value is ignored and replaced with the calculated value. An imported `cycles` value is also replaced when `frequencyHz` is valid. `cycles` is retained as a legacy fallback for files that do not contain `frequencyHz`.
+An imported `durationMs` value is ignored and replaced with the calculated value. Frequency is configuration metadata and does not determine the sample values or cycle count.
 
 ## Sample ordering and time
 
 `values[0]` is the first voltage point and `values[sampleCount - 1]` is the last.
 
-ArbDraw currently displays sample timestamps across the inclusive record duration with:
+ArbDraw displays sample timestamps across one period calculated from `frequencyHz`. The `cycles`
+setting changes the voltage pattern within that span but is intentionally excluded from the time
+calculation:
 
 ```text
-displayTimeSeconds(i) = i / (sampleCount - 1) × durationMs / 1000
+displayTimeSeconds(i) = i / (sampleCount - 1) × (1 / frequencyHz)
 ```
 
 For hardware-oriented processing, the sample rate itself is usually the more useful timing authority:
@@ -112,7 +109,9 @@ sampleIntervalSeconds = 1 / (sampleRateMSa × 1,000,000)
 hardwareTimeSeconds(i) = i × sampleIntervalSeconds
 ```
 
-The current ArbDraw UI therefore treats `durationMs` as the total record length (`sampleCount / sampleRate`) while visually placing both endpoint samples across that duration. External scripts should choose the timing interpretation required by the destination instrument.
+The current ArbDraw UI therefore uses frequency metadata for its displayed x-axis while retaining
+`sampleRateMSa` and `durationMs` as separate instrument metadata. External scripts should choose the
+timing interpretation required by the destination instrument.
 
 ## Waveform types
 
@@ -138,6 +137,7 @@ ArbDraw applies the following rules while opening a file:
 - `schema`, `version`, and `waveform` must be present and valid or the file is rejected.
 - Numeric metadata fields may be JSON numbers or numeric strings; they are converted with JavaScript's `Number(...)`.
 - `sampleCount` is rounded to an integer and limited to a minimum of 2.
+- `cycles` is rounded to an integer and limited to a minimum of 1.
 - `sampleRateMSa` and `frequencyHz` are limited to a minimum of `0.000001`.
 - `dutyCyclePercent` is limited to the range 5 through 95.
 - `values` must contain exactly `sampleCount` entries.
@@ -197,5 +197,5 @@ For maximum compatibility:
 2. Store all metadata in the canonical units shown above.
 3. Set `sampleCount` to the exact length of `values`.
 4. Use only finite JSON numbers in `values`.
-5. Calculate `durationMs` and `cycles` with the formulas in this document, even though ArbDraw recalculates them when opening the file.
+5. Calculate `durationMs` with the formula in this document, even though ArbDraw recalculates it when opening the file.
 6. Preserve fields you do not modify if your script performs a read-edit-write operation.

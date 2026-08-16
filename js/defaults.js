@@ -17,6 +17,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   sampleRateUnit: 'MSa/s',
   sampleCount: 1000,
   sampleCountUnit: 'pts',
+  nCycles: 1,
   frequencyHz: 2.5,
   frequencyUnit: 'MHz',
   periodUnit: 'ns',

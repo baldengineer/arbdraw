@@ -76,14 +76,15 @@ function syncInputs() {
   state.high = inputVoltage('highInput');
   state.low = inputVoltage('lowInput');
   if (state.high < state.low) [state.high, state.low] = [state.low, state.high];
+  state.cycles = Math.max(1, Math.round(+$('cyclesInput').value));
   state.frequency = Math.max(0.000001, inputFrequency());
-  state.cycles = (state.frequency * state.duration) / 1000;
   state.phase = +$('phaseInput').value;
   state.duty = +$('dutyInput').value;
   $('highInput').value = displayVoltage('highInput', state.high);
   $('lowInput').value = displayVoltage('lowInput', state.low);
   $('amplitudeInput').value = displayAmplitude(state.high - state.low);
   $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
+  $('cyclesInput').value = state.cycles;
   $('dutyValue').textContent = state.duty + '%';
   renderFrequency();
   renderTiming();
@@ -103,7 +104,6 @@ function commitTimingInput(kind) {
     }
     state.sampleRate = Math.max(0.000001, value);
     state.duration = state.samples / (state.sampleRate * 1000);
-    state.cycles = (state.frequency * state.duration) / 1000;
     renderTiming();
     pushHistory();
     draw();
@@ -115,7 +115,6 @@ function commitTimingInput(kind) {
     }
     state.samples = samples;
     state.duration = state.samples / (state.sampleRate * 1000);
-    state.cycles = (state.frequency * state.duration) / 1000;
     renderTiming();
     generate();
   }
@@ -165,7 +164,6 @@ $('oneCycleBtn').onclick = () => {
   state.sampleRate = rate;
   state.samples = samples;
   state.duration = state.samples / (state.sampleRate * 1000);
-  state.cycles = (state.frequency * state.duration) / 1000;
   renderTiming();
   generate();
   refreshScopeTime();
@@ -174,11 +172,12 @@ function propertiesDiffer() {
   const values = [
       inputVoltage('highInput'),
       inputVoltage('lowInput'),
+      +$('cyclesInput').value,
       inputFrequency(),
       +$('phaseInput').value,
       +$('dutyInput').value,
     ],
-    current = [state.high, state.low, state.frequency, state.phase, state.duty];
+    current = [state.high, state.low, state.cycles, state.frequency, state.phase, state.duty];
   return values.some(
     (value, index) =>
       !Number.isFinite(value) ||
@@ -187,9 +186,19 @@ function propertiesDiffer() {
 }
 function propertiesValid() {
   return (
-    [$('highInput'), $('lowInput'), $('frequencyInput'), $('phaseInput'), $('dutyInput')].every(
+    [
+      $('highInput'),
+      $('lowInput'),
+      $('cyclesInput'),
+      $('frequencyInput'),
+      $('phaseInput'),
+      $('dutyInput'),
+    ].every(
       (input) => Number.isFinite(+input.value),
-    ) && inputFrequency() > 0
+    ) &&
+    Number.isInteger(+$('cyclesInput').value) &&
+    +$('cyclesInput').value >= 1 &&
+    inputFrequency() > 0
   );
 }
 function valueChanged(value, current) {
@@ -200,14 +209,21 @@ function applyProperties() {
   const amplitudeChanged =
     valueChanged(inputVoltage('highInput'), state.high) ||
     valueChanged(inputVoltage('lowInput'), state.low);
-  const timingChanged =
-    valueChanged(inputFrequency(), state.frequency) ||
+  const waveformChanged =
+    amplitudeChanged ||
+    valueChanged(+$('cyclesInput').value, state.cycles) ||
     valueChanged(+$('phaseInput').value, state.phase) ||
     valueChanged(+$('dutyInput').value, state.duty);
   syncInputs();
-  generate();
-  if (amplitudeChanged) refreshScopeTime();
-  if (timingChanged) refreshScopeVertical();
+  if (waveformChanged) {
+    generate();
+    if (amplitudeChanged) refreshScopeTime();
+    else refreshScopeVertical();
+  } else {
+    pushHistory();
+    draw();
+    if (!$('samplesView').classList.contains('hidden')) renderSamples();
+  }
 }
 $('dutyInput').oninput = () => {
   if ($('dutyInput').disabled) return;
@@ -237,6 +253,10 @@ $('offsetInput').oninput = () => {
   $('highInput').value = displayVoltage('highInput', m + a);
   $('lowInput').value = displayVoltage('lowInput', m - a);
 };
+$('cyclesInput').addEventListener('blur', () => {
+  const value = Number($('cyclesInput').value);
+  $('cyclesInput').value = Number.isFinite(value) ? Math.max(1, Math.round(value)) : state.cycles;
+});
 document.querySelectorAll('.inspector input').forEach((input) => {
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
@@ -251,6 +271,7 @@ const propertyDefaultMap = {
   lowInput: 'lowLevelV',
   offsetInput: 'offsetV',
   amplitudeInput: 'amplitudeVpp',
+  cyclesInput: 'nCycles',
   frequencyInput: 'frequencyHz',
   periodInput: 'frequencyHz',
   phaseInput: 'phaseDegrees',
@@ -277,6 +298,7 @@ $('defaultAllBtn').onclick = () => {
   $('lowInput').value = displayVoltage('lowInput', DEFAULT_VALUES.lowLevelV);
   $('offsetInput').value = displayVoltage('offsetInput', DEFAULT_VALUES.offsetV);
   $('amplitudeInput').value = displayAmplitude(DEFAULT_VALUES.amplitudeVpp);
+  $('cyclesInput').value = DEFAULT_VALUES.nCycles;
   $('frequencyInput').value = displayFrequency(DEFAULT_VALUES.frequencyHz);
   $('periodInput').value = displayPeriod(DEFAULT_VALUES.frequencyHz);
   $('phaseInput').value = DEFAULT_VALUES.phaseDegrees;

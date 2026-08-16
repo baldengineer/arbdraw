@@ -7,6 +7,7 @@ function renderDocument() {
   $('lowInput').value = displayVoltage('lowInput', state.low);
   $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
   $('amplitudeInput').value = displayAmplitude(state.high - state.low);
+  $('cyclesInput').value = state.cycles;
   renderFrequency();
   $('phaseInput').value = state.phase;
   $('dutyInput').value = state.duty;
@@ -35,8 +36,8 @@ function parseProject(raw) {
       : [];
   const importedType = source.type === 'free' ? 'custom' : source.type;
   const durationMs = sampleCount / (sampleRateMSa * 1000),
-    legacyCycles = Math.max(0, number('cycles', defaults.cycles)),
-    frequencyHz = Math.max(0.000001, number('frequencyHz', legacyCycles / (durationMs / 1000)));
+    cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
+    frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
   return {
     schema: 'arbdraw.waveform',
     version: 1,
@@ -48,7 +49,7 @@ function parseProject(raw) {
       durationMs,
       sampleRateMSa,
       frequencyHz,
-      cycles: (frequencyHz * durationMs) / 1000,
+      cycles,
       phaseDegrees: number('phaseDegrees', defaults.phaseDegrees),
       dutyCyclePercent: Math.min(
         95,

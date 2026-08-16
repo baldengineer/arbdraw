@@ -1,6 +1,6 @@
 // Editor tabs, sample table, JSON view, and sample-point editing.
 function formatSampleTime(index) {
-  const seconds = ((index / (state.samples - 1)) * state.duration) / 1000;
+  const seconds = ((index / (state.samples - 1)) * waveformDurationMs()) / 1000;
   return seconds === 0 ? '0' : seconds.toExponential(9);
 }
 let sampleRenderToken = 0;

@@ -43,7 +43,7 @@
           </div>
           <div class="canvas-area">
             <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
-            <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
+            <div id="editorVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="editorTimeAxisLabel" class="axis-label x-label">TIME (ms)</div>
           </div>
         </div>
 
@@ -60,7 +60,7 @@
           </div>
           <div class="scope-display-area">
             <div class="scope-frame scope-readonly"><canvas id="scopeCanvas"></canvas><div id="scopeZoomSelection" class="scope-zoom-selection" aria-hidden="true"></div><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
-            <div class="axis-label y-label">VOLTAGE (V)</div><div class="axis-label x-label">TIME (ms)</div>
+            <div id="scopeVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="scopeTimeAxisLabel" class="axis-label x-label">TIME (ms)</div>
           </div>
         </div>
 
@@ -108,6 +108,7 @@
         </div>
         <div class="section">
           <div class="section-title">Timing</div>
+          <label>N Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" value="1"></div></label>
           <label>Frequency <div class="unit-input"><input id="frequencyInput" type="number" step="1" min="0.000001" value="750000"><button id="frequencyUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Hz</button></div></label>
           <label>Period <div class="unit-input"><input id="periodInput" type="number" step="0.001" min="0.000001" value="1.333333"><button id="periodUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">µs</button></div></label>
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>

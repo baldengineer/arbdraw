@@ -53,7 +53,7 @@ function renderScopeTime() {
 function fittedScopeTime() {
   return Math.min(
     1000,
-    Math.max(1e-9, nextUpper125((state.duration * scopeFitCycleCount) / 10)),
+    Math.max(1e-9, nextUpper125((waveformDurationMs() * scopeFitCycleCount) / 10)),
   );
 }
 function refreshScopeTime() {
@@ -87,7 +87,13 @@ function drawScope() {
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
     timeSpan = timePerDiv * 10,
-    voltageSpan = voltsPerDiv * scopeState.verticalDivisions;
+    voltageSpan = voltsPerDiv * scopeState.verticalDivisions,
+    timeUnit = axisTimeUnitFor(scopeState.timeStartMs + timeSpan),
+    voltageMinimum = mid - voltageSpan / 2,
+    voltageMaximum = mid + voltageSpan / 2,
+    voltageUnit = axisVoltageUnitFor(voltageMinimum, voltageMaximum);
+  $('scopeTimeAxisLabel').textContent = `TIME (${timeUnit.label})`;
+  $('scopeVoltageAxisLabel').textContent = `VOLTAGE (${voltageUnit.label})`;
   scopeCtx.clearRect(0, 0, w, h);
   scopeCtx.fillStyle = '#090d0f';
   scopeCtx.fillRect(0, 0, w, h);
@@ -97,7 +103,7 @@ function drawScope() {
   scopeCtx.textAlign = 'right';
   for (let y = 0; y <= scopeState.verticalDivisions; y++) {
     const py = pad.t + (ph * y) / scopeState.verticalDivisions,
-      value = mid + voltageSpan / 2 - y * voltsPerDiv;
+      value = (mid + voltageSpan / 2 - y * voltsPerDiv) / voltageUnit.scaleV;
     scopeCtx.strokeStyle = y === scopeState.verticalDivisions / 2 ? '#49605f' : '#223033';
     scopeCtx.beginPath();
     scopeCtx.moveTo(pad.l, py);
@@ -110,7 +116,7 @@ function drawScope() {
   scopeCtx.textBaseline = 'top';
   for (let x = 0; x <= 10; x++) {
     const px = pad.l + (pw * x) / 10,
-      time = scopeState.timeStartMs + x * timePerDiv;
+      time = (scopeState.timeStartMs + x * timePerDiv) / timeUnit.scaleMs;
     scopeCtx.strokeStyle = x === 0 ? '#405053' : '#1e2c2f';
     scopeCtx.beginPath();
     scopeCtx.moveTo(px, pad.t);
@@ -127,12 +133,13 @@ function drawScope() {
   scopeCtx.strokeStyle = DEFAULT_VALUES.waveformColor;
   scopeCtx.shadowColor = DEFAULT_VALUES.waveformColor;
   scopeCtx.lineWidth = 1.5 * d;
-  const firstVisibleCycle = Math.max(0, Math.floor(scopeState.timeStartMs / state.duration));
-  const lastVisibleCycle = Math.ceil((scopeState.timeStartMs + timeSpan) / state.duration);
+  const waveformDuration = waveformDurationMs();
+  const firstVisibleCycle = Math.max(0, Math.floor(scopeState.timeStartMs / waveformDuration));
+  const lastVisibleCycle = Math.ceil((scopeState.timeStartMs + timeSpan) / waveformDuration);
   const visibleCycleCount = Math.max(1, lastVisibleCycle - firstVisibleCycle);
   const maximumRenderedCycles = Math.max(1, Math.ceil(pw / d));
   const cycleStep = Math.max(1, Math.ceil(visibleCycleCount / maximumRenderedCycles));
-  const cycleWidthPixels = (state.duration / timeSpan) * (pw / d);
+  const cycleWidthPixels = (waveformDuration / timeSpan) * (pw / d);
   const maximumSamplesPerCycle = Math.max(2, Math.ceil(cycleWidthPixels * 2));
   const sampleStep = Math.max(
     1,
@@ -145,7 +152,9 @@ function drawScope() {
     scopeCtx.beginPath();
     const drawSample = (index) => {
       const value = state.data[index];
-      const time = cycle * state.duration + (index / (state.data.length - 1)) * state.duration,
+      const time =
+          cycle * waveformDuration +
+          (index / (state.data.length - 1)) * waveformDuration,
         x = pad.l + ((time - scopeState.timeStartMs) / timeSpan) * pw,
         y = pad.t + ((mid + voltageSpan / 2 - value) / voltageSpan) * ph;
       index ? scopeCtx.lineTo(x, y) : scopeCtx.moveTo(x, y);
@@ -173,16 +182,23 @@ function scopePlotPoint(event) {
 
 function updateScopeCursor(event) {
   const point = scopePlotPoint(event);
+  const timeSpan = scopeState.timePerDivMs * 10;
+  const timeUnit = axisTimeUnitFor(scopeState.timeStartMs + timeSpan);
   const time =
-    scopeState.timeStartMs + point.timeFraction * scopeState.timePerDivMs * 10;
+    (scopeState.timeStartMs + point.timeFraction * timeSpan) / timeUnit.scaleMs;
   const voltage =
     scopeState.verticalPosition +
     (0.5 - point.voltageFraction) *
       scopeState.voltsPerDiv *
       scopeState.verticalDivisions;
+  const voltageSpan = scopeState.voltsPerDiv * scopeState.verticalDivisions;
+  const voltageUnit = axisVoltageUnitFor(
+    scopeState.verticalPosition - voltageSpan / 2,
+    scopeState.verticalPosition + voltageSpan / 2,
+  );
   $('scopeCursorReadout').style.display = 'block';
   $('scopeCursorReadout').innerHTML =
-    `${time.toPrecision(5)} ms &nbsp; ${voltage.toPrecision(5)} V`;
+    `${time.toPrecision(5)} ${timeUnit.label} &nbsp; ${(voltage / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
 }
 
 let scopeZoomDrag = null;

@@ -95,6 +95,7 @@ function normalizeDefaults(source = {}) {
           sampleCountUnits[sampleCountUnit],
       ),
     ),
+    nCycles: Math.max(1, Math.round(finite('nCycles', 1))),
     frequencyHz: Math.max(
       0.000001,
       finite('frequencyHz', 750000 / frequencyUnits[frequencyUnit]) * frequencyUnits[frequencyUnit],
@@ -126,7 +127,7 @@ function createDefaultDocument() {
       durationMs,
       sampleRateMSa: DEFAULT_VALUES.sampleRateMSa,
       frequencyHz: DEFAULT_VALUES.frequencyHz,
-      cycles: (DEFAULT_VALUES.frequencyHz * durationMs) / 1000,
+      cycles: DEFAULT_VALUES.nCycles,
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
       sampleCount: DEFAULT_VALUES.sampleCount,
@@ -181,3 +182,20 @@ const titles = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+function waveformDurationMs() {
+  return (1 / state.frequency) * 1000;
+}
+
+function axisTimeUnitFor(milliseconds) {
+  if (milliseconds >= 1000) return { scaleMs: 1000, label: 's' };
+  if (milliseconds >= 1) return { scaleMs: 1, label: 'ms' };
+  if (milliseconds >= 0.001) return { scaleMs: 0.001, label: 'µs' };
+  return { scaleMs: 0.000001, label: 'ns' };
+}
+
+function axisVoltageUnitFor(minimumVolts, maximumVolts) {
+  return Math.abs(minimumVolts) < 1 && Math.abs(maximumVolts) < 1
+    ? { scaleV: 0.001, label: 'mV' }
+    : { scaleV: 1, label: 'V' };
+}
