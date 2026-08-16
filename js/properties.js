@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Property inputs, timing controls, defaults, and SI-unit selection.
 const voltageScaleByLabel = { V: 1, mV: 0.001, µV: 0.000001 },
   amplitudeScaleByLabel = { Vpp: 1, mVpp: 0.001, µVpp: 0.000001 },

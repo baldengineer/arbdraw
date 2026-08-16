@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Project rendering, naming, import, export, and document validation.
 function renderDocument() {
   document.querySelector('.document-name').value = projectDocument.name;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Read-only waveform viewer rendering and independent scope controls.
 const scopeCanvas = document.querySelector('#scopeCanvas');
 const scopeCtx = scopeCanvas.getContext('2d');

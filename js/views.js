@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Editor tabs, sample table, JSON view, and sample-point editing.
 function formatSampleTime(index) {
   const seconds = ((index / (state.samples - 1)) * waveformDurationMs()) / 1000;

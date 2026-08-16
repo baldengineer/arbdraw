@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Shared defaults, project document, and application state.
 function normalizeDefaults(source = {}) {
   const finite = (key, fallback) =>

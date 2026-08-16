@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Waveform generation, editable canvas rendering, presets, and history.
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');

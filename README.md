@@ -1,10 +1,14 @@
 # ArbDraw
 
-An early UI/UX prototype for a flexible arbitrary waveform editor.
+Vibe coded, but actually useful, arbitrary waveform editor.
+
+![ArbDraw waveform editor](arbdraw_screenshot.PNG)
 
 ## Run
 
-No build step or third-party dependencies are required. From the project directory:
+No build step or third-party dependencies are required.
+
+Open `index.html` directly in a web browser, or serve the project locally:
 
 ```powershell
 python -m http.server 8000
@@ -14,24 +18,27 @@ Then open `http://localhost:8000`.
 
 ## Prototype features
 
-- Scalable black waveform canvas with time and voltage axes
-- Sine, square, triangle, ramp, pulse, DC, noise, custom, and serial waveform types
-- Freehand, line, and erase editing
-- Voltage, timing, phase, duty-cycle, cycle-count, and sample controls
-- Fixed, evenly spaced voltage points with frequency and period stored as instrument metadata
-- Frequency-derived time display with automatic s, ms, µs, and ns axis scaling
-- Automatic V/mV axis scaling and scroll-wheel adjustment of numeric properties
+- Sine, square, triangle, custom, and serial (UART) waveform types
+- Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Undo and redo for waveform changes
-- Viewer, sample-table, and JSON representations of the current waveform
+- Freehand, line, and erase editing
+- Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 
-## Project files
+## ArbDraw Files
 
-The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth. Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values. Use **Open** to restore a project from a JSON file or pasted JSON text.
+The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth.
+
+- Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values.
+- Use **Open** to restore a project from a JSON file or pasted JSON text.
 
 See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field reference, units, import rules, timing formulas, and a Python reader example.
 
 Transient UI state such as the selected drawing tool, zoom, and undo history is intentionally not stored in the project document.
+
+## License
+
+ArbDraw is available under the [MIT License](LICENSE).
 
 ## Editing defaults
 

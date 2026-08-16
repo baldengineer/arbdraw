@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Serial waveform metadata controls.
 function serialSettings() {
   if (!projectDocument.waveform.serial) {

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // ArbDraw bootstrap. Feature code lives in the ordered scripts under js/.
 new ResizeObserver(resize).observe(canvas);
 new ResizeObserver(() => {

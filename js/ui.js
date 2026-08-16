@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Application-wide theme, toast, menu-dismissal, and lifecycle behavior.
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;

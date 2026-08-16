@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: MIT */
+/* Copyright (c) 2026 James Lewis <james@baldengineer.com> */
+
 :root,:root[data-theme="dark"] { color-scheme:dark; --bg:#0d1216; --panel:#151c21; --panel-raised:#1a2329; --field:#10171b; --ink:#e8edef; --muted:#8f9ba3; --soft:#242e34; --line:#2b363d; --orange:#F68B1E; --orange-deep:#AE6227; --blue:#69B0E0; --blue-strong:#3779B2; --blue-soft:#66A5D9; --focus:#69B0E0; --scope:#050809; --green:#7bffb2; --top:#090e11; }
 :root[data-theme="light"] { color-scheme:light; --bg:#eef1f4; --panel:#fff; --panel-raised:#f8fafb; --field:#fff; --ink:#17212b; --muted:#697580; --soft:#e5eaed; --line:#dbe1e6; --orange:#AE6227; --orange-deep:#AE6227; --blue:#3779B2; --blue-strong:#3779B2; --blue-soft:#66A5D9; --focus:#3779B2; --scope:#090d0f; --green:#7bffb2; --top:#11191f; }
 :root[data-theme="contrast"] { color-scheme:dark; --bg:#000; --panel:#000; --panel-raised:#080808; --field:#000; --ink:#fff; --muted:#fff; --soft:#171717; --line:#fff; --orange:#F68B1E; --orange-deep:#AE6227; --blue:#69B0E0; --blue-strong:#66A5D9; --blue-soft:#66A5D9; --focus:#69B0E0; --scope:#000; --green:#fff200; --top:#000; }
