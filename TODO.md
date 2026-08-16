@@ -7,5 +7,5 @@
 - Wire up the Phase control.
 - Create a JSON structure for input-box properties.
 - Add Waveform viewer right-click defaults for 0 and 50%.
-- Add a row below Sample Rate and Samples for maximum One Cycle settings, enabled or disabled by the One Cycle button.
+- Rework or remove the Sample Rate and One Cycle controls to match the fixed-spaced sample model.
 - BEM Color Palette

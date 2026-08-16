@@ -257,6 +257,20 @@ $('cyclesInput').addEventListener('blur', () => {
   const value = Number($('cyclesInput').value);
   $('cyclesInput').value = Number.isFinite(value) ? Math.max(1, Math.round(value)) : state.cycles;
 });
+document.querySelectorAll('.inspector input[type="number"]').forEach((input) => {
+  input.addEventListener(
+    'wheel',
+    (event) => {
+      if (input.disabled || event.deltaY === 0) return;
+      event.preventDefault();
+      if (event.deltaY < 0) input.stepUp();
+      else input.stepDown();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      applyProperties();
+    },
+    { passive: false },
+  );
+});
 document.querySelectorAll('.inspector input').forEach((input) => {
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {

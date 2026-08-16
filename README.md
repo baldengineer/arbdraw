@@ -15,11 +15,14 @@ Then open `http://localhost:8000`.
 ## Prototype features
 
 - Scalable black waveform canvas with time and voltage axes
-- Sine, square, triangle, ramp, pulse, DC, noise, and blank presets
+- Sine, square, triangle, ramp, pulse, DC, noise, and custom waveform types
 - Freehand, line, and erase editing
-- Voltage, timing, phase, duty-cycle, and sample controls
+- Voltage, timing, phase, duty-cycle, cycle-count, and sample controls
+- Fixed, evenly spaced voltage points with frequency and period stored as instrument metadata
+- Frequency-derived time display with automatic s, ms, µs, and ns axis scaling
+- Automatic V/mV axis scaling and scroll-wheel adjustment of numeric properties
 - Undo and redo for waveform changes
-- CSV export with time and voltage columns
+- Viewer, sample-table, and JSON representations of the current waveform
 
 ## Project files
 
@@ -31,4 +34,4 @@ Transient UI state such as the selected drawing tool, zoom, and undo history is 
 
 ## Editing defaults
 
-Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, frequency, phase, duty cycle, display colors, and the Waveform viewer's vertical division count. Default duration is calculated from sample count and sample rate. It is a JavaScript object rather than fetched JSON so it also works when `index.html` is opened directly from disk.
+Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, N Cycles, frequency, phase, duty cycle, display colors, and the Viewer vertical division count. Frequency and period are reciprocal instrument metadata; they set the displayed time span but do not regenerate the voltage points. The defaults use a JavaScript object rather than fetched JSON so the app also works when `index.html` is opened directly from disk.
