@@ -15,7 +15,7 @@ Then open `http://localhost:8000`.
 ## Prototype features
 
 - Scalable black waveform canvas with time and voltage axes
-- Sine, square, triangle, ramp, pulse, DC, noise, and custom waveform types
+- Sine, square, triangle, ramp, pulse, DC, noise, custom, and serial waveform types
 - Freehand, line, and erase editing
 - Voltage, timing, phase, duty-cycle, cycle-count, and sample controls
 - Fixed, evenly spaced voltage points with frequency and period stored as instrument metadata
@@ -23,6 +23,7 @@ Then open `http://localhost:8000`.
 - Automatic V/mV axis scaling and scroll-wheel adjustment of numeric properties
 - Undo and redo for waveform changes
 - Viewer, sample-table, and JSON representations of the current waveform
+- Conditional Serial metadata controls for protocol, word size, parity, start bit, and stop bit
 
 ## Project files
 

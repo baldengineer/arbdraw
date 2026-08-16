@@ -114,6 +114,15 @@
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
           <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="5" max="95" value="50"></label>
         </div>
+        <div id="serialProperties" class="section serial-section" hidden>
+          <div class="section-title">Serial</div>
+          <label>Protocol <div class="unit-input"><select id="serialProtocol"><option value="UART">UART</option><option value="I2C">I2C</option></select></div></label>
+          <label>Word Size <div class="unit-input"><select id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
+          <label>Parity <div class="unit-input"><select id="serialParity"><option value="odd">Odd</option><option value="even">Even</option><option value="none" selected>None</option></select></div></label>
+          <label>Start Bit <input id="serialStartBit" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>Stop Bit <input id="serialStopBit" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
+        </div>
       </aside>
     </main>
   </div>
@@ -144,6 +153,7 @@
     <button data-wave="sine" role="menuitem"><canvas aria-hidden="true"></canvas><span>Sine</span></button>
     <button data-wave="square" role="menuitem"><canvas aria-hidden="true"></canvas><span>Square</span></button>
     <button data-wave="triangle" role="menuitem"><canvas aria-hidden="true"></canvas><span>Triangle</span></button>
+    <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>Serial</span></button>
     <button data-wave="ramp" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Ramp</span></button>
     <button data-wave="pulse" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>DC</span></button>
@@ -154,6 +164,7 @@
   <script src="js/core.js"></script>
   <script src="js/properties.js"></script>
   <script src="js/waveform-editor.js"></script>
+  <script src="js/serial-properties.js"></script>
   <script src="js/scope-view.js"></script>
   <script src="js/views.js"></script>
   <script src="js/project.js"></script>

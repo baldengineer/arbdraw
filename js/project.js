@@ -16,6 +16,7 @@ function renderDocument() {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');
   updateDutyAvailability(state.type);
+  renderSerialProperties();
   updateFunctionSelect(state.type);
   draw();
 }
@@ -55,6 +56,7 @@ function parseProject(raw) {
         95,
         Math.max(5, number('dutyCyclePercent', defaults.dutyCyclePercent)),
       ),
+      serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
       sampleCount,
       values,
     },

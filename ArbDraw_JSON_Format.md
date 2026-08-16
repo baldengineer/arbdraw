@@ -67,6 +67,7 @@ Unknown top-level fields are ignored.
 | `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
+| `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
 
@@ -127,6 +128,22 @@ Version 1 recognizes:
 - `noise`
 
 The legacy value `free` is imported as `custom`. Unknown values are also imported as `custom`.
+
+## Serial settings
+
+When `type` is `serial`, the `serial` object stores the selected protocol and framing metadata:
+
+| Field | Type | Allowed values | Default |
+| --- | --- | --- | --- |
+| `protocol` | string | `UART`, `I2C` | `UART` |
+| `wordSize` | integer | `7`, `8` | `8` |
+| `parity` | string | `odd`, `even`, `none` | `none` |
+| `startBit` | boolean | `true`, `false` | `true` |
+| `stopBit` | boolean | `true`, `false` | `true` |
+| `payload` | string | Any string | `0xAA` |
+
+The object remains part of the project document when another waveform type is active, allowing the
+Serial settings to be restored if Serial is selected again.
 
 `type` describes how ArbDraw should regenerate the waveform when valid sample data is unavailable. When `values` is valid, it remains the statement of record for the actual waveform points.
 

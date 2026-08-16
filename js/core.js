@@ -102,6 +102,18 @@ function normalizeDefaults(source = {}) {
     ),
     phaseDegrees: finite('phaseDegrees', 0),
     dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
+    serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
+      ? source.serialProtocol
+      : 'UART',
+    serialWordSize: [7, 8].includes(Number(source.serialWordSize))
+      ? Number(source.serialWordSize)
+      : 8,
+    serialParity: ['odd', 'even', 'none'].includes(source.serialParity)
+      ? source.serialParity
+      : 'none',
+    serialStartBit: source.serialStartBit !== false,
+    serialStopBit: source.serialStopBit !== false,
+    serialPayload: String(source.serialPayload ?? '0xAA'),
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
     waveformVerticalDivisions: Math.max(
@@ -130,6 +142,14 @@ function createDefaultDocument() {
       cycles: DEFAULT_VALUES.nCycles,
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
+      serial: {
+        protocol: DEFAULT_VALUES.serialProtocol,
+        wordSize: DEFAULT_VALUES.serialWordSize,
+        parity: DEFAULT_VALUES.serialParity,
+        startBit: DEFAULT_VALUES.serialStartBit,
+        stopBit: DEFAULT_VALUES.serialStopBit,
+        payload: DEFAULT_VALUES.serialPayload,
+      },
       sampleCount: DEFAULT_VALUES.sampleCount,
       values: [],
     },
@@ -179,7 +199,24 @@ const titles = {
   dc: 'DC level',
   noise: 'White noise',
   custom: 'Custom waveform',
+  serial: 'Serial data',
 };
+
+function normalizeSerialSettings(source = {}, fallback = DEFAULT_VALUES) {
+  if (!source || typeof source !== 'object') source = {};
+  return {
+    protocol: ['UART', 'I2C'].includes(source.protocol) ? source.protocol : fallback.serialProtocol,
+    wordSize: [7, 8].includes(Number(source.wordSize))
+      ? Number(source.wordSize)
+      : fallback.serialWordSize,
+    parity: ['odd', 'even', 'none'].includes(source.parity)
+      ? source.parity
+      : fallback.serialParity,
+    startBit: typeof source.startBit === 'boolean' ? source.startBit : fallback.serialStartBit,
+    stopBit: typeof source.stopBit === 'boolean' ? source.stopBit : fallback.serialStopBit,
+    payload: typeof source.payload === 'string' ? source.payload : fallback.serialPayload,
+  };
+}
 
 const $ = (id) => document.getElementById(id);
 

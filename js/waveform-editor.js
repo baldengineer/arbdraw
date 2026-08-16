@@ -34,7 +34,11 @@ function generate(type = state.type, recordHistory = true) {
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
 }
 function cloneWaveform(source = projectDocument.waveform) {
-  return { ...source, values: [...source.values] };
+  return {
+    ...source,
+    serial: { ...source.serial },
+    values: [...source.values],
+  };
 }
 function restoreWaveform(snapshot) {
   projectDocument.waveform = cloneWaveform(snapshot);
@@ -192,7 +196,15 @@ function editAt(pt, last) {
   } else state.data[pt.i] = pt.v;
   draw();
 }
-const dutyDisabledTypes = new Set(['custom', 'sine', 'triangle', 'ramp', 'dc', 'noise']);
+const dutyDisabledTypes = new Set([
+  'custom',
+  'sine',
+  'triangle',
+  'ramp',
+  'dc',
+  'noise',
+  'serial',
+]);
 function updateDutyAvailability(type) {
   const disabled = dutyDisabledTypes.has(type);
   $('dutyInput').disabled = disabled;
@@ -202,6 +214,7 @@ function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
   updateDutyAvailability(type);
+  updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }
 function markCustom() {
@@ -258,6 +271,23 @@ function drawMini(c, type) {
     h = (c.height = 42);
   x.strokeStyle = '#ff6b2c';
   x.lineWidth = 2;
+  if (type === 'serial') {
+    x.fillStyle = '#ff6b2c';
+    x.font = 'bold 18px ui-monospace, monospace';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.beginPath();
+    x.moveTo(31, 6);
+    x.lineTo(79, 6);
+    x.lineTo(88, 21);
+    x.lineTo(79, 36);
+    x.lineTo(31, 36);
+    x.lineTo(22, 21);
+    x.closePath();
+    x.stroke();
+    x.fillText('AA', 55, 21);
+    return;
+  }
   x.beginPath();
   for (let i = 0; i < w; i++) {
     let t = i / (w - 1),
