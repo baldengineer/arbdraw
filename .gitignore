@@ -41,6 +41,8 @@ htmlcov/
 .DS_Store
 Thumbs.db
 *.ai
+*.psd
+ignore/
 
 # Environment variables and local secrets
 .env
