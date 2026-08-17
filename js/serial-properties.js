@@ -87,6 +87,16 @@ function updateSerialPropertiesVisibility(type = state.type) {
   $('serialProperties').hidden = type !== 'serial';
 }
 
+function ensureSerialPeriodCoversPayload() {
+  const bits = serialBitPattern(),
+    baud = serialSettings().baud,
+    requiredFrequency = baud / Math.max(1, bits.length);
+  if (state.frequency > requiredFrequency) {
+    state.frequency = requiredFrequency;
+    renderFrequency();
+  }
+}
+
 function renderSerialProperties() {
   const serial = serialSettings();
   $('serialProtocol').value = serial.protocol;
@@ -124,6 +134,7 @@ function commitSerialProperties(event) {
     payload: $('serialPayload').value,
     binaryPattern,
   });
+  if (event?.target?.id === 'serialPayload') ensureSerialPeriodCoversPayload();
   renderSerialProperties();
   if (state.type === 'serial') generate('serial');
   else pushHistory();
