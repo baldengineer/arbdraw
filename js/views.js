@@ -46,6 +46,8 @@ function setEditorTab(tab) {
     $(name + 'Tab').setAttribute('aria-selected', String(active));
     $(name + 'View').classList.toggle('hidden', !active);
   }
+  $('editorControls').classList.toggle('hidden', tab !== 'editor');
+  $('viewerControls').classList.toggle('hidden', tab !== 'waveform');
   if (tab === 'samples') requestAnimationFrame(renderSamples);
   else sampleRenderToken++;
   if (tab === 'editor') resize();
@@ -56,6 +58,7 @@ function setEditorTab(tab) {
     });
   if (tab === 'json') renderJson();
 }
+$('viewerControls').append(document.querySelector('.scope-controls'));
 $('editorTab').onclick = () => setEditorTab('editor');
 $('waveformTab').onclick = () => setEditorTab('waveform');
 $('samplesTab').onclick = () => setEditorTab('samples');

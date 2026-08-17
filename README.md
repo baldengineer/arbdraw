@@ -40,10 +40,12 @@ See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field refe
 
 Transient UI state such as the selected drawing tool, zoom, and undo history is intentionally not stored in the project document.
 
+## Editing defaults
+
+Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, N Cycles, frequency, phase, duty cycle, display colors, and the Viewer vertical division count. Frequency and period are reciprocal instrument metadata; they set the displayed time span but do not regenerate the voltage points. The defaults use a JavaScript object rather than fetched JSON so the app also works when `index.html` is opened directly from disk.
+
 ## License
 
 ArbDraw is available under the [MIT License](LICENSE).
 
-## Editing defaults
 
-Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. The configuration currently contains high level, low level, offset, amplitude, sample rate, sample count, N Cycles, frequency, phase, duty cycle, display colors, and the Viewer vertical division count. Frequency and period are reciprocal instrument metadata; they set the displayed time span but do not regenerate the voltage points. The defaults use a JavaScript object rather than fetched JSON so the app also works when `index.html` is opened directly from disk.

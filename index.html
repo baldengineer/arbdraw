@@ -33,15 +33,13 @@
         </div>
 
         <div id="waveformView" class="scope-view panel view-panel hidden" role="tabpanel" aria-labelledby="waveformTab">
-          <div class="scope-toolbar">
-            <div class="scope-controls" aria-label="Waveform display controls">
+          <div class="scope-controls" aria-label="Waveform display controls">
               <label>Vertical <div id="scopeVerticalControl" class="unit-input scope-control"><input id="scopeVoltsDiv" type="number" min="0.000001" step="any" value="2" aria-label="Vertical scale"><button id="scopeVoltageUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V/div</button></div></label>
-              <label>Position <div class="unit-input scope-control scope-position-control"><input id="scopeVerticalPosition" type="number" step="any" value="0" aria-label="Vertical position"><button id="scopePositionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
+              <label>Position <div class="unit-input scope-control scope-position-control"><input id="scopeVerticalPosition" type="number" step="0.1" value="0" aria-label="Vertical position"><button id="scopePositionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
               <button id="scopeVerticalRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh vertical scale" title="Refresh vertical scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
               <span class="scope-control-separator" aria-hidden="true"></span>
               <label>Time <div class="unit-input scope-control"><input id="scopeTimeDiv" type="number" min="0.000000001" step="any" value="200" aria-label="Time per division"><button id="scopeTimeUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">ns/div</button></div></label>
               <button id="scopeRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh time scale" title="Refresh time scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
-            </div>
           </div>
           <div class="scope-display-area">
             <div class="scope-frame scope-readonly"><canvas id="scopeCanvas"></canvas><div id="scopeZoomSelection" class="scope-zoom-selection" aria-hidden="true"></div><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
@@ -66,8 +64,9 @@
         </div>
 
         <div class="statusbar panel">
+          <div id="editorControls" class="control-group">
           <div class="status-timing-field">
-            <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number" min="0.000001" step="0.001" value="1250"><span>MSa/s</span></div>
+            <span class="status-label" title="Not used but saved in the JSON.">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number" min="0.000001" step="0.001" value="1250"><span>MSa/s</span></div>
           </div>
           <div class="status-timing-field">
             <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number" min="2" step="1" value="1000"><span>pts</span></div>
@@ -75,6 +74,8 @@
           <div class="status-timing-field">
             <span class="status-label">DURATION</span><div class="duration-input-row"><div class="unit-input status-input calculated"><input id="durationEdit" aria-label="Calculated duration" type="text" value="0.800" readonly><span id="durationUnit">µs</span></div><button id="oneCycleBtn" class="one-cycle-button" title="Fit one waveform cycle into the sample range" disabled>One Cycle</button><div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div></div>
           </div>
+          </div>
+          <div id="viewerControls" class="control-group hidden"></div>
         </div>
       </section>
 

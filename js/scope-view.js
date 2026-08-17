@@ -331,19 +331,24 @@ for (const [id, key] of [
   ['scopeVoltsDiv', 'voltsPerDiv'],
   ['scopeTimeDiv', 'timePerDivMs'],
 ]) {
-  $(id).addEventListener('change', () => {
+  const updateControl = (event) => {
     const value = Number($(id).value),
       scale = id === 'scopeVoltsDiv' ? scopeVoltageUnitScale : scopeTimeUnitScaleMs;
     if (Number.isFinite(value) && value > 0) {
       scopeState[key] =
         id === 'scopeTimeDiv'
-          ? Math.min(1000, Math.max(1e-9, nextUpper125(value * scale)))
+          ? Math.min(
+              1000,
+              Math.max(1e-9, event.type === 'change' ? nextUpper125(value * scale) : value * scale),
+            )
           : value * scale;
       scopeState.fitted = true;
       if (id === 'scopeTimeDiv') renderScopeTime();
       drawScope();
     } else $(id).value = Number((scopeState[key] / scale).toPrecision(8));
-  });
+  };
+  $(id).addEventListener('input', updateControl);
+  $(id).addEventListener('change', updateControl);
   $(id).addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -351,13 +356,15 @@ for (const [id, key] of [
     }
   });
 }
-$('scopeVerticalPosition').addEventListener('change', () => {
+const updateScopePosition = () => {
   const value = Number($('scopeVerticalPosition').value);
   if (Number.isFinite(value)) {
     scopeState.verticalPosition = value * scopePositionUnitScale;
     drawScope();
   } else $('scopeVerticalPosition').value = scopeState.verticalPosition / scopePositionUnitScale;
-});
+};
+$('scopeVerticalPosition').addEventListener('input', updateScopePosition);
+$('scopeVerticalPosition').addEventListener('change', updateScopePosition);
 $('scopeVerticalPosition').addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
