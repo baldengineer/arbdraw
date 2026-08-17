@@ -146,6 +146,16 @@
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmSaveBtn" type="button" class="primary">Save project</button></div>
     </form>
   </dialog>
+  <dialog id="exportDialog" class="open-dialog">
+    <form method="dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export CSV</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p>Choose the filename and CSV options.</p>
+      <label class="save-filename-label" for="exportFilenameInput">Filename<input id="exportFilenameInput" type="text" spellcheck="false"></label>
+      <label class="save-name-option"><input id="updateProjectNameOnExport" type="checkbox" checked> Update project name from saved filename</label>
+      <label class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
+      <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmExportBtn" type="button" class="primary">Export CSV</button></div>
+    </form>
+  </dialog>
   <div id="propertyContextMenu" class="context-menu" role="menu"><button id="setFieldDefaultBtn" role="menuitem">Set to Default</button></div>
   <div id="amplitudeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="Vpp" role="menuitem">Vpp</button><button data-scale="0.001" data-label="mVpp" role="menuitem">mVpp</button><button data-scale="0.000001" data-label="µVpp" role="menuitem">µVpp</button></div>
   <div id="voltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button><button data-scale="0.000001" data-label="µV" role="menuitem">µV</button></div>

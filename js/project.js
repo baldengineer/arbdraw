@@ -130,6 +130,7 @@ exportButton.title = 'CSV';
 exportButton.textContent = 'Export';
 $('saveBtn').after(exportButton);
 $('saveBtn').title = 'JSON';
+$('openBtn').title = 'JSON';
 const exportMenu = document.createElement('div');
 exportMenu.id = 'exportMenu';
 exportMenu.className = 'context-menu';
@@ -170,7 +171,7 @@ $('confirmSaveBtn').onclick = () => {
   $('saveDialog').close();
   showToast('Project JSON downloaded');
 };
-function downloadCsv(includeHeader) {
+function downloadCsv(includeHeader, filename) {
   const values = state.data.map((value) => Number(value ?? 0)),
     sampleCount = values.length,
     durationSeconds = state.duration / 1000,
@@ -211,11 +212,7 @@ function downloadCsv(includeHeader) {
   const blob = new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download =
-    (document.querySelector('.document-name').value.trim() || 'Untitled waveform')
-      .replace(/[^a-z0-9_-]+/gi, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase() + '.csv';
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
   closeExportMenu();
@@ -227,11 +224,24 @@ function closeExportMenu() {
 }
 $('exportBtn').onclick = (event) => {
   event.stopPropagation();
-  const button = $('exportBtn'), menu = $('exportMenu'), rect = button.getBoundingClientRect();
-  menu.style.left = Math.min(rect.left, innerWidth - 165) + 'px';
-  menu.style.top = Math.min(rect.bottom + 4, innerHeight - menu.offsetHeight - 8) + 'px';
-  menu.classList.toggle('open');
-  button.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+  const projectName = document.querySelector('.document-name').value.trim() || 'Untitled waveform';
+  $('exportFilenameInput').value = projectName + '.csv';
+  $('updateProjectNameOnExport').checked = true;
+  $('includeCsvHeaders').checked = false;
+  $('exportDialog').showModal();
+  $('exportFilenameInput').focus();
+  $('exportFilenameInput').select();
+};
+$('confirmExportBtn').onclick = () => {
+  let filename = $('exportFilenameInput').value.trim() || 'Untitled waveform.csv';
+  if (!/\.csv$/i.test(filename)) filename += '.csv';
+  const savedName = filename.replace(/\.csv$/i, '').trim() || 'Untitled waveform';
+  if ($('updateProjectNameOnExport').checked) {
+    projectDocument.name = savedName;
+    document.querySelector('.document-name').value = savedName;
+  }
+  downloadCsv($('includeCsvHeaders').checked, filename);
+  $('exportDialog').close();
 };
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#exportMenu,#exportBtn')) closeExportMenu();
