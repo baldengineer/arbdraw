@@ -156,5 +156,5 @@ for (const id of [
   'serialPayload',
   'serialBinaryPattern',
 ]) {
-  $(id).addEventListener('change', commitSerialProperties);
+  $(id).addEventListener(id === 'serialPayload' ? 'input' : 'change', commitSerialProperties);
 }
