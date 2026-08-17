@@ -40,7 +40,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   serialStopBits: 1,
   serialPayload: '0xAA',
   serialBinaryPattern: '',
-  serial_debug: true,
+  serial_debug: false,
   editorColor: '#7bffb2',
   waveformColor: '#ffe45e',
   waveformVerticalDivisions: 10,
