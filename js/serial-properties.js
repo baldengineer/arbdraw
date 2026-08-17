@@ -90,7 +90,9 @@ function updateSerialPropertiesVisibility(type = state.type) {
 function ensureSerialPeriodCoversPayload() {
   const bits = serialBitPattern(),
     baud = serialSettings().baud,
-    requiredFrequency = baud / Math.max(1, bits.length);
+    requiredPeriodSeconds = Math.max(1, bits.length) / baud,
+    roundedPeriodSeconds = Math.ceil(requiredPeriodSeconds * 1e6) / 1e6,
+    requiredFrequency = 1 / roundedPeriodSeconds;
   if (state.frequency > requiredFrequency) {
     state.frequency = requiredFrequency;
     renderFrequency();
