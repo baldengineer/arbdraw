@@ -93,7 +93,7 @@ function ensureSerialPeriodCoversPayload() {
     requiredPeriodSeconds = Math.max(1, bits.length) / baud,
     roundedPeriodSeconds = Math.ceil(requiredPeriodSeconds * 1e6) / 1e6,
     requiredFrequency = 1 / roundedPeriodSeconds;
-  if (state.frequency > requiredFrequency) {
+  if (state.frequency !== requiredFrequency) {
     state.frequency = requiredFrequency;
     renderFrequency();
   }
