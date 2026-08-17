@@ -256,7 +256,16 @@ $('offsetInput').oninput = () => {
     m = inputVoltage('offsetInput');
   $('highInput').value = displayVoltage('highInput', m + a);
   $('lowInput').value = displayVoltage('lowInput', m - a);
+  if (state.type === 'dc') {
+    state.high = m + a;
+    state.low = m - a;
+    generate('dc', false);
+    refreshScopeVertical();
+  }
 };
+$('offsetInput').addEventListener('change', () => {
+  if (state.type === 'dc') pushHistory();
+});
 $('cyclesInput').addEventListener('blur', () => {
   const value = Number($('cyclesInput').value);
   $('cyclesInput').value = Number.isFinite(value) ? Math.max(1, Math.round(value)) : state.cycles;

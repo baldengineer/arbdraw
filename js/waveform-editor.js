@@ -251,10 +251,22 @@ function updateDutyAvailability(type) {
   $('dutyInput').disabled = disabled;
   $('dutyInput').closest('.range-label').classList.toggle('disabled', disabled);
 }
+function updateDcPropertyAvailability(type) {
+  const disabled = type === 'dc';
+  for (const id of ['highInput', 'lowInput', 'amplitudeInput']) {
+    const input = $(id),
+      label = input.closest('label'),
+      unitButton = label.querySelector('.unit-button');
+    input.disabled = disabled;
+    if (unitButton) unitButton.disabled = disabled;
+    label.classList.toggle('disabled', disabled);
+  }
+}
 function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
   updateDutyAvailability(type);
+  updateDcPropertyAvailability(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }

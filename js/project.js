@@ -18,6 +18,7 @@ function renderDocument() {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');
   updateDutyAvailability(state.type);
+  updateDcPropertyAvailability(state.type);
   renderSerialProperties();
   updateFunctionSelect(state.type);
   draw();
