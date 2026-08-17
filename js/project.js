@@ -120,6 +120,27 @@ $('newBtn').onclick = () => {
 $('cancelNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
 };
+const exportButton = document.createElement('button');
+exportButton.id = 'exportBtn';
+exportButton.className = 'ghost';
+exportButton.type = 'button';
+exportButton.setAttribute('aria-haspopup', 'menu');
+exportButton.setAttribute('aria-expanded', 'false');
+exportButton.textContent = 'Export';
+$('saveBtn').after(exportButton);
+const exportMenu = document.createElement('div');
+exportMenu.id = 'exportMenu';
+exportMenu.className = 'context-menu';
+exportMenu.setAttribute('role', 'menu');
+exportMenu.setAttribute('aria-label', 'Export format');
+['CSV', 'CSV with header'].forEach((label) => {
+  const option = document.createElement('button');
+  option.type = 'button';
+  option.setAttribute('role', 'menuitem');
+  option.textContent = label;
+  exportMenu.append(option);
+});
+document.body.append(exportMenu);
 $('saveBtn').onclick = () => {
   projectDocument.name =
     document.querySelector('.document-name').value.trim() || 'Untitled waveform';
@@ -136,6 +157,24 @@ $('saveBtn').onclick = () => {
   URL.revokeObjectURL(a.href);
   showToast('Project JSON downloaded');
 };
+function closeExportMenu() {
+  $('exportMenu').classList.remove('open');
+  $('exportBtn').setAttribute('aria-expanded', 'false');
+}
+$('exportBtn').onclick = (event) => {
+  event.stopPropagation();
+  const button = $('exportBtn'), menu = $('exportMenu'), rect = button.getBoundingClientRect();
+  menu.style.left = Math.min(rect.left, innerWidth - 165) + 'px';
+  menu.style.top = Math.min(rect.bottom + 4, innerHeight - menu.offsetHeight - 8) + 'px';
+  menu.classList.toggle('open');
+  button.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+};
+document.addEventListener('pointerdown', (event) => {
+  if (!event.target.closest?.('#exportMenu,#exportBtn')) closeExportMenu();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeExportMenu();
+});
 $('openBtn').onclick = () => {
   $('projectJsonInput').value = '';
   $('openError').textContent = '';
