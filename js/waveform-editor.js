@@ -276,6 +276,15 @@ function markCustom() {
     selectPreset('custom');
   }
 }
+function addNoise(percentage) {
+  if (!state.data.length || !Number.isFinite(percentage) || percentage <= 0) return;
+  const noiseSpan = Math.abs(state.high - state.low) * Math.min(100, percentage) / 100;
+  markCustom();
+  state.data = state.data.map((value) => value + (Math.random() * 2 - 1) * noiseSpan);
+  pushHistory();
+  draw();
+  if (!$('samplesView').classList.contains('hidden')) renderSamples();
+}
 canvas.addEventListener('pointerdown', (e) => {
   if (state.tool === 'pointer') return;
   markCustom();
