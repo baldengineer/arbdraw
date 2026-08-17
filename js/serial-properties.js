@@ -101,7 +101,7 @@ function renderSerialProperties() {
   $('serialStopBits').value = String(serial.stopBits);
   $('serialPayload').value = serial.payload;
   $('serialBinaryPattern').value = serialBitPattern().join('');
-  $('serialBinaryControl').hidden = !DEFAULT_VALUES.serial_debug;
+  $('serialBinaryControl').hidden = globalThis.ARBDRAW_DEFAULTS?.serial_debug !== true;
   updateSerialPropertiesVisibility();
 }
 
