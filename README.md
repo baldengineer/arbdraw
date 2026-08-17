@@ -2,7 +2,11 @@
 
 Vibe coded, but actually useful, arbitrary waveform editor.
 
-![ArbDraw waveform editor](arbdraw_screenshot.PNG)
+[![ArbDraw waveform editor](arbdraw_screenshot.PNG)](https://baldengineer.github.io/arbdraw/)
+
+## Try it online
+
+Access the GitHub-hosted version at [baldengineer.github.io/arbdraw](https://baldengineer.github.io/arbdraw/).
 
 ## Run
 
