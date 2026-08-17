@@ -44,6 +44,9 @@ function normalizeDefaults(source = {}) {
     Mpts: 1e6,
   };
 
+  const noisePercentMax = Math.min(100, Math.max(0, finite('noisePercentMax', 10))),
+    noisePercent = Math.min(noisePercentMax, Math.max(0, finite('noisePercent', 1)));
+
   const unit = (key, units, fallback) =>
     Object.hasOwn(units, source[key]) ? source[key] : fallback;
 
@@ -104,6 +107,8 @@ function normalizeDefaults(source = {}) {
     ),
     phaseDegrees: finite('phaseDegrees', 0),
     dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
+    noisePercent,
+    noisePercentMax,
     serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
       ? source.serialProtocol
       : 'UART',

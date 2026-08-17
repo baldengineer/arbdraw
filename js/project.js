@@ -116,6 +116,7 @@ $('confirmNewBtn').onclick = () => {
   showToast('New project created');
 };
 $('newBtn').onclick = () => {
+  closeFileMenu();
   $('newConfirm').hidden = false;
 };
 $('cancelNewBtn').onclick = () => {
@@ -155,6 +156,7 @@ function projectNameFromFilename(filename) {
   );
 }
 $('saveBtn').onclick = () => {
+  closeFileMenu();
   const projectName = projectNameFromFilename(document.querySelector('.document-name').value);
   $('saveFilenameInput').value = projectName + '.arbdraw.json';
   $('updateProjectNameOnSave').checked = true;
@@ -233,6 +235,7 @@ function closeExportMenu() {
 }
 $('exportBtn').onclick = (event) => {
   event.stopPropagation();
+  closeFileMenu();
   const projectName = projectNameFromFilename(document.querySelector('.document-name').value);
   $('exportFilenameInput').value = projectName + '.csv';
   $('updateProjectNameOnExport').checked = true;
@@ -262,13 +265,29 @@ for (const [inputId, buttonId] of [
     $(buttonId).click();
   });
 }
+const fileButton = $('fileBtn');
+const fileMenu = $('fileMenu');
+function closeFileMenu() {
+  fileMenu.classList.remove('open');
+  fileButton.setAttribute('aria-expanded', 'false');
+}
+fileButton.onclick = (event) => {
+  event.stopPropagation();
+  const isOpen = fileMenu.classList.toggle('open');
+  fileButton.setAttribute('aria-expanded', String(isOpen));
+};
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#exportMenu,#exportBtn')) closeExportMenu();
+  if (!event.target.closest?.('#fileMenu,#fileBtn')) closeFileMenu();
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeExportMenu();
+  if (event.key === 'Escape') {
+    closeExportMenu();
+    closeFileMenu();
+  }
 });
 $('openBtn').onclick = () => {
+  closeFileMenu();
   $('projectJsonInput').value = '';
   $('openError').textContent = '';
   $('projectFileInput').value = '';
