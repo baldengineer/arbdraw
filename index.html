@@ -20,8 +20,9 @@
 
         <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
           <div class="toolrail" id="toolrail">
-            <button class="tool active" data-tool="pencil" title="Draw">✎</button>
-            <button class="tool" data-tool="erase" title="Erase">⌫</button>
+            <button class="tool" data-tool="pointer" type="button" title="Pointer" aria-label="Pointer"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5v15.2l4.1-4 2.8 6.1 3.2-1.5-2.8-5.9h5.9L5 3.5Z"/></svg></button>
+            <button class="tool active" data-tool="pencil" type="button" title="Edit" aria-label="Edit">✎</button>
+            <button class="tool" data-tool="erase" type="button" title="Delete" aria-label="Delete">⌫</button>
             <span></span>
             <button class="tool" id="zoomIn" title="Zoom in">＋</button>
             <button class="tool" id="zoomOut" title="Zoom out">−</button>

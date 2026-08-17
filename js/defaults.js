@@ -41,6 +41,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   serialPayload: '0xAA',
   serialBinaryPattern: '',
   serial_debug: false,
+  editor_tool: 'Edit',
   editorColor: '#7bffb2',
   waveformColor: '#ffe45e',
   waveformVerticalDivisions: 10,

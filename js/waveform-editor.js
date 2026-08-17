@@ -277,6 +277,7 @@ function markCustom() {
   }
 }
 canvas.addEventListener('pointerdown', (e) => {
+  if (state.tool === 'pointer') return;
   markCustom();
   state.drawing = true;
   canvas.setPointerCapture(e.pointerId);
@@ -298,7 +299,10 @@ canvas.addEventListener('pointermove', (e) => {
   const timeUnit = axisTimeUnitFor(waveformDurationMs());
   const bounds = voltageBounds();
   const voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
-  canvas.classList.toggle('waveform-hover', pointerIsNearWaveform(e));
+  canvas.classList.toggle(
+    'waveform-hover',
+    state.tool !== 'pointer' && pointerIsNearWaveform(e),
+  );
   $('cursorReadout').style.display = 'block';
   $('cursorReadout').innerHTML =
     `${(((p.i / (state.samples - 1)) * waveformDurationMs()) / timeUnit.scaleMs).toPrecision(5)} ${timeUnit.label} &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
@@ -427,6 +431,8 @@ function drawCustomPreview() {
     x.stroke();
   }
 }
+document.querySelector('.tool.active')?.classList.remove('active');
+document.querySelector(`.tool[data-tool="${state.tool}"]`)?.classList.add('active');
 document.querySelectorAll('.tool[data-tool]').forEach(
   (b) =>
     (b.onclick = () => {

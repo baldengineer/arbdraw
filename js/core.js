@@ -129,6 +129,9 @@ function normalizeDefaults(source = {}) {
       ? String(source.serialBinaryPattern)
       : '',
     serial_debug: source.serial_debug === true,
+    editor_tool: ['Pointer', 'Edit', 'Delete'].includes(source.editor_tool)
+      ? source.editor_tool
+      : 'Edit',
     editorColor: color('editorColor', '#7bffb2'),
     waveformColor: color('waveformColor', '#ffe45e'),
     waveformVerticalDivisions: Math.max(
@@ -180,7 +183,11 @@ function createDefaultDocument() {
 let projectDocument = createDefaultDocument();
 
 const state = {
-  tool: 'pencil',
+  tool: {
+    Pointer: 'pointer',
+    Edit: 'pencil',
+    Delete: 'erase',
+  }[DEFAULT_VALUES.editor_tool],
   waveformRenderMode: 'vectors',
   zoom: 1,
   history: [],
