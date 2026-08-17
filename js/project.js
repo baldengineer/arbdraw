@@ -138,6 +138,7 @@ exportMenu.setAttribute('aria-label', 'Export format');
   option.type = 'button';
   option.setAttribute('role', 'menuitem');
   option.textContent = label;
+  option.onclick = () => downloadCsv(label === 'CSV with header');
   exportMenu.append(option);
 });
 document.body.append(exportMenu);
@@ -157,6 +158,57 @@ $('saveBtn').onclick = () => {
   URL.revokeObjectURL(a.href);
   showToast('Project JSON downloaded');
 };
+function downloadCsv(includeHeader) {
+  const values = state.data.map((value) => Number(value ?? 0)),
+    sampleCount = values.length,
+    durationSeconds = state.duration / 1000,
+    timeMax = sampleCount > 1 ? durationSeconds : 0,
+    voltageMin = sampleCount ? Math.min(...values) : 0,
+    voltageMax = sampleCount ? Math.max(...values) : 0,
+    csvValue = (value) => {
+      const text = String(value ?? '');
+      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    },
+    metadata = [
+      ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
+      ['Generated', new Date().toISOString()],
+      ['Waveform type', titles[state.type] || state.type],
+      ['High level (V)', state.high],
+      ['Low level (V)', state.low],
+      ['Amplitude (Vpp)', state.high - state.low],
+      ['Offset (V)', (state.high + state.low) / 2],
+      ['Frequency (Hz)', state.frequency],
+      ['Period (s)', 1 / state.frequency],
+      ['Cycles', state.cycles],
+      ['Phase (degrees)', state.phase],
+      ['Duty cycle (%)', state.duty],
+      ['Sample rate (MSa/s)', state.sampleRate],
+      ['Sample count', sampleCount],
+      ['Time min (s)', 0],
+      ['Time max (s)', timeMax],
+      ['Voltage min (V)', voltageMin],
+      ['Voltage max (V)', voltageMax],
+    ],
+    rows = includeHeader
+      ? [...metadata.map(([key, value]) => `${csvValue(key)},${csvValue(value)}`), '', 'Time (s),Voltage (V)']
+      : [];
+  for (let index = 0; index < state.data.length; index++) {
+    const timeSeconds = (index / Math.max(1, sampleCount - 1)) * durationSeconds;
+    rows.push(`${timeSeconds},${values[index]}`);
+  }
+  const blob = new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download =
+    (document.querySelector('.document-name').value.trim() || 'Untitled waveform')
+      .replace(/[^a-z0-9_-]+/gi, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase() + '.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  closeExportMenu();
+  showToast(`Waveform exported as ${includeHeader ? 'CSV with header' : 'CSV'}`);
+}
 function closeExportMenu() {
   $('exportMenu').classList.remove('open');
   $('exportBtn').setAttribute('aria-expanded', 'false');
