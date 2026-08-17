@@ -136,16 +136,45 @@ function draw() {
   ctx.shadowColor = DEFAULT_VALUES.editorColor;
   ctx.shadowBlur = 5 * d;
   ctx.lineWidth = 1.5 * d;
-  ctx.beginPath();
-  state.data.forEach((v, i) => {
-    const x = pad.l + (pw * i) / (state.data.length - 1),
-      y = pad.t + ((bounds.high - v) / (bounds.high - bounds.low)) * ph;
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  });
-  ctx.stroke();
+  if (state.waveformRenderMode === 'dots') {
+    ctx.fillStyle = DEFAULT_VALUES.editorColor;
+    state.data.forEach((v, i) => {
+      const x = pad.l + (pw * i) / (state.data.length - 1),
+        y = pad.t + ((bounds.high - v) / (bounds.high - bounds.low)) * ph;
+      ctx.beginPath();
+      ctx.arc(x, y, 2 * d, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  } else {
+    ctx.beginPath();
+    state.data.forEach((v, i) => {
+      const x = pad.l + (pw * i) / (state.data.length - 1),
+        y = pad.t + ((bounds.high - v) / (bounds.high - bounds.low)) * ph;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+  }
   ctx.restore();
   drawCustomPreview();
   if (!$('waveformView').classList.contains('hidden')) drawScope();
+}
+function updateWaveformModeButton() {
+  document.querySelectorAll('#waveformModePicker .theme-option').forEach((button) => {
+    button.classList.toggle('active', button.dataset.mode === state.waveformRenderMode);
+  });
+}
+document.querySelectorAll('#waveformModePicker .theme-option').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.waveformRenderMode = button.dataset.mode;
+    updateWaveformModeButton();
+    draw();
+  });
+});
+/* Keep the active segment synchronized if the render mode is changed elsewhere. */
+function setWaveformRenderMode(mode) {
+  state.waveformRenderMode = mode === 'dots' ? 'dots' : 'vectors';
+  updateWaveformModeButton();
+  draw();
 }
 function canvasPoint(e) {
   const r = canvas.getBoundingClientRect(),

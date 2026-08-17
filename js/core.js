@@ -181,6 +181,7 @@ let projectDocument = createDefaultDocument();
 
 const state = {
   tool: 'pencil',
+  waveformRenderMode: 'vectors',
   zoom: 1,
   history: [],
   redo: [],

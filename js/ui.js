@@ -5,12 +5,12 @@ function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem('arbdraw-theme', theme);
   document
-    .querySelectorAll('.theme-option')
+    .querySelectorAll('.theme-option[data-theme]')
     .forEach((button) => button.classList.toggle('active', button.dataset.theme === theme));
 }
 setTheme(localStorage.getItem('arbdraw-theme') || 'dark');
 document
-  .querySelectorAll('.theme-option')
+  .querySelectorAll('.theme-option[data-theme]')
   .forEach((button) => button.addEventListener('click', () => setTheme(button.dataset.theme)));
 function showToast(message) {
   $('toast').textContent = message;
