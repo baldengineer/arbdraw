@@ -126,8 +126,10 @@ exportButton.className = 'ghost';
 exportButton.type = 'button';
 exportButton.setAttribute('aria-haspopup', 'menu');
 exportButton.setAttribute('aria-expanded', 'false');
+exportButton.title = 'CSV';
 exportButton.textContent = 'Export';
 $('saveBtn').after(exportButton);
+$('saveBtn').title = 'JSON';
 const exportMenu = document.createElement('div');
 exportMenu.id = 'exportMenu';
 exportMenu.className = 'context-menu';
@@ -143,19 +145,29 @@ exportMenu.setAttribute('aria-label', 'Export format');
 });
 document.body.append(exportMenu);
 $('saveBtn').onclick = () => {
-  projectDocument.name =
-    document.querySelector('.document-name').value.trim() || 'Untitled waveform';
+  const projectName = document.querySelector('.document-name').value.trim() || 'Untitled waveform';
+  $('saveFilenameInput').value = projectName + '.arbdraw.json';
+  $('updateProjectNameOnSave').checked = true;
+  $('saveDialog').showModal();
+  $('saveFilenameInput').focus();
+  $('saveFilenameInput').select();
+};
+$('confirmSaveBtn').onclick = () => {
+  let filename = $('saveFilenameInput').value.trim() || 'Untitled waveform.arbdraw.json';
+  if (!/\.arbdraw\.json$/i.test(filename)) filename += '.arbdraw.json';
+  const savedName = filename.replace(/\.arbdraw\.json$/i, '').trim() || 'Untitled waveform';
+  if ($('updateProjectNameOnSave').checked) {
+    projectDocument.name = savedName;
+    document.querySelector('.document-name').value = savedName;
+  }
   const json = JSON.stringify(projectDocument, null, 2),
     blob = new Blob([json], { type: 'application/json' }),
     a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download =
-    projectDocument.name
-      .replace(/[^a-z0-9_-]+/gi, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase() + '.arbdraw.json';
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+  $('saveDialog').close();
   showToast('Project JSON downloaded');
 };
 function downloadCsv(includeHeader) {
