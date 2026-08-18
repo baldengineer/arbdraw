@@ -12,7 +12,7 @@ function generate(type = state.type, recordHistory = true) {
     serialBits = type === 'serial' ? serialBitPattern() : null,
     serialBaud = type === 'serial' ? serialSettings().baud : null,
     bufferDurationSeconds = waveformDurationMs() / 1000;
-  state.data = Array.from({ length: n }, (_, i) => {
+  const generatedData = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1),
       p = (t * state.cycles + state.phase / 360) % 1;
     switch (type) {
@@ -41,6 +41,7 @@ function generate(type = state.type, recordHistory = true) {
         return mid;
     }
   });
+  state.data = applyFilters(generatedData);
   if (recordHistory) pushHistory();
   draw();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
@@ -49,6 +50,7 @@ function cloneWaveform(source = projectDocument.waveform) {
   return {
     ...source,
     serial: { ...source.serial },
+    filters: { ...source.filters },
     values: [...source.values],
   };
 }
@@ -251,6 +253,13 @@ function updateDutyAvailability(type) {
   $('dutyInput').disabled = disabled;
   $('dutyInput').closest('.range-label').classList.toggle('disabled', disabled);
 }
+function updateCyclesAvailability(type) {
+  const disabled = type === 'custom',
+    input = $('cyclesInput'),
+    label = input.closest('label');
+  input.disabled = disabled;
+  label.classList.toggle('disabled', disabled);
+}
 function updateDcPropertyAvailability(type) {
   const disabled = type === 'dc';
   for (const id of ['highInput', 'lowInput', 'amplitudeInput']) {
@@ -266,6 +275,7 @@ function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
   updateDutyAvailability(type);
+  updateCyclesAvailability(type);
   updateDcPropertyAvailability(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
@@ -275,15 +285,6 @@ function markCustom() {
     state.type = 'custom';
     selectPreset('custom');
   }
-}
-function addNoise(percentage) {
-  if (!state.data.length || !Number.isFinite(percentage) || percentage <= 0) return;
-  const noiseSpan = Math.abs(state.high - state.low) * Math.min(100, percentage) / 100;
-  markCustom();
-  state.data = state.data.map((value) => value + (Math.random() * 2 - 1) * noiseSpan);
-  pushHistory();
-  draw();
-  if (!$('samplesView').classList.contains('hidden')) renderSamples();
 }
 canvas.addEventListener('pointerdown', (e) => {
   if (state.tool === 'pointer') return;

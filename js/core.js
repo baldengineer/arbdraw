@@ -58,6 +58,7 @@ function normalizeDefaults(source = {}) {
   const periodUnit = unit('periodUnit', periodUnits, 'µs');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
+  const waveformTypes = ['sine', 'square', 'triangle', 'ramp', 'pulse', 'dc', 'noise', 'custom', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -86,6 +87,7 @@ function normalizeDefaults(source = {}) {
     periodUnit,
     sampleRateUnit,
     sampleCountUnit,
+    waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
     phaseUnit: String(source.phaseUnit || '°'),
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
@@ -107,6 +109,7 @@ function normalizeDefaults(source = {}) {
     ),
     phaseDegrees: finite('phaseDegrees', 0),
     dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
+    filtersEnabled: source.filtersEnabled !== false,
     noisePercent,
     noisePercentMax,
     serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
@@ -148,6 +151,20 @@ function normalizeDefaults(source = {}) {
 
 const DEFAULT_VALUES = normalizeDefaults(globalThis.ARBDRAW_DEFAULTS);
 
+function normalizeFilterSettings(source = {}) {
+  const noisePercent = Number(source.noisePercent);
+  const cutoff = Number(source.lowPassCutoffHz);
+  return {
+    enabled: source.enabled !== false,
+    noiseEnabled: source.noiseEnabled === true,
+    noisePercent: Number.isFinite(noisePercent)
+      ? Math.min(DEFAULT_VALUES.noisePercentMax, Math.max(0, noisePercent))
+      : DEFAULT_VALUES.noisePercent,
+    lowPassEnabled: source.lowPassEnabled === true,
+    lowPassCutoffHz: Number.isFinite(cutoff) && cutoff > 0 ? cutoff : null,
+  };
+}
+
 function createDefaultDocument() {
   const durationMs = DEFAULT_VALUES.sampleCount / (DEFAULT_VALUES.sampleRateMSa * 1000);
 
@@ -156,7 +173,7 @@ function createDefaultDocument() {
     version: 1,
     name: 'Waveform 01',
     waveform: {
-      type: 'sine',
+      type: DEFAULT_VALUES.waveformType,
       highVoltage: DEFAULT_VALUES.highLevelV,
       lowVoltage: DEFAULT_VALUES.lowLevelV,
       durationMs,
@@ -165,6 +182,13 @@ function createDefaultDocument() {
       cycles: DEFAULT_VALUES.nCycles,
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
+      filters: {
+        enabled: DEFAULT_VALUES.filtersEnabled,
+        noiseEnabled: false,
+        noisePercent: DEFAULT_VALUES.noisePercent,
+        lowPassEnabled: false,
+        lowPassCutoffHz: null,
+      },
       serial: {
         protocol: DEFAULT_VALUES.serialProtocol,
         baud: DEFAULT_VALUES.serialBaud,
@@ -211,6 +235,7 @@ const documentFields = {
   cycles: 'cycles',
   phase: 'phaseDegrees',
   duty: 'dutyCyclePercent',
+  filters: 'filters',
   samples: 'sampleCount',
   data: 'values',
 };

@@ -24,10 +24,18 @@ function nextUpper125(value) {
   return 10 * power;
 }
 function fittedVerticalScale() {
+  let dataLow = state.low,
+    dataHigh = state.high;
+  for (const value of state.data) {
+    if (Number.isFinite(value)) {
+      dataLow = Math.min(dataLow, value);
+      dataHigh = Math.max(dataHigh, value);
+    }
+  }
   const maximumOffset = Math.max(
     0.000001,
-    Math.abs(state.high - scopeState.verticalPosition),
-    Math.abs(state.low - scopeState.verticalPosition),
+    Math.abs(dataHigh - scopeState.verticalPosition),
+    Math.abs(dataLow - scopeState.verticalPosition),
   );
   return nextUpper125(maximumOffset / (scopeState.verticalDivisions / 2));
 }

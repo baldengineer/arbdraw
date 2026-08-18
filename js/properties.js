@@ -37,8 +37,6 @@ function inputPeriodFrequency() {
 $('amplitudeUnitBtn').textContent = DEFAULT_VALUES.amplitudeUnit;
 $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
-$('noisePercentInput').max = DEFAULT_VALUES.noisePercentMax;
-$('noisePercentInput').value = DEFAULT_VALUES.noisePercent;
 document.querySelector('.voltage-unit-button[data-input="highInput"]').textContent =
   DEFAULT_VALUES.highLevelUnit;
 document.querySelector('.voltage-unit-button[data-input="lowInput"]').textContent =
@@ -253,16 +251,6 @@ $('amplitudeInput').oninput = () => {
   $('highInput').value = displayVoltage('highInput', mid + a);
   $('lowInput').value = displayVoltage('lowInput', mid - a);
 };
-$('addNoiseBtn').onclick = () => {
-  const input = $('noisePercentInput'),
-    percentage = Number(input.value);
-  if (!Number.isFinite(percentage)) {
-    input.value = 10;
-    return;
-  }
-  input.value = Math.min(DEFAULT_VALUES.noisePercentMax, Math.max(0, percentage));
-  addNoise(Number(input.value));
-};
 $('offsetInput').oninput = () => {
   const a = (inputVoltage('highInput') - inputVoltage('lowInput')) / 2,
     m = inputVoltage('offsetInput');
@@ -344,7 +332,6 @@ $('defaultAllBtn').onclick = () => {
   $('phaseInput').value = DEFAULT_VALUES.phaseDegrees;
   $('dutyInput').value = DEFAULT_VALUES.dutyCyclePercent;
   $('dutyValue').textContent = DEFAULT_VALUES.dutyCyclePercent + '%';
-  $('noisePercentInput').value = DEFAULT_VALUES.noisePercent;
   applyProperties();
 };
 let contextPropertyInput = null;
