@@ -58,6 +58,7 @@ function normalizeDefaults(source = {}) {
   const periodUnit = unit('periodUnit', periodUnits, 'µs');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
+  const waveformTypes = ['sine', 'square', 'triangle', 'ramp', 'pulse', 'dc', 'noise', 'custom', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -86,6 +87,7 @@ function normalizeDefaults(source = {}) {
     periodUnit,
     sampleRateUnit,
     sampleCountUnit,
+    waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
     phaseUnit: String(source.phaseUnit || '°'),
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
@@ -171,7 +173,7 @@ function createDefaultDocument() {
     version: 1,
     name: 'Waveform 01',
     waveform: {
-      type: 'sine',
+      type: DEFAULT_VALUES.waveformType,
       highVoltage: DEFAULT_VALUES.highLevelV,
       lowVoltage: DEFAULT_VALUES.lowLevelV,
       durationMs,

@@ -35,11 +35,16 @@ function closeFiltersMenu() {
 }
 
 function renderFilterMenu() {
+  const noisePercent = Number.isFinite(state.filters?.noisePercent)
+    ? state.filters.noisePercent
+    : DEFAULT_VALUES.noisePercent;
   $('noiseFilterBtn').setAttribute('aria-checked', String(state.filters?.noiseEnabled === true));
   $('lowPassFilterBtn').setAttribute(
     'aria-checked',
     String(state.filters?.lowPassEnabled === true),
   );
+  $('noiseFilterValue').textContent = `${Number(noisePercent.toPrecision(6))}%`;
+  $('noiseFilterDefaultValue').textContent = `${Number(DEFAULT_VALUES.noisePercent.toPrecision(6))}%`;
 }
 
 function regenerateWithFilters() {
@@ -62,7 +67,7 @@ function openFilterDialog(kind) {
   if (kind === 'noise') {
     title.textContent = 'Add Noise';
     description.textContent = 'Set the amount of random vertical noise to add.';
-    input.value = state.filters.noiseEnabled
+    input.value = Number.isFinite(state.filters.noisePercent)
       ? state.filters.noisePercent
       : DEFAULT_VALUES.noisePercent;
     input.min = 0;
@@ -119,6 +124,14 @@ $('noiseFilterBtn').onclick = () => {
     regenerateWithFilters();
   } else openFilterDialog('noise');
 };
+$('changeNoiseFilterBtn').onclick = () => openFilterDialog('noise');
+$('defaultNoiseFilterBtn').onclick = () => {
+  state.filters.noisePercent = DEFAULT_VALUES.noisePercent;
+  state.filters.noiseEnabled = true;
+  renderFilterMenu();
+  closeFiltersMenu();
+  regenerateWithFilters();
+};
 $('lowPassFilterBtn').onclick = () => {
   if (state.filters.lowPassEnabled) {
     state.filters.lowPassEnabled = false;
@@ -138,9 +151,15 @@ $('applyFilterDialogBtn').onclick = () => {
     state.filters.lowPassCutoffHz = value * 1e3;
     state.filters.lowPassEnabled = true;
   }
+  renderFilterMenu();
   dialog.close();
   regenerateWithFilters();
 };
+$('filterDialogInput').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  $('applyFilterDialogBtn').click();
+});
 
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#filtersMenu,#filtersBtn')) closeFiltersMenu();
