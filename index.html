@@ -14,7 +14,7 @@
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button></div><button id="filtersBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">Filters <span aria-hidden="true">▾</span></button><div id="filtersMenu" class="context-menu file-menu filters-menu" role="menu" aria-label="Filters"><button id="enableFiltersBtn" role="menuitemcheckbox" aria-checked="true" type="button">Enable Filters</button><div class="menu-divider" role="separator"></div><button id="noiseFilterBtn" role="menuitem" type="button">Add Noise…</button><button id="lowPassFilterBtn" role="menuitem" type="button">Low-Pass Filter…</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
@@ -90,7 +90,6 @@
           <div class="section-title">Amplitude</div>
           <label>High level <div class="unit-input"><input id="highInput" type="number" step="0.1" value="5"><button class="unit-button voltage-unit-button" type="button" data-input="highInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
           <label>Amplitude <div class="unit-input"><input id="amplitudeInput" type="number" step="0.1" min="0" value="10"><button id="amplitudeUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Vpp</button></div></label>
-          <label>Noise <div class="noise-control"><div class="unit-input"><input id="noisePercentInput" type="number" min="0" max="10" step="1" value="1"><span>%</span></div><button id="addNoiseBtn" class="noise-button" type="button">Add noise</button></div></label>
           <label>Offset <div class="unit-input"><input id="offsetInput" type="number" step="0.1" value="0"><button class="unit-button voltage-unit-button" type="button" data-input="offsetInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
           <label>Low level <div class="unit-input"><input id="lowInput" type="number" step="0.1" value="-5"><button class="unit-button voltage-unit-button" type="button" data-input="lowInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
         </div>
@@ -159,6 +158,14 @@
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmExportBtn" type="button" class="primary">Export CSV</button></div>
     </form>
   </dialog>
+  <dialog id="filterDialog" class="open-dialog filter-dialog">
+    <form method="dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">FILTER</span><h2 id="filterDialogTitle">Add Noise</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p id="filterDialogDescription"></p>
+      <label class="save-filename-label" for="filterDialogInput">Value<div class="filter-value-input"><input id="filterDialogInput" type="number" step="any"><span id="filterDialogUnit"></span></div></label>
+      <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="applyFilterDialogBtn" type="button" class="primary">Apply filter</button></div>
+    </form>
+  </dialog>
   <div id="propertyContextMenu" class="context-menu" role="menu"><button id="setFieldDefaultBtn" role="menuitem">Set to Default</button></div>
   <div id="amplitudeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="Vpp" role="menuitem">Vpp</button><button data-scale="0.001" data-label="mVpp" role="menuitem">mVpp</button><button data-scale="0.000001" data-label="µVpp" role="menuitem">µVpp</button></div>
   <div id="voltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button><button data-scale="0.000001" data-label="µV" role="menuitem">µV</button></div>
@@ -186,6 +193,7 @@
   <script src="js/core.js"></script>
   <script src="js/properties.js"></script>
   <script src="js/waveform-editor.js"></script>
+  <script src="js/filters.js"></script>
   <script src="js/serial-properties.js"></script>
   <script src="js/scope-view.js"></script>
   <script src="js/views.js"></script>

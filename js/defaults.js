@@ -28,6 +28,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   phaseUnit: '°',
   dutyCyclePercent: 50,
   dutyCycleUnit: '%',
+  filtersEnabled: true,
   noisePercent: 1,
   noisePercentMax: 10,
   serialProtocol: 'UART',
