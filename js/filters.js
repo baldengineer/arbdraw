@@ -2,6 +2,11 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Waveform filter settings, menu controls, and post-processing.
 const LOW_PASS_INITIAL_HZ = 1_000;
+const FILTER_MENU_ENABLED = new URLSearchParams(window.location.search).get('lpf') === '1';
+
+const lowPassFilterButton = $('lowPassFilterBtn');
+lowPassFilterButton.hidden = !FILTER_MENU_ENABLED;
+lowPassFilterButton.style.display = FILTER_MENU_ENABLED ? '' : 'none';
 
 function applyNoiseFilter(values, percentage) {
   const span = Math.abs(state.high - state.low) * (percentage / 100);
