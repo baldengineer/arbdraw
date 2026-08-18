@@ -45,6 +45,7 @@ function generate(type = state.type, recordHistory = true) {
   if (recordHistory) pushHistory();
   draw();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
+  persistCurrentSettings();
 }
 function cloneWaveform(source = projectDocument.waveform) {
   return {
@@ -404,6 +405,7 @@ $('functionSelectMenu')
       if (type === 'custom') {
         state.type = 'custom';
         drawCustomPreview();
+        persistCurrentSettings();
       } else generate(type);
       refreshScopeTime();
       closeFunctionSelectMenu();
@@ -449,6 +451,7 @@ document.querySelectorAll('.tool[data-tool]').forEach(
       document.querySelector('.tool.active')?.classList.remove('active');
       b.classList.add('active');
       state.tool = b.dataset.tool;
+      persistCurrentSettings();
     }),
 );
 function undoWaveform() {
@@ -464,6 +467,8 @@ function redoWaveform() {
     restoreWaveform(snapshot);
   }
 }
+$('undoBtn').textContent = 'Undo';
+$('redoBtn').textContent = 'Redo';
 $('undoBtn').onclick = undoWaveform;
 $('redoBtn').onclick = redoWaveform;
 document.addEventListener('keydown', (event) => {

@@ -332,6 +332,7 @@ $('scopeDivisionMenu')
     option.onclick = () => {
       scopeState.verticalDivisions = +option.dataset.divisions;
       refreshScopeVertical();
+      persistCurrentSettings();
       closeScopeDivisionMenu();
     };
   });

@@ -149,7 +149,43 @@ function normalizeDefaults(source = {}) {
   });
 }
 
-const DEFAULT_VALUES = normalizeDefaults(globalThis.ARBDRAW_DEFAULTS);
+const SETTINGS_STORAGE_KEY = 'arbdraw-settings';
+
+function readStoredSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}');
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistSettings(settings) {
+  try {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ ...readStoredSettings(), ...settings }),
+    );
+  } catch {
+    // Storage may be unavailable for restricted file or private browsing contexts.
+  }
+}
+
+function resetStoredSettings() {
+  try {
+    localStorage.removeItem(SETTINGS_STORAGE_KEY);
+  } catch {
+    // Storage may be unavailable for restricted file or private browsing contexts.
+  }
+}
+
+const STORED_SETTINGS = readStoredSettings();
+const DEFAULT_VALUES = normalizeDefaults({
+  ...globalThis.ARBDRAW_DEFAULTS,
+  ...STORED_SETTINGS,
+});
+// Merge newly added defaults into the stored settings without overwriting user values.
+persistSettings({ ...globalThis.ARBDRAW_DEFAULTS, ...STORED_SETTINGS });
 
 function normalizeFilterSettings(source = {}) {
   const noisePercent = Number(source.noisePercent);

@@ -8,6 +8,11 @@ const lowPassFilterButton = $('lowPassFilterBtn');
 lowPassFilterButton.hidden = !FILTER_MENU_ENABLED;
 lowPassFilterButton.style.display = FILTER_MENU_ENABLED ? '' : 'none';
 
+const filtersMenuAnchor = document.createElement('span');
+filtersMenuAnchor.className = 'filters-menu-anchor';
+$('filtersBtn').before(filtersMenuAnchor);
+filtersMenuAnchor.append($('filtersBtn'), $('filtersMenu'));
+
 function applyNoiseFilter(values, percentage) {
   const span = Math.abs(state.high - state.low) * (percentage / 100);
   return values.map((value) => value + (Math.random() * 2 - 1) * span);
@@ -60,6 +65,7 @@ function regenerateWithFilters() {
     if (!$('samplesView').classList.contains('hidden')) renderSamples();
   } else generate(state.type);
   refreshScopeVertical();
+  persistCurrentSettings();
 }
 
 function openFilterDialog(kind) {

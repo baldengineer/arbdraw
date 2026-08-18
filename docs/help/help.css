@@ -1,0 +1,77 @@
+/* AI generated, TBD human generated. */
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #17212b;
+  background: #ffffff;
+}
+
+body {
+  box-sizing: border-box;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 28px 32px 40px;
+  font: 15px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  color: #17212b;
+}
+
+h1 {
+  margin: 0 0 22px;
+  font-size: 28px;
+}
+
+h2 {
+  margin: 28px 0 8px;
+  font-size: 19px;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 14px;
+}
+
+li + li {
+  margin-top: 6px;
+}
+
+code {
+  padding: 2px 4px;
+  color: #314454;
+  background: #eef2f5;
+  border-radius: 4px;
+  font: 0.92em ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+strong:first-child {
+  display: block;
+  margin-bottom: 18px;
+  color: #697580;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: 22px 20px 32px;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+}

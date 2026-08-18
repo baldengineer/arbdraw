@@ -1,0 +1,29 @@
+{
+  "_note": "AI generated, TBD human generated.",
+  "faqs": [
+    {
+      "question": "Where is my waveform stored?",
+      "answer": "The current waveform exists in the open browser tab until you save it. Use File → Save JSON Waveform to create a project file you can keep or share."
+    },
+    {
+      "question": "What does the Default button do?",
+      "answer": "It asks for confirmation, clears saved application settings from local storage, and reloads the application using the values in js/defaults.js."
+    },
+    {
+      "question": "How do I add noise?",
+      "answer": "Open Filters, choose Add Noise, enter a percentage, and apply the filter. The configured noise amount is retained as a setting."
+    },
+    {
+      "question": "Why do I not see the Low-Pass Filter option?",
+      "answer": "The low-pass filter is currently an experimental option. It can be exposed by loading the application with the lpf=1 URL parameter."
+    },
+    {
+      "question": "What is the difference between the Editor and Waveform views?",
+      "answer": "The Editor is used to create and edit sample values. The Waveform view is a read-only, oscilloscope-style view for inspecting the resulting signal."
+    },
+    {
+      "question": "Which browsers are supported?",
+      "answer": "ArbDraw is intended for current versions of Firefox, Chrome, and Safari. Browser-specific rendering differences may still occur."
+    }
+  ]
+}
