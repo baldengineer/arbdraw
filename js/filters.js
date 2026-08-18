@@ -35,9 +35,11 @@ function closeFiltersMenu() {
 }
 
 function renderFilterMenu() {
-  const enabled = state.filters?.enabled !== false;
-  $('enableFiltersBtn').setAttribute('aria-checked', String(enabled));
-  $('enableFiltersBtn').classList.toggle('checked', enabled);
+  $('noiseFilterBtn').setAttribute('aria-checked', String(state.filters?.noiseEnabled === true));
+  $('lowPassFilterBtn').setAttribute(
+    'aria-checked',
+    String(state.filters?.lowPassEnabled === true),
+  );
 }
 
 function regenerateWithFilters() {
@@ -47,6 +49,7 @@ function regenerateWithFilters() {
     draw();
     if (!$('samplesView').classList.contains('hidden')) renderSamples();
   } else generate(state.type);
+  refreshScopeVertical();
 }
 
 function openFilterDialog(kind) {
@@ -93,12 +96,37 @@ $('filtersBtn').onclick = (event) => {
   renderFilterMenu();
 };
 $('enableFiltersBtn').onclick = () => {
-  state.filters.enabled = state.filters.enabled === false;
+  state.filters.enabled = true;
+  state.filters.noiseEnabled = true;
+  state.filters.lowPassEnabled = true;
+  if (!state.filters.noisePercent) state.filters.noisePercent = DEFAULT_VALUES.noisePercent;
+  if (!state.filters.lowPassCutoffHz) state.filters.lowPassCutoffHz = LOW_PASS_INITIAL_HZ;
   renderFilterMenu();
   regenerateWithFilters();
 };
-$('noiseFilterBtn').onclick = () => openFilterDialog('noise');
-$('lowPassFilterBtn').onclick = () => openFilterDialog('lowPass');
+$('disableFiltersBtn').onclick = () => {
+  state.filters.enabled = false;
+  state.filters.noiseEnabled = false;
+  state.filters.lowPassEnabled = false;
+  renderFilterMenu();
+  regenerateWithFilters();
+};
+$('noiseFilterBtn').onclick = () => {
+  if (state.filters.noiseEnabled) {
+    state.filters.noiseEnabled = false;
+    renderFilterMenu();
+    closeFiltersMenu();
+    regenerateWithFilters();
+  } else openFilterDialog('noise');
+};
+$('lowPassFilterBtn').onclick = () => {
+  if (state.filters.lowPassEnabled) {
+    state.filters.lowPassEnabled = false;
+    renderFilterMenu();
+    closeFiltersMenu();
+    regenerateWithFilters();
+  } else openFilterDialog('lowPass');
+};
 $('applyFilterDialogBtn').onclick = () => {
   const dialog = $('filterDialog'),
     value = Number($('filterDialogInput').value);
