@@ -13,6 +13,55 @@ const voltageUnitScales = {
 };
 let frequencyUnitScale = frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],
   periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit];
+
+function persistCurrentSettings() {
+  const toolNames = { pointer: 'Pointer', pencil: 'Edit', erase: 'Delete' },
+    serial = typeof serialSettings === 'function' ? serialSettings() : {};
+  persistSettings({
+    highLevelV: state.high / voltageUnitScales.highInput,
+    lowLevelV: state.low / voltageUnitScales.lowInput,
+    offsetV: ((state.high + state.low) / 2) / voltageUnitScales.offsetInput,
+    amplitudeVpp: (state.high - state.low) / amplitudeUnitScale,
+    highLevelUnit: $('highInput').closest('label').querySelector('.voltage-unit-button').textContent,
+    lowLevelUnit: $('lowInput').closest('label').querySelector('.voltage-unit-button').textContent,
+    offsetUnit: $('offsetInput').closest('label').querySelector('.voltage-unit-button').textContent,
+    amplitudeUnit: $('amplitudeUnitBtn').textContent,
+    sampleRateMSa: state.sampleRate,
+    sampleRateUnit: 'MSa/s',
+    sampleCount: state.samples,
+    sampleCountUnit: 'pts',
+    waveformType: state.type,
+    nCycles: state.cycles,
+    frequencyHz: state.frequency / frequencyUnitScale,
+    frequencyUnit: $('frequencyUnitBtn').textContent,
+    periodUnit: $('periodUnitBtn').textContent,
+    phaseDegrees: state.phase,
+    dutyCyclePercent: state.duty,
+    filtersEnabled: state.filters?.enabled !== false,
+    noisePercent: state.filters?.noisePercent ?? DEFAULT_VALUES.noisePercent,
+    noisePercentMax: DEFAULT_VALUES.noisePercentMax,
+    serialProtocol: serial.protocol,
+    serialBaud: serial.baud,
+    serialWordSize: serial.wordSize,
+    serialBitOrder: serial.bitOrder,
+    serialInvertData: serial.invertData,
+    serialParity: serial.parity,
+    serialStartBit: serial.startBit,
+    serialPreIdleBits: serial.preIdleBits,
+    serialPostIdleBits: serial.postIdleBits,
+    serialStopBits: serial.stopBits,
+    serialPayload: serial.payload,
+    serialBinaryPattern: serial.binaryPattern,
+    serial_debug: DEFAULT_VALUES.serial_debug,
+    editor_tool: toolNames[state.tool] || DEFAULT_VALUES.editor_tool,
+    editorColor: DEFAULT_VALUES.editorColor,
+    waveformColor: DEFAULT_VALUES.waveformColor,
+    waveformVerticalDivisions:
+      typeof scopeState !== 'undefined'
+        ? scopeState.verticalDivisions
+        : DEFAULT_VALUES.waveformVerticalDivisions,
+  });
+}
 function displayAmplitude(volts) {
   return Number((volts / amplitudeUnitScale).toPrecision(10));
 }
@@ -109,6 +158,7 @@ function commitTimingInput(kind) {
     renderTiming();
     pushHistory();
     draw();
+    persistCurrentSettings();
   } else {
     const samples = Math.max(2, Math.round(value));
     if (samples === state.samples) {
@@ -169,6 +219,7 @@ $('oneCycleBtn').onclick = () => {
   renderTiming();
   generate();
   refreshScopeTime();
+  persistCurrentSettings();
 };
 function propertiesDiffer() {
   const values = [
@@ -228,6 +279,7 @@ function applyProperties() {
     draw();
     if (!$('samplesView').classList.contains('hidden')) renderSamples();
   }
+  persistCurrentSettings();
 }
 $('dutyInput').oninput = () => {
   if ($('dutyInput').disabled) return;
@@ -322,17 +374,10 @@ function setPropertyInputDefault(input) {
   applyProperties();
 }
 $('defaultAllBtn').onclick = () => {
-  $('highInput').value = displayVoltage('highInput', DEFAULT_VALUES.highLevelV);
-  $('lowInput').value = displayVoltage('lowInput', DEFAULT_VALUES.lowLevelV);
-  $('offsetInput').value = displayVoltage('offsetInput', DEFAULT_VALUES.offsetV);
-  $('amplitudeInput').value = displayAmplitude(DEFAULT_VALUES.amplitudeVpp);
-  $('cyclesInput').value = DEFAULT_VALUES.nCycles;
-  $('frequencyInput').value = displayFrequency(DEFAULT_VALUES.frequencyHz);
-  $('periodInput').value = displayPeriod(DEFAULT_VALUES.frequencyHz);
-  $('phaseInput').value = DEFAULT_VALUES.phaseDegrees;
-  $('dutyInput').value = DEFAULT_VALUES.dutyCyclePercent;
-  $('dutyValue').textContent = DEFAULT_VALUES.dutyCyclePercent + '%';
-  applyProperties();
+  if (!window.confirm('Reset all settings to defaults? This will replace your saved settings.'))
+    return;
+  resetStoredSettings();
+  window.location.reload();
 };
 let contextPropertyInput = null;
 document.querySelectorAll('.inspector input').forEach((input) =>
@@ -380,6 +425,7 @@ function selectAmplitudeUnit(scale, label) {
   $('amplitudeUnitBtn').textContent = label;
   $('amplitudeInput').dispatchEvent(new Event('input', { bubbles: true }));
   applyProperties();
+  persistCurrentSettings();
   closeAmplitudeUnitMenu();
 }
 $('amplitudeUnitMenu')
@@ -432,6 +478,7 @@ function selectVoltageUnit(inputId, scale, label) {
   document.querySelector(`.voltage-unit-button[data-input="${inputId}"]`).textContent = label;
   $(inputId).dispatchEvent(new Event('input', { bubbles: true }));
   applyProperties();
+  persistCurrentSettings();
   closeVoltageUnitMenu();
 }
 $('voltageUnitMenu')
@@ -523,6 +570,7 @@ function selectTimingUnit(kind, scale, label) {
   }
 
   applyProperties();
+  persistCurrentSettings();
   closeTimingUnitMenus();
 }
 for (const kind of ['frequency', 'period']) {

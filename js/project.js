@@ -126,13 +126,16 @@ $('cancelNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
 };
 const exportButton = document.createElement('button');
+$('newBtn').textContent = 'New Project';
+$('openBtn').textContent = 'Open JSON Waveform';
+$('saveBtn').textContent = 'Save JSON Waveform';
 exportButton.id = 'exportBtn';
 exportButton.className = 'ghost';
 exportButton.type = 'button';
 exportButton.setAttribute('aria-haspopup', 'menu');
 exportButton.setAttribute('aria-expanded', 'false');
 exportButton.title = 'CSV';
-exportButton.textContent = 'Export';
+exportButton.textContent = 'Export Waveform';
 $('saveBtn').after(exportButton);
 $('saveBtn').title = 'JSON';
 $('openBtn').title = 'JSON';
