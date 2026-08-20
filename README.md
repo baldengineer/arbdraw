@@ -12,6 +12,12 @@ Access the GitHub-hosted version at [baldengineer.github.io/arbdraw](https://bal
 
 No build step or third-party dependencies are required.
 
+## Python instrument bridge
+
+The **Instruments** button connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
+
+Start the bridge and a local copy of ArbDraw with `python -m python_bridge --serve-app .`. PyVISA is only required for VISA operations. See [python_bridge/README.md](python_bridge/README.md) for setup, API endpoints, and the adapter hook for existing waveform utilities.
+
 
 ## Features
 
