@@ -7,4 +7,5 @@ new ResizeObserver(() => {
 }).observe(scopeCanvas);
 
 renderDocument();
+if (state.type === 'serial') ensureSerialPeriodCoversPayload();
 generate();
