@@ -6,19 +6,21 @@
   <h2>Create a waveform</h2>
   <ol>
     <li>Choose a waveshape from the Waveshape selector.</li>
-    <li>Set the high and low voltage levels, frequency, phase, duty cycle, and sample settings in the Properties panel.</li>
+    <li>Note: The amplitude settings set the visual scale. The values are saved in the JSON file. However, the exported waveform does not contain absolute voltage points.</li>
     <li>Use the Editor view to inspect or edit the waveform.</li>
     <li>Use the Waveform view to inspect the generated signal with oscilloscope-style controls.</li>
   </ol>
-  <h2>Use serial data</h2>
+  <h2>Create serial data</h2>
   <ol>
     <li>Select Serial as the waveshape.</li>
     <li>Choose the protocol and configure baud rate, word size, bit order, parity, and idle bits.</li>
     <li>Enter a text or hexadecimal payload.</li>
-    <li>ArbDraw recalculates the waveform timing from the serial sequence.</li>
+    <li>ArbDraw recalculates the waveform timing from the serial sequence and baud.</li>
   </ol>
   <h2>Save and export</h2>
   <p>Use <strong>File → Save JSON Waveform</strong> to save an editable project file. Use <strong>File → Export Waveform</strong> to export CSV data, with or without metadata headers.</p>
+  <h2>Arb/AFG Setup Notes</h2>
+  <p>The CSV file does not contain voltage and frequency information. However, if you want the frequency of the arb's waveform to match the viewer's, the arb's period needs to be the same as ArbDraw's. (todo: I really need to explain this better.)
   <h2>Reset settings</h2>
   <p>The Default button in the Properties panel restores the application settings defined in <code>js/defaults.js</code>. The action asks for confirmation before clearing saved browser settings.</p>
 </article>
