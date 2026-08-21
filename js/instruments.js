@@ -7,8 +7,11 @@
   const bridgeDialog = $('bridgeDialog');
   const bridgeUrlInput = $('bridgeUrlInput');
   const resourceInput = $('visaResourceInput');
-  const resourceOptions = $('visaResourceOptions');
   const clearResourceButton = $('clearVisaResourceBtn');
+  const dropdownButton = $('visaResourceDropdownBtn');
+  const resourceMenu = $('visaResourceMenu');
+  const resourceFilter = $('visaResourceFilter');
+  const resourceList = $('visaResourceList');
   const connectButton = $('bridgeConnectBtn');
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
@@ -17,6 +20,7 @@
   const resultElement = $('bridgeResult');
   let bridgeClient = null;
   let busy = false;
+  let resources = [];
 
   try {
     bridgeUrlInput.value = localStorage.getItem(BRIDGE_URL_STORAGE_KEY) || defaultBridgeUrl;
@@ -36,6 +40,33 @@
   function setResult(message = '', isError = false) {
     resultElement.textContent = message;
     resultElement.classList.toggle('error', isError);
+  }
+
+  function closeResourceMenu() {
+    resourceMenu.classList.remove('open');
+    dropdownButton.setAttribute('aria-expanded', 'false');
+  }
+
+  function renderResourceList() {
+    const filter = resourceFilter.value.trim().toLowerCase();
+    const visibleResources = resources.filter((resource) => resource.toLowerCase().includes(filter));
+    resourceList.replaceChildren();
+    if (!visibleResources.length) {
+      const empty = document.createElement('div');
+      empty.className = 'bridge-resource-empty';
+      empty.textContent = resources.length ? 'No matching resources' : 'No VISA resources found';
+      resourceList.append(empty);
+      return;
+    }
+    visibleResources.forEach((resource) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'bridge-resource-option';
+      option.role = 'option';
+      option.dataset.resource = resource;
+      option.textContent = resource;
+      resourceList.append(option);
+    });
   }
 
   function updateActions() {
@@ -63,15 +94,15 @@
   async function loadResources({ preserveSelection = true } = {}) {
     const previous = preserveSelection ? selectedResource() : '';
     setResult('Scanning VISA resources…');
-    const resources = await bridgeClient.listResources();
-    resourceOptions.replaceChildren();
+    resources = await bridgeClient.listResources();
     if (!resources.length) {
       resourceInput.value = '';
+      renderResourceList();
       setResult('The bridge is online, but VISA reported no resources.');
       return;
     }
-    resources.forEach((resource) => resourceOptions.append(new Option(resource, resource)));
     resourceInput.value = resources.includes(previous) ? previous : resources[0];
+    renderResourceList();
     setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`);
   }
 
@@ -121,6 +152,31 @@
     resourceInput.focus();
     setResult('');
     updateActions();
+  });
+
+  dropdownButton.addEventListener('click', () => {
+    const isOpen = resourceMenu.classList.toggle('open');
+    dropdownButton.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen) {
+      resourceFilter.value = '';
+      renderResourceList();
+      resourceFilter.focus();
+    }
+  });
+  resourceFilter.addEventListener('input', renderResourceList);
+  resourceList.addEventListener('click', (event) => {
+    const option = event.target.closest('.bridge-resource-option');
+    if (!option) return;
+    resourceInput.value = option.dataset.resource;
+    closeResourceMenu();
+    setResult('');
+    updateActions();
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!event.target.closest?.('.bridge-resource-control')) closeResourceMenu();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeResourceMenu();
   });
 
   identifyButton.addEventListener('click', () =>
