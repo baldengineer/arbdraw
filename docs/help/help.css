@@ -54,6 +54,45 @@ code {
   font: 0.92em ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+pre {
+  max-width: 100%;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  color: #314454;
+  background: #f4f6f8;
+  border: 1px solid #dbe1e6;
+  border-radius: 6px;
+  font: 0.88em/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+pre code {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+}
+
+table {
+  width: 100%;
+  margin: 0 0 16px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+th,
+td {
+  padding: 7px 8px;
+  border: 1px solid #dbe1e6;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #f4f6f8;
+  font-weight: 700;
+}
+
 strong:first-child {
   display: block;
   margin-bottom: 18px;

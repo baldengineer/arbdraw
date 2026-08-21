@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="help.css">
+<article>
+  <h1>ArbDraw JSON format</h1>
+  <p>ArbDraw project files are UTF-8 JSON documents, normally saved with the <code>.arbdraw.json</code> extension. They describe one waveform, its instrument metadata, and its ordered voltage samples.</p>
+
+  <h2>File identity</h2>
+  <p>A compatible file must contain these values:</p>
+  <pre><code>{
+  "schema": "arbdraw.waveform",
+  "version": 1
+}</code></pre>
+  <p>The top-level <code>name</code> is optional. Unknown top-level fields are ignored.</p>
+
+  <h2>Basic structure</h2>
+  <pre><code>{
+  "schema": "arbdraw.waveform",
+  "version": 1,
+  "name": "One Cycle Example",
+  "waveform": {
+    "type": "sine",
+    "highVoltage": 1,
+    "lowVoltage": -1,
+    "sampleRateMSa": 0.001,
+    "frequencyHz": 125,
+    "cycles": 1,
+    "phaseDegrees": 0,
+    "dutyCyclePercent": 50,
+    "sampleCount": 8,
+    "values": [0, 0.7818314825, 0.9749279122, 0.4338837391,
+      -0.4338837391, -0.9749279122, -0.7818314825, 0]
+  }
+}</code></pre>
+
+  <h2>Waveform fields</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>type</code></td><td>—</td><td><code>custom</code>, <code>sine</code>, <code>square</code>, <code>triangle</code>, <code>ramp</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, or <code>serial</code>.</td></tr>
+      <tr><td><code>highVoltage</code>, <code>lowVoltage</code></td><td>V</td><td>Nominal waveform levels.</td></tr>
+      <tr><td><code>sampleRateMSa</code></td><td>MSa/s</td><td>Samples per second in millions. <code>1</code> means 1,000,000 samples/second.</td></tr>
+      <tr><td><code>frequencyHz</code></td><td>Hz</td><td>Nominal waveform frequency metadata.</td></tr>
+      <tr><td><code>cycles</code></td><td>cycles</td><td>Number of waveform cycles represented by the samples.</td></tr>
+      <tr><td><code>phaseDegrees</code></td><td>degrees</td><td>Nominal phase offset.</td></tr>
+      <tr><td><code>dutyCyclePercent</code></td><td>%</td><td>High-state percentage for square and pulse waveforms.</td></tr>
+      <tr><td><code>sampleCount</code></td><td>samples</td><td>Must match the length of <code>values</code>; minimum is 2.</td></tr>
+      <tr><td><code>values</code></td><td>V</td><td>Ordered voltage samples. Every entry must be a finite JSON number.</td></tr>
+    </tbody>
+  </table>
+  <p>UI prefixes such as mV, kHz, and µs are display choices. Project JSON always uses the canonical units above.</p>
+
+  <h2>Authoritative and derived values</h2>
+  <p>The sample data and timing metadata are authoritative: <code>sampleCount</code>, <code>sampleRateMSa</code>, <code>frequencyHz</code>, <code>cycles</code>, and <code>values</code>. ArbDraw recalculates <code>durationMs</code> when importing:</p>
+  <pre><code>durationMs = sampleCount / (sampleRateMSa × 1000)</code></pre>
+  <p>Frequency is metadata for the displayed waveform timing; it does not change the values stored in the sample array.</p>
+
+  <h2>Serial waveforms</h2>
+  <p>When <code>type</code> is <code>serial</code>, the optional <code>serial</code> object stores protocol and framing settings:</p>
+  <pre><code>"serial": {
+  "protocol": "UART",
+  "baud": 57600,
+  "wordSize": 8,
+  "bitOrder": "LSB",
+  "invertData": false,
+  "parity": "none",
+  "startBit": true,
+  "preIdleBits": 1,
+  "postIdleBits": 10,
+  "stopBits": 1,
+  "payload": "Hello World",
+  "binaryPattern": ""
+}</code></pre>
+  <p><code>binaryPattern</code>, when nonempty, overrides the generated serial bit sequence. Serial settings remain in the document even when another waveform type is selected so they can be restored later.</p>
+
+  <h2>Import validation</h2>
+  <ul>
+    <li><code>schema</code>, <code>version</code>, and <code>waveform</code> must be valid.</li>
+    <li>Numeric metadata may be supplied as numbers or numeric strings and is normalized on import.</li>
+    <li><code>sampleCount</code> and <code>cycles</code> are rounded and clamped to valid minimums.</li>
+    <li><code>values</code> must contain exactly <code>sampleCount</code> finite numbers.</li>
+    <li>If sample validation fails, ArbDraw discards the values and regenerates samples from metadata.</li>
+    <li>Unknown fields are ignored.</li>
+  </ul>
+  <p>JSON cannot represent <code>NaN</code> or infinity. Do not write those values into <code>values</code>.</p>
+
+  <h2>Writing compatible files</h2>
+  <ol>
+    <li>Use UTF-8 JSON with <code>schema</code> set to <code>arbdraw.waveform</code> and <code>version</code> set to <code>1</code>.</li>
+    <li>Use volts, hertz, degrees, milliseconds, and MSa/s in metadata.</li>
+    <li>Set <code>sampleCount</code> to the exact number of entries in <code>values</code>.</li>
+    <li>Preserve fields you do not modify when reading and writing a project.</li>
+  </ol>
+</article>

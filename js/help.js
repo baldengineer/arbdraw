@@ -4,6 +4,7 @@
 const helpItems = [
   { title: 'About', source: 'docs/help/about.html' },
   { title: 'How to use', source: 'docs/help/how-to-use.html' },
+  { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
 ];
 
