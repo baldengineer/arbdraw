@@ -35,6 +35,21 @@ test('sends IDN through the dedicated endpoint', async () => {
   });
 });
 
+test('wraps IPv4 addresses as TCPIP VISA resources', async () => {
+  assert.equal(
+    ArbDrawBridge.normalizeVisaResource('192.168.1.50'),
+    'TCPIP0::192.168.1.50::INSTR',
+  );
+  assert.equal(
+    ArbDrawBridge.normalizeVisaResource('USB0::INSTR'),
+    'USB0::INSTR',
+  );
+  assert.equal(
+    ArbDrawBridge.normalizeVisaResource('999.1.1.1'),
+    '999.1.1.1',
+  );
+});
+
 test('surfaces bridge error messages', async () => {
   const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
     fetchImpl: async () =>

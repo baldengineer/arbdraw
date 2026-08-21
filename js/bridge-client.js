@@ -2,6 +2,15 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // REST client for the local ArbDraw Python bridge.
 (function initializeBridgeClient(globalScope) {
+  function normalizeVisaResource(resource) {
+    const value = String(resource || '').trim();
+    const octets = value.split('.');
+    const isIpv4 = octets.length === 4 && octets.every((octet) =>
+      /^\d{1,3}$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255,
+    );
+    return isIpv4 ? `TCPIP0::${value}::INSTR` : value;
+  }
+
   class BridgeRequestError extends Error {
     constructor(message, { status = 0, code = 'bridge_request_failed', cause } = {}) {
       super(message, { cause });
@@ -102,7 +111,7 @@
     identify(resource, { timeoutMs = 5000 } = {}) {
       return this.request('/api/v1/visa/idn', {
         method: 'POST',
-        body: { resource, timeout_ms: timeoutMs },
+        body: { resource: normalizeVisaResource(resource), timeout_ms: timeoutMs },
         timeoutMs: timeoutMs + 1000,
       });
     }
@@ -110,7 +119,7 @@
     query(resource, command, { timeoutMs = 5000 } = {}) {
       return this.request('/api/v1/visa/query', {
         method: 'POST',
-        body: { resource, command, timeout_ms: timeoutMs },
+        body: { resource: normalizeVisaResource(resource), command, timeout_ms: timeoutMs },
         timeoutMs: timeoutMs + 1000,
       });
     }
@@ -118,11 +127,11 @@
     sendWaveform(resource, waveformDocument, { options = {}, timeoutMs = 60000 } = {}) {
       return this.request('/api/v1/waveforms/send', {
         method: 'POST',
-        body: { resource, waveform: waveformDocument, options },
+        body: { resource: normalizeVisaResource(resource), waveform: waveformDocument, options },
         timeoutMs,
       });
     }
   }
 
-  globalScope.ArbDrawBridge = Object.freeze({ BridgeClient, BridgeRequestError });
+  globalScope.ArbDrawBridge = Object.freeze({ BridgeClient, BridgeRequestError, normalizeVisaResource });
 })(globalThis);

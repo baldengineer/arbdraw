@@ -84,6 +84,11 @@ class PyVisaBackend:
             try:
                 with self._manager().open_resource(resource) as instrument:
                     instrument.timeout = timeout_ms
+                    # SCPI instruments commonly require LF to terminate a
+                    # command and use LF to terminate the response. Do this
+                    # explicitly instead of relying on backend defaults.
+                    instrument.write_termination = "\n"
+                    instrument.read_termination = "\n"
                     return str(instrument.query(command)).strip()
             except BridgeError:
                 raise

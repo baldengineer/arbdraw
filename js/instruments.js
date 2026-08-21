@@ -6,7 +6,9 @@
   const defaultBridgeUrl = globalThis.ARBDRAW_DEFAULTS?.bridgeUrl || 'http://127.0.0.1:8876';
   const bridgeDialog = $('bridgeDialog');
   const bridgeUrlInput = $('bridgeUrlInput');
-  const resourceSelect = $('visaResourceSelect');
+  const resourceInput = $('visaResourceInput');
+  const resourceOptions = $('visaResourceOptions');
+  const clearResourceButton = $('clearVisaResourceBtn');
   const connectButton = $('bridgeConnectBtn');
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
@@ -23,7 +25,7 @@
   }
 
   function selectedResource() {
-    return resourceSelect.value;
+    return ArbDrawBridge.normalizeVisaResource(resourceInput.value);
   }
 
   function setStatus(kind, message) {
@@ -62,14 +64,14 @@
     const previous = preserveSelection ? selectedResource() : '';
     setResult('Scanning VISA resources…');
     const resources = await bridgeClient.listResources();
-    resourceSelect.replaceChildren();
+    resourceOptions.replaceChildren();
     if (!resources.length) {
-      resourceSelect.add(new Option('No VISA resources found', ''));
+      resourceInput.value = '';
       setResult('The bridge is online, but VISA reported no resources.');
       return;
     }
-    resources.forEach((resource) => resourceSelect.add(new Option(resource, resource)));
-    if (resources.includes(previous)) resourceSelect.value = previous;
+    resources.forEach((resource) => resourceOptions.append(new Option(resource, resource)));
+    resourceInput.value = resources.includes(previous) ? previous : resources[0];
     setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`);
   }
 
@@ -109,7 +111,14 @@
 
   connectButton.addEventListener('click', () => runBridgeAction(connect));
   refreshButton.addEventListener('click', () => runBridgeAction(loadResources));
-  resourceSelect.addEventListener('change', () => {
+  resourceInput.addEventListener('input', () => {
+    setResult('');
+    updateActions();
+  });
+
+  clearResourceButton.addEventListener('click', () => {
+    resourceInput.value = '';
+    resourceInput.focus();
     setResult('');
     updateActions();
   });

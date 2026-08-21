@@ -176,7 +176,8 @@
       </div>
       <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
       <div class="bridge-resource-heading"><label for="visaResourceSelect">VISA resource</label><button id="refreshResourcesBtn" type="button" class="ghost">Refresh</button></div>
-      <select id="visaResourceSelect" class="bridge-resource-select" aria-label="VISA resource"><option value="">Connect to list VISA resources</option></select>
+      <div class="bridge-resource-control"><input id="visaResourceInput" class="bridge-resource-select" list="visaResourceOptions" aria-label="VISA resource" placeholder="Paste a VISA resource or enter an IP address" spellcheck="false" autocomplete="off"><button id="clearVisaResourceBtn" class="bridge-resource-clear" type="button" aria-label="Clear VISA resource" title="Clear VISA resource">×</button></div>
+      <datalist id="visaResourceOptions"></datalist>
       <div class="bridge-actions">
         <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
         <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
