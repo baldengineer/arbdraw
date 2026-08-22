@@ -174,7 +174,7 @@
   }
 
   async function checkBridgeHealth() {
-    if (!bridgeClient || busy || keepAlivePending) return;
+    if (!bridgeDialog.open || !bridgeClient || busy || keepAlivePending) return;
     const client = bridgeClient;
     keepAlivePending = true;
     try {
