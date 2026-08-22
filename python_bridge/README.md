@@ -93,6 +93,8 @@ These tests validate document parsing, encoding, options, packaged defaults, and
 
 The bridge discovers installed adapters registered in the `arbdraw.instrument_adapters` entry-point group. Open **File → Instruments** in ArbDraw to see the available waveform backends and select one before sending. The generic bridge remains usable for health checks, VISA discovery, identity queries, and SCPI queries when no adapter is installed.
 
+The bridge is safe for multiple ArbDraw browser clients. Instrument-facing operations are serialized inside the bridge, including VISA discovery, queries, and adapter waveform transfers. This prevents concurrent clients or adapters from using the VISA stack at the same time. Non-instrument HTTP requests remain independently serviceable.
+
 The legacy `--waveform-handler module:function` option remains available as a temporary compatibility override, but normal users should select the backend in the GUI.
 
 ### Update an editable adapter

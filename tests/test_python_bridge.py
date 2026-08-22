@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError
@@ -98,6 +99,44 @@ class PythonBridgeTests(unittest.TestCase):
         status, _, body = self.request("/api/v1/visa/idn", {})
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "invalid_request")
+
+    def test_instrument_operations_are_serialized_across_clients(self):
+        active = 0
+        maximum_active = 0
+        state_lock = threading.Lock()
+
+        def handler(request):
+            nonlocal active, maximum_active
+            with state_lock:
+                active += 1
+                maximum_active = max(maximum_active, active)
+            time.sleep(0.05)
+            with state_lock:
+                active -= 1
+            return {"status": "sent"}
+
+        service = BridgeService(FakeVisa(), adapters={"test": handler})
+        payload = {
+            "resource": "USB0::INSTR",
+            "adapter": "test",
+            "waveform": {"schema": "arbdraw.waveform", "version": 1},
+        }
+        errors = []
+
+        def send():
+            try:
+                self.assertEqual(service.dispatch("POST", "/api/v1/waveforms/send", payload)[0], 200)
+            except Exception as error:  # pragma: no cover - only reports thread failures
+                errors.append(error)
+
+        first = threading.Thread(target=send)
+        second = threading.Thread(target=send)
+        first.start()
+        second.start()
+        first.join()
+        second.join()
+        self.assertFalse(errors)
+        self.assertEqual(maximum_active, 1)
 
 
 if __name__ == "__main__":

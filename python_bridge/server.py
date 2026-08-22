@@ -112,6 +112,10 @@ class BridgeService:
         adapters: dict[str, WaveformHandler] | None = None,
     ):
         self.visa = visa_backend or PyVisaBackend()
+        # PyVISA resources and vendor adapters may use different ResourceManager
+        # instances. Serialize all instrument-facing work at the bridge boundary
+        # so multiple browser clients cannot operate the same VISA stack at once.
+        self._visa_operation_lock = threading.RLock()
         self.waveform_handler = waveform_handler
         self.adapters = dict(adapters or {})
         if waveform_handler is not None and "default" not in self.adapters:
@@ -133,25 +137,28 @@ class BridgeService:
         if method == "GET" and path == "/api/v1/adapters":
             return HTTPStatus.OK, {"adapters": [{"id": key, "name": key} for key in self.adapters]}
         if method == "GET" and path == "/api/v1/visa/resources":
-            return HTTPStatus.OK, {"resources": self.visa.list_resources()}
+            with self._visa_operation_lock:
+                return HTTPStatus.OK, {"resources": self.visa.list_resources()}
         if method == "POST" and path == "/api/v1/visa/idn":
             request = self._object(payload)
             resource = self._text(request, "resource")
             timeout_ms = self._timeout(request)
-            return HTTPStatus.OK, {
-                "resource": resource,
-                "identity": self.visa.query(resource, "*IDN?", timeout_ms),
-            }
+            with self._visa_operation_lock:
+                return HTTPStatus.OK, {
+                    "resource": resource,
+                    "identity": self.visa.query(resource, "*IDN?", timeout_ms),
+                }
         if method == "POST" and path == "/api/v1/visa/query":
             request = self._object(payload)
             resource = self._text(request, "resource")
             command = self._text(request, "command")
             timeout_ms = self._timeout(request)
-            return HTTPStatus.OK, {
-                "resource": resource,
-                "command": command,
-                "response": self.visa.query(resource, command, timeout_ms),
-            }
+            with self._visa_operation_lock:
+                return HTTPStatus.OK, {
+                    "resource": resource,
+                    "command": command,
+                    "response": self.visa.query(resource, command, timeout_ms),
+                }
         if method == "POST" and path == "/api/v1/waveforms/send":
             request = self._object(payload)
             self._text(request, "resource")
@@ -172,7 +179,8 @@ class BridgeService:
                     "adapter_not_found" if self.adapters else "waveform_handler_unconfigured",
                     f"Unknown waveform adapter: {adapter_id}." if self.adapters else "No waveform adapter is installed in the Python bridge.",
                 )
-            result = handler(request)
+            with self._visa_operation_lock:
+                result = handler(request)
             return HTTPStatus.OK, result or {"status": "sent", "message": "Waveform sent."}
         raise BridgeError(HTTPStatus.NOT_FOUND, "route_not_found", "REST endpoint not found.")
 
