@@ -64,6 +64,13 @@ test('surfaces bridge error messages', async () => {
   );
 });
 
+test('lists installed adapters', async () => {
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
+    fetchImpl: async () => response({ adapters: [{ id: 'owon-xdg3000', name: 'OWON XDG3000' }] }),
+  });
+  assert.deepEqual(await client.listAdapters(), [{ id: 'owon-xdg3000', name: 'OWON XDG3000' }]);
+});
+
 test('sends adapter channel and output options with a waveform', async () => {
   let request;
   const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
@@ -77,7 +84,9 @@ test('sends adapter channel and output options with a waveform', async () => {
     { schema: 'arbdraw.waveform', version: 1 },
     { options: { channel: 2, enable_output: true } },
   );
-  assert.deepEqual(JSON.parse(request.options.body).options, {
+  const body = JSON.parse(request.options.body);
+  assert.equal(body.adapter, 'default');
+  assert.deepEqual(body.options, {
     channel: 2,
     enable_output: true,
   });

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import importlib.util
+import importlib.metadata
 import json
 import threading
 from http import HTTPStatus
@@ -108,9 +109,13 @@ class BridgeService:
         self,
         visa_backend: VisaBackend | None = None,
         waveform_handler: WaveformHandler | None = None,
+        adapters: dict[str, WaveformHandler] | None = None,
     ):
         self.visa = visa_backend or PyVisaBackend()
         self.waveform_handler = waveform_handler
+        self.adapters = dict(adapters or {})
+        if waveform_handler is not None and "default" not in self.adapters:
+            self.adapters["default"] = waveform_handler
 
     def dispatch(
         self, method: str, path: str, payload: dict[str, Any] | None
@@ -121,9 +126,12 @@ class BridgeService:
                 "api_version": API_VERSION,
                 "capabilities": {
                     "visa": importlib.util.find_spec("pyvisa") is not None,
-                    "waveform_send": self.waveform_handler is not None,
+                    "waveform_send": bool(self.adapters),
+                    "adapters": bool(self.adapters),
                 },
             }
+        if method == "GET" and path == "/api/v1/adapters":
+            return HTTPStatus.OK, {"adapters": [{"id": key, "name": key} for key in self.adapters]}
         if method == "GET" and path == "/api/v1/visa/resources":
             return HTTPStatus.OK, {"resources": self.visa.list_resources()}
         if method == "POST" and path == "/api/v1/visa/idn":
@@ -154,13 +162,17 @@ class BridgeService:
                     "invalid_waveform",
                     "waveform must be an ArbDraw waveform document.",
                 )
-            if self.waveform_handler is None:
+            adapter_id = request.get("adapter", "default")
+            if not isinstance(adapter_id, str) or not adapter_id.strip():
+                raise BridgeError(HTTPStatus.BAD_REQUEST, "invalid_adapter", "adapter must be a non-empty string.")
+            handler = self.adapters.get(adapter_id)
+            if handler is None:
                 raise BridgeError(
-                    HTTPStatus.NOT_IMPLEMENTED,
-                    "waveform_handler_unconfigured",
-                    "No waveform handler is configured in the Python bridge.",
+                    HTTPStatus.BAD_REQUEST if self.adapters else HTTPStatus.NOT_IMPLEMENTED,
+                    "adapter_not_found" if self.adapters else "waveform_handler_unconfigured",
+                    f"Unknown waveform adapter: {adapter_id}." if self.adapters else "No waveform adapter is installed in the Python bridge.",
                 )
-            result = self.waveform_handler(request)
+            result = handler(request)
             return HTTPStatus.OK, result or {"status": "sent", "message": "Waveform sent."}
         raise BridgeError(HTTPStatus.NOT_FOUND, "route_not_found", "REST endpoint not found.")
 
@@ -298,6 +310,17 @@ def load_waveform_handler(specification: str | None) -> WaveformHandler | None:
     return handler
 
 
+def discover_adapters() -> dict[str, WaveformHandler]:
+    """Load installed adapters registered under the ArbDraw entry-point group."""
+    adapters: dict[str, WaveformHandler] = {}
+    for entry_point in importlib.metadata.entry_points(group="arbdraw.instrument_adapters"):
+        handler = entry_point.load()
+        if not callable(handler):
+            raise TypeError(f"Adapter {entry_point.name} is not callable.")
+        adapters[entry_point.name] = handler
+    return adapters
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local ArbDraw Python bridge.")
     parser.add_argument("--host", default="127.0.0.1")
@@ -321,9 +344,13 @@ def main() -> None:
         help="Additional browser origin allowed to call the bridge (repeatable).",
     )
     arguments = parser.parse_args()
+    adapters = discover_adapters()
+    configured_handler = load_waveform_handler(arguments.waveform_handler)
+    if configured_handler is not None:
+        adapters["default"] = configured_handler
     service = BridgeService(
         visa_backend=PyVisaBackend(arguments.visa_library),
-        waveform_handler=load_waveform_handler(arguments.waveform_handler),
+        adapters=adapters,
     )
     allowed_origins = ("https://baldengineer.github.io", *arguments.allow_origin)
     server = create_server(

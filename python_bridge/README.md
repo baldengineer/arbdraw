@@ -84,17 +84,16 @@ Run the OWON hardware-free tests from the ArbDraw root:
 
 These tests validate document parsing, encoding, options, packaged defaults, and imports. They do not intentionally upload a waveform. Follow an adapter's own documentation for any separately authorized hardware tests.
 
-### Start the bridge with an adapter
-
-Supply the installed adapter's `module:function` entry point when starting the bridge:
+### Start the bridge
 
 ```powershell
 .\.venv\Scripts\python.exe -m python_bridge --serve-app . `
-    --port 8876 `
-    --waveform-handler arbdraw_bridge_adapter:send_waveform
+    --port 8876
 ```
 
-Without `--waveform-handler`, the generic bridge still supports health checks, VISA discovery, identity queries, and SCPI queries. Waveform sending returns HTTP 501 until an adapter is configured.
+The bridge discovers installed adapters registered in the `arbdraw.instrument_adapters` entry-point group. Open **File → Instruments** in ArbDraw to see the available waveform backends and select one before sending. The generic bridge remains usable for health checks, VISA discovery, identity queries, and SCPI queries when no adapter is installed.
+
+The legacy `--waveform-handler module:function` option remains available as a temporary compatibility override, but normal users should select the backend in the GUI.
 
 ### Update an editable adapter
 

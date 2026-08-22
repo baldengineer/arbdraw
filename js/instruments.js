@@ -13,6 +13,7 @@
   const resourceMenu = $('visaResourceMenu');
   const resourceFilter = $('visaResourceFilter');
   const resourceList = $('visaResourceList');
+  const adapterSelect = $('instrumentAdapter');
   const connectButton = $('bridgeConnectBtn');
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
@@ -130,6 +131,18 @@
     setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`, false, true);
   }
 
+  async function loadAdapters() {
+    const adapters = await bridgeClient.listAdapters();
+    adapterSelect.replaceChildren();
+    if (!adapters.length) {
+      adapterSelect.add(new Option('No adapter installed', ''));
+      adapterSelect.disabled = true;
+      return;
+    }
+    adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
+    adapterSelect.disabled = false;
+  }
+
   async function connect() {
     let candidate;
     try {
@@ -156,6 +169,7 @@
       // The connection still works if browser storage is unavailable.
     }
     markBridgeOnline(health);
+    await loadAdapters();
     await loadResources({ preserveSelection: false });
   }
 
@@ -234,6 +248,7 @@
         resource,
         JSON.parse(JSON.stringify(projectDocument)),
         {
+          adapter: adapterSelect.value || 'default',
           options: {
             channel: Number(channelSelect.value),
             enable_output: enableOutputCheckbox.checked,

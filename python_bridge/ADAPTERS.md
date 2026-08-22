@@ -6,13 +6,13 @@ An adapter translates ArbDraw's instrument-independent waveform document into th
 
 ## Current implementation and intended direction
 
-The bridge currently loads one adapter callable from the command line:
+The bridge discovers installed adapter callables through Python entry points:
 
 ```powershell
-python -m python_bridge --serve-app . --waveform-handler my_adapter:send_waveform
+python -m python_bridge --serve-app .
 ```
 
-ArbDraw sends the complete project document to `POST /api/v1/waveforms/send`. The bridge validates the top-level request and calls the configured function. This is the supported integration point today.
+ArbDraw lists adapters with `GET /api/v1/adapters`, and sends the selected adapter ID with the complete project document to `POST /api/v1/waveforms/send`. The bridge validates the top-level request and calls the selected function. This keeps backend selection in the GUI.
 
 The intended next step is a registry of instrument adapters selected from the resource and `*IDN?` response. Adapter code should therefore keep instrument matching, capabilities, transfer options, and waveform transmission separate, even when the first version exports only the current `send_waveform(request)` function. That structure will make the adapter straightforward to register later without changing its transfer implementation.
 

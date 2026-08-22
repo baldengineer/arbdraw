@@ -108,6 +108,14 @@
       return payload.resources;
     }
 
+    async listAdapters() {
+      const payload = await this.request('/api/v1/adapters');
+      if (!Array.isArray(payload?.adapters)) {
+        throw new BridgeRequestError('The bridge adapter response is malformed.', { code: 'invalid_bridge_response' });
+      }
+      return payload.adapters;
+    }
+
     identify(resource, { timeoutMs = 5000 } = {}) {
       return this.request('/api/v1/visa/idn', {
         method: 'POST',
@@ -124,10 +132,10 @@
       });
     }
 
-    sendWaveform(resource, waveformDocument, { options = {}, timeoutMs = 60000 } = {}) {
+    sendWaveform(resource, waveformDocument, { adapter = 'default', options = {}, timeoutMs = 60000 } = {}) {
       return this.request('/api/v1/waveforms/send', {
         method: 'POST',
-        body: { resource: normalizeVisaResource(resource), waveform: waveformDocument, options },
+        body: { resource: normalizeVisaResource(resource), waveform: waveformDocument, adapter, options },
         timeoutMs,
       });
     }
