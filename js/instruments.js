@@ -42,9 +42,11 @@
     statusElement.textContent = message;
   }
 
-  function setResult(message = '', isError = false) {
-    resultElement.textContent = message;
+  function setResult(message = '', isError = false, isSuccess = false) {
+    const prefix = isError ? '✖ ' : isSuccess ? '✔ ' : '';
+    resultElement.textContent = `${prefix}${message}`;
     resultElement.classList.toggle('error', isError);
+    resultElement.classList.toggle('success', isSuccess && !isError);
   }
 
   function markBridgeOnline(health) {
@@ -125,7 +127,7 @@
     }
     resourceInput.value = resources.includes(previous) ? previous : resources[0];
     renderResourceList();
-    setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`);
+    setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`, false, true);
   }
 
   async function connect() {
@@ -220,7 +222,7 @@
     runBridgeAction(async () => {
       setResult(`Querying ${selectedResource()}…`);
       const response = await bridgeClient.identify(selectedResource());
-      setResult(response.identity || response.response || 'The instrument returned an empty response.');
+      setResult(response.identity || response.response || 'The instrument returned an empty response.', false, true);
     }),
   );
 
@@ -239,7 +241,7 @@
         },
       );
       const message = response?.message || `Waveform sent to ${resource}.`;
-      setResult(message);
+      setResult(message, false, true);
       showToast(message);
     }),
   );
