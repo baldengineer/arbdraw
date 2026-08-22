@@ -63,3 +63,22 @@ test('surfaces bridge error messages', async () => {
     (error) => error.code === 'waveform_handler_unconfigured' && error.status === 501,
   );
 });
+
+test('sends adapter channel and output options with a waveform', async () => {
+  let request;
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return response({ status: 'sent' });
+    },
+  });
+  await client.sendWaveform(
+    'USB0::INSTR',
+    { schema: 'arbdraw.waveform', version: 1 },
+    { options: { channel: 2, enable_output: true } },
+  );
+  assert.deepEqual(JSON.parse(request.options.body).options, {
+    channel: 2,
+    enable_output: true,
+  });
+});

@@ -3,6 +3,7 @@
 // ArbDraw UI for the local Python instrument bridge.
 (function initializeInstrumentControls() {
   const BRIDGE_URL_STORAGE_KEY = 'arbdraw-bridge-url';
+  const BRIDGE_KEEP_ALIVE_MS = 10000;
   const defaultBridgeUrl = globalThis.ARBDRAW_DEFAULTS?.bridgeUrl || 'http://127.0.0.1:8876';
   const bridgeDialog = $('bridgeDialog');
   const bridgeUrlInput = $('bridgeUrlInput');
@@ -16,10 +17,14 @@
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
   const sendButton = $('sendWaveformBtn');
+  const channelSelect = $('instrumentChannel');
+  const enableOutputCheckbox = $('instrumentEnableOutput');
   const statusElement = $('bridgeStatus');
   const resultElement = $('bridgeResult');
   let bridgeClient = null;
+  let bridgeOnline = false;
   let busy = false;
+  let keepAlivePending = false;
   let resources = [];
 
   try {
@@ -40,6 +45,22 @@
   function setResult(message = '', isError = false) {
     resultElement.textContent = message;
     resultElement.classList.toggle('error', isError);
+  }
+
+  function markBridgeOnline(health) {
+    bridgeOnline = true;
+    setStatus('online', `Connected · API ${health?.api_version || 'v1'}`);
+    updateActions();
+  }
+
+  function markBridgeOffline() {
+    bridgeOnline = false;
+    setStatus('offline', 'Bridge offline');
+    updateActions();
+  }
+
+  function isConnectionError(error) {
+    return error?.code === 'bridge_unreachable' || error?.code === 'bridge_timeout';
   }
 
   function closeResourceMenu() {
@@ -72,9 +93,9 @@
   function updateActions() {
     const hasResource = Boolean(selectedResource());
     connectButton.disabled = busy;
-    refreshButton.disabled = busy || !bridgeClient;
-    identifyButton.disabled = busy || !bridgeClient || !hasResource;
-    sendButton.disabled = busy || !bridgeClient || !hasResource;
+    refreshButton.disabled = busy || !bridgeOnline;
+    identifyButton.disabled = busy || !bridgeOnline || !hasResource;
+    sendButton.disabled = busy || !bridgeOnline || !hasResource;
   }
 
   async function runBridgeAction(action) {
@@ -84,6 +105,7 @@
     try {
       await action();
     } catch (error) {
+      if (isConnectionError(error)) markBridgeOffline();
       setResult(error.message || 'The bridge request failed.', true);
     } finally {
       busy = false;
@@ -108,36 +130,51 @@
 
   async function connect() {
     let candidate;
-    bridgeClient = null;
     try {
       candidate = new ArbDrawBridge.BridgeClient(bridgeUrlInput.value);
     } catch (error) {
       setStatus('offline', 'Not connected');
       throw error;
     }
+    bridgeClient = candidate;
+    bridgeOnline = false;
     setStatus('connecting', 'Connecting…');
+    updateActions();
     let health;
     try {
       health = await candidate.health();
     } catch (error) {
-      setStatus('offline', 'Bridge offline');
+      markBridgeOffline();
       throw error;
     }
-    bridgeClient = candidate;
     bridgeUrlInput.value = candidate.baseUrl;
     try {
       localStorage.setItem(BRIDGE_URL_STORAGE_KEY, candidate.baseUrl);
     } catch {
       // The connection still works if browser storage is unavailable.
     }
-    setStatus('online', `Connected · API ${health.api_version || 'v1'}`);
+    markBridgeOnline(health);
     await loadResources({ preserveSelection: false });
+  }
+
+  async function checkBridgeHealth() {
+    if (!bridgeClient || busy || keepAlivePending) return;
+    const client = bridgeClient;
+    keepAlivePending = true;
+    try {
+      const health = await client.health();
+      if (client === bridgeClient) markBridgeOnline(health);
+    } catch {
+      if (client === bridgeClient) markBridgeOffline();
+    } finally {
+      keepAlivePending = false;
+    }
   }
 
   $('instrumentsBtn').addEventListener('click', () => {
     closeFileMenu();
     bridgeDialog.showModal();
-    if (!bridgeClient) runBridgeAction(connect);
+    if (!bridgeOnline) runBridgeAction(connect);
   });
 
   connectButton.addEventListener('click', () => runBridgeAction(connect));
@@ -194,6 +231,12 @@
       const response = await bridgeClient.sendWaveform(
         resource,
         JSON.parse(JSON.stringify(projectDocument)),
+        {
+          options: {
+            channel: Number(channelSelect.value),
+            enable_output: enableOutputCheckbox.checked,
+          },
+        },
       );
       const message = response?.message || `Waveform sent to ${resource}.`;
       setResult(message);
@@ -209,5 +252,6 @@
   });
 
   bridgeDialog.addEventListener('close', () => setResult(''));
+  setInterval(checkBridgeHealth, BRIDGE_KEEP_ALIVE_MS);
   updateActions();
 })();

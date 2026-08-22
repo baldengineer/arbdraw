@@ -177,6 +177,10 @@
       <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
       <div class="bridge-resource-heading"><label for="visaResourceSelect">VISA resource</label><button id="refreshResourcesBtn" type="button" class="ghost">Refresh</button></div>
       <div class="bridge-resource-control"><input id="visaResourceInput" class="bridge-resource-select" aria-label="VISA resource" placeholder="Paste a VISA resource or enter an IP address" spellcheck="false" autocomplete="off"><button id="clearVisaResourceBtn" class="bridge-resource-clear" type="button" aria-label="Clear VISA resource" title="Clear VISA resource">×</button><button id="visaResourceDropdownBtn" class="bridge-resource-dropdown-button" type="button" aria-label="Show VISA resources" aria-haspopup="listbox" aria-expanded="false">▾</button><div id="visaResourceMenu" class="bridge-resource-menu" role="listbox" aria-label="VISA resources"><input id="visaResourceFilter" class="bridge-resource-filter" type="search" placeholder="Filter devices…" aria-label="Filter VISA resources" autocomplete="off" spellcheck="false"><div class="menu-divider" role="separator"></div><div id="visaResourceList" class="bridge-resource-list"></div></div></div>
+      <div class="bridge-send-options">
+        <label for="instrumentChannel">Channel<select id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
+        <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
+      </div>
       <div class="bridge-actions">
         <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
         <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
