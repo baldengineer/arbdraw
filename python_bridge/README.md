@@ -17,7 +17,107 @@ If you use the pure-Python backend, install `pyvisa-py` too and start with `--vi
 
 Keep the default loopback host unless you deliberately want to expose instrument control to another machine. Browser access is limited to local/file origins and the ArbDraw GitHub Pages origin. Use repeatable `--allow-origin https://example.test` arguments for another trusted deployment.
 
-## Attach a waveform utility
+## Install and manage adapters
+
+See [ADAPTERS.md](ADAPTERS.md) for the complete adapter-authoring guide, including validation, safety, packaging, testing, registry direction, and an OWON XDG3000 / Multicomp MP750290 example.
+
+Adapters are optional Python packages. ArbDraw's HTML/JavaScript editor works without them, and installing an adapter affects only the local Python virtual environment used to run the bridge.
+
+### Keep local adapter source
+
+The repository ignores the root-level `local_adapters` directory so development clones do not become part of ArbDraw's Git history. For example, clone the OWON adapter from the ArbDraw repository root:
+
+```powershell
+git clone --branch arbdraw_integration `
+    https://github.com/baldengineer/owon-multicomp-awg-python-waveform-importer.git `
+    .\local_adapters\owon-multicomp-awg-python-waveform-importer
+```
+
+Each adapter remains its own Git repository. Pull, branch, and commit inside its directory rather than from the ArbDraw repository.
+
+### Install an adapter for development
+
+Install the adapter into ArbDraw's virtual environment in editable mode:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e `
+    .\local_adapters\owon-multicomp-awg-python-waveform-importer
+```
+
+Editable mode registers the source directory with the virtual environment instead of copying its Python files. Changes and pulls in the adapter repository are therefore used the next time the bridge starts. Reinstall after changing adapter packaging metadata or dependencies.
+
+This installation does not make the adapter a dependency of the web app or generic bridge. Another ArbDraw checkout or virtual environment will not have the adapter unless it is installed there too.
+
+### Verify an installation
+
+Ask `pip` which version and source location are installed:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip show `
+    owon-multicomp-awg-python-waveform-importer
+```
+
+Then verify the bridge entry point can be imported from the ArbDraw root:
+
+```powershell
+.\.venv\Scripts\python.exe -c `
+    "from arbdraw_bridge_adapter import send_waveform; print('OWON adapter available:', callable(send_waveform))"
+```
+
+This check imports the adapter but does not open a VISA resource or communicate with hardware.
+
+### Test an adapter
+
+Install the adapter's development dependencies when its documentation provides a `dev` extra:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e `
+    ".\local_adapters\owon-multicomp-awg-python-waveform-importer[dev]"
+```
+
+Run the OWON hardware-free tests from the ArbDraw root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q `
+    .\local_adapters\owon-multicomp-awg-python-waveform-importer\test_arbdraw_adapter.py
+```
+
+These tests validate document parsing, encoding, options, packaged defaults, and imports. They do not intentionally upload a waveform. Follow an adapter's own documentation for any separately authorized hardware tests.
+
+### Start the bridge with an adapter
+
+Supply the installed adapter's `module:function` entry point when starting the bridge:
+
+```powershell
+.\.venv\Scripts\python.exe -m python_bridge --serve-app . `
+    --port 8876 `
+    --waveform-handler arbdraw_bridge_adapter:send_waveform
+```
+
+Without `--waveform-handler`, the generic bridge still supports health checks, VISA discovery, identity queries, and SCPI queries. Waveform sending returns HTTP 501 until an adapter is configured.
+
+### Update an editable adapter
+
+Pull updates inside the adapter repository:
+
+```powershell
+git -C .\local_adapters\owon-multicomp-awg-python-waveform-importer pull --ff-only
+```
+
+Restart the bridge to load updated Python code. Run the editable install command again if `pyproject.toml` or dependencies changed.
+
+### Remove an adapter
+
+Uninstall the package from ArbDraw's virtual environment:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip uninstall `
+    owon-multicomp-awg-python-waveform-importer
+```
+
+Uninstalling removes the virtual environment's registration but does not delete the source clone under `local_adapters`. Delete or archive that separate clone only when it is no longer needed.
+
+### Adapter callable contract
 
 Pass an adapter callable using `module:function` syntax:
 
