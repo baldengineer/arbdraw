@@ -14,7 +14,7 @@
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button></div><button id="filtersBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">Filters <span aria-hidden="true">▾</span></button><div id="filtersMenu" class="context-menu file-menu filters-menu" role="menu" aria-label="Filters"><button id="enableFiltersBtn" role="menuitem" type="button">Enable All Filters</button><button id="disableFiltersBtn" role="menuitem" type="button">Disable All Filters</button><div class="menu-divider" role="separator"></div><div id="noiseFilterItem" class="filter-menu-item"><button id="noiseFilterBtn" role="menuitemcheckbox" aria-haspopup="menu" aria-checked="false" type="button">Add Noise…</button><div class="filter-submenu" role="menu" aria-label="Add Noise settings"><div class="filter-value"><span>Current</span><strong id="noiseFilterValue">1%</strong></div><button id="defaultNoiseFilterBtn" role="menuitem" type="button">Use Default (<span id="noiseFilterDefaultValue">1%</span>)</button><button id="changeNoiseFilterBtn" role="menuitem" type="button">Change…</button></div></div><button id="lowPassFilterBtn" role="menuitemcheckbox" aria-checked="false" type="button">Low-Pass Filter…</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" title="Click to rename project" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Instruments</button></div><button id="filtersBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">Filters <span aria-hidden="true">▾</span></button><div id="filtersMenu" class="context-menu file-menu filters-menu" role="menu" aria-label="Filters"><button id="enableFiltersBtn" role="menuitem" type="button">Enable All Filters</button><button id="disableFiltersBtn" role="menuitem" type="button">Disable All Filters</button><div class="menu-divider" role="separator"></div><div id="noiseFilterItem" class="filter-menu-item"><button id="noiseFilterBtn" role="menuitemcheckbox" aria-haspopup="menu" aria-checked="false" type="button">Add Noise…</button><div class="filter-submenu" role="menu" aria-label="Add Noise settings"><div class="filter-value"><span>Current</span><strong id="noiseFilterValue">1%</strong></div><button id="defaultNoiseFilterBtn" role="menuitem" type="button">Use Default (<span id="noiseFilterDefaultValue">1%</span>)</button><button id="changeNoiseFilterBtn" role="menuitem" type="button">Change…</button></div></div><button id="lowPassFilterBtn" role="menuitemcheckbox" aria-checked="false" type="button">Low-Pass Filter…</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
@@ -166,6 +166,30 @@
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="applyFilterDialogBtn" type="button" class="primary">Apply filter</button></div>
     </form>
   </dialog>
+  <dialog id="bridgeDialog" class="open-dialog bridge-dialog">
+    <form method="dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">PYTHON BRIDGE</span><h2>Instruments</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p>Connect ArbDraw to the local Python service that owns VISA and instrument-specific waveform transfers.</p>
+      <div class="bridge-connection-row">
+        <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off"></label>
+        <button id="bridgeConnectBtn" type="button" class="primary">Connect</button>
+      </div>
+      <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
+      <label class="bridge-adapter-field" for="instrumentAdapter">Waveform backend<select id="instrumentAdapter" disabled><option value="">No adapter installed</option></select></label>
+      <div class="bridge-resource-heading"><label for="visaResourceSelect">VISA resource</label><button id="refreshResourcesBtn" type="button" class="ghost">Refresh</button></div>
+      <div class="bridge-resource-control"><input id="visaResourceInput" class="bridge-resource-select" aria-label="VISA resource" placeholder="Paste a VISA resource or enter an IP address" spellcheck="false" autocomplete="off"><button id="clearVisaResourceBtn" class="bridge-resource-clear" type="button" aria-label="Clear VISA resource" title="Clear VISA resource">×</button><button id="visaResourceDropdownBtn" class="bridge-resource-dropdown-button" type="button" aria-label="Show VISA resources" aria-haspopup="listbox" aria-expanded="false">▾</button><div id="visaResourceMenu" class="bridge-resource-menu" role="listbox" aria-label="VISA resources"><input id="visaResourceFilter" class="bridge-resource-filter" type="search" placeholder="Filter devices…" aria-label="Filter VISA resources" autocomplete="off" spellcheck="false"><div class="menu-divider" role="separator"></div><div id="visaResourceList" class="bridge-resource-list"></div></div></div>
+      <div class="bridge-send-options">
+        <label for="instrumentChannel">Channel<select id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
+        <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
+      </div>
+      <div class="bridge-actions">
+        <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
+        <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
+      </div>
+      <pre id="bridgeResult" class="bridge-result" aria-live="polite"></pre>
+      <div class="dialog-actions"><button value="cancel" class="ghost">Close</button></div>
+    </form>
+  </dialog>
   <div id="propertyContextMenu" class="context-menu" role="menu"><button id="setFieldDefaultBtn" role="menuitem">Set to Default</button></div>
   <div id="amplitudeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="Vpp" role="menuitem">Vpp</button><button data-scale="0.001" data-label="mVpp" role="menuitem">mVpp</button><button data-scale="0.000001" data-label="µVpp" role="menuitem">µVpp</button></div>
   <div id="voltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button><button data-scale="0.000001" data-label="µV" role="menuitem">µV</button></div>
@@ -191,6 +215,7 @@
   <div id="toast" class="toast">Waveform exported as CSV</div>
   <script src="js/defaults.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/bridge-client.js"></script>
   <script src="js/properties.js"></script>
   <script src="js/waveform-editor.js"></script>
   <script src="js/filters.js"></script>
@@ -200,6 +225,7 @@
   <script src="js/project.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/instruments.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
  * directly from disk. Values use volts, hertz, and degrees.
  */
 globalThis.ARBDRAW_DEFAULTS = {
+  bridgeUrl: 'http://127.0.0.1:8876',
   highLevelV: 500,
   highLevelUnit: 'mV',
   lowLevelV: -500,

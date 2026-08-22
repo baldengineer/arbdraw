@@ -43,6 +43,7 @@ Thumbs.db
 *.ai
 *.psd
 ignore/
+local_adapters/
 
 # Environment variables and local secrets
 .env
