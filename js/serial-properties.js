@@ -136,7 +136,7 @@ function commitSerialProperties(event) {
     payload: $('serialPayload').value,
     binaryPattern,
   });
-  if (event?.target?.id === 'serialPayload') ensureSerialPeriodCoversPayload();
+  if (state.type === 'serial') ensureSerialPeriodCoversPayload();
   renderSerialProperties();
   if (state.type === 'serial') generate('serial');
   else pushHistory();
@@ -156,5 +156,8 @@ for (const id of [
   'serialPayload',
   'serialBinaryPattern',
 ]) {
-  $(id).addEventListener(id === 'serialPayload' ? 'input' : 'change', commitSerialProperties);
+  $(id).addEventListener(
+    id === 'serialPayload' || id === 'serialPostIdle' ? 'input' : 'change',
+    commitSerialProperties,
+  );
 }

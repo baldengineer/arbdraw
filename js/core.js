@@ -108,7 +108,7 @@ function normalizeDefaults(source = {}) {
       finite('frequencyHz', 750000 / frequencyUnits[frequencyUnit]) * frequencyUnits[frequencyUnit],
     ),
     phaseDegrees: finite('phaseDegrees', 0),
-    dutyCyclePercent: Math.min(95, Math.max(5, finite('dutyCyclePercent', 50))),
+    dutyCyclePercent: Math.min(99, Math.max(1, finite('dutyCyclePercent', 50))),
     filtersEnabled: source.filtersEnabled !== false,
     noisePercent,
     noisePercentMax,

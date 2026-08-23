@@ -58,8 +58,8 @@ function parseProject(raw) {
       cycles,
       phaseDegrees: number('phaseDegrees', defaults.phaseDegrees),
       dutyCyclePercent: Math.min(
-        95,
-        Math.max(5, number('dutyCyclePercent', defaults.dutyCyclePercent)),
+        99,
+        Math.max(1, number('dutyCyclePercent', defaults.dutyCyclePercent)),
       ),
       filters: normalizeFilterSettings(source.filters),
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),

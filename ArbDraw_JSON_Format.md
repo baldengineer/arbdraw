@@ -186,7 +186,7 @@ ArbDraw applies the following rules while opening a file:
 - `sampleCount` is rounded to an integer and limited to a minimum of 2.
 - `cycles` is rounded to an integer and limited to a minimum of 1.
 - `sampleRateMSa` and `frequencyHz` are limited to a minimum of `0.000001`.
-- `dutyCyclePercent` is limited to the range 5 through 95.
+- `dutyCyclePercent` is limited to the range 1 through 99.
 - `values` must contain exactly `sampleCount` entries.
 - Every `values` entry must already be a finite JSON number. Numeric strings are not accepted in this array.
 - If any sample-array validation fails, the entire `values` array is discarded and ArbDraw regenerates samples from the waveform metadata.
