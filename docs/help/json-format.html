@@ -16,6 +16,15 @@
   "schema": "arbdraw.waveform",
   "version": 1,
   "name": "One Cycle Example",
+  "AWG": {
+    "profileId": "owon-xdg3000",
+    "sampleRateType": "Fixed",
+    "sampleRateMSa": 0.001,
+    "sampleCount": 8,
+    "tsResolutionSeconds": 0.000001,
+    "frequencyHz": 125,
+    "periodSeconds": 0.008
+  },
   "waveform": {
     "type": "sine",
     "highVoltage": 1,
@@ -48,8 +57,23 @@
   </table>
   <p>UI prefixes such as mV, kHz, and µs are display choices. Project JSON always uses the canonical units above.</p>
 
+  <h2>AWG fields</h2>
+  <p>The top-level <code>AWG</code> object stores the selected profile and the AWG settings shown in the interface. <code>frequencyHz</code> and <code>periodSeconds</code> are linked; for N cycles, the AWG frequency is <code>waveform.frequencyHz × waveform.cycles</code>. When a project is opened, its profile is selected first, then its saved sample rate and sample count are applied.</p>
+  <table>
+    <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>profileId</code></td><td>—</td><td>AWG profile identifier.</td></tr>
+      <tr><td><code>sampleRateType</code></td><td>—</td><td>Currently <code>Fixed</code>; <code>Variable</code> is reserved for future support.</td></tr>
+      <tr><td><code>sampleRateMSa</code></td><td>MSa/s</td><td>Sample rate saved with the project.</td></tr>
+      <tr><td><code>sampleCount</code></td><td>samples</td><td>Sample count saved with the project.</td></tr>
+      <tr><td><code>tsResolutionSeconds</code></td><td>s</td><td>Timestamp resolution derived from the saved sample rate and sample count.</td></tr>
+      <tr><td><code>frequencyHz</code></td><td>Hz</td><td>Frequency to set on the AWG.</td></tr>
+      <tr><td><code>periodSeconds</code></td><td>s</td><td>Period to set on the AWG, equal to <code>1 / frequencyHz</code>.</td></tr>
+    </tbody>
+  </table>
+
   <h2>Authoritative and derived values</h2>
-  <p>The sample data and timing metadata are authoritative: <code>sampleCount</code>, <code>sampleRateMSa</code>, <code>frequencyHz</code>, <code>cycles</code>, and <code>values</code>. ArbDraw recalculates <code>durationMs</code> when importing:</p>
+  <p>The sample data and waveform timing metadata are authoritative: <code>frequencyHz</code>, <code>cycles</code>, and <code>values</code>. AWG settings are stored separately in the top-level <code>AWG</code> object. ArbDraw recalculates <code>durationMs</code> when importing:</p>
   <pre><code>durationMs = sampleCount / (sampleRateMSa × 1000)</code></pre>
   <p>Frequency is metadata for the displayed waveform timing; it does not change the values stored in the sample array.</p>
 
@@ -76,6 +100,7 @@
     <li><code>schema</code>, <code>version</code>, and <code>waveform</code> must be valid.</li>
     <li>Numeric metadata may be supplied as numbers or numeric strings and is normalized on import.</li>
     <li><code>sampleCount</code> and <code>cycles</code> are rounded and clamped to valid minimums.</li>
+    <li>The top-level <code>AWG</code> object stores the selected profile, sample settings, timestamp resolution, and linked AWG frequency/period.</li>
     <li><code>values</code> must contain exactly <code>sampleCount</code> finite numbers.</li>
     <li>If sample validation fails, ArbDraw discards the values and regenerates samples from metadata.</li>
     <li>Unknown fields are ignored.</li>

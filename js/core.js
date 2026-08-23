@@ -210,6 +210,15 @@ function createDefaultDocument() {
     schema: 'arbdraw.waveform',
     version: 1,
     name: 'Waveform 01',
+    AWG: {
+      profileId: globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || 'other',
+      sampleRateType: 'Fixed',
+      sampleRateMSa: DEFAULT_VALUES.sampleRateMSa,
+      sampleCount: DEFAULT_VALUES.sampleCount,
+      tsResolutionSeconds: durationMs / 1000 / Math.max(1, DEFAULT_VALUES.sampleCount - 1),
+      frequencyHz: DEFAULT_VALUES.frequencyHz * DEFAULT_VALUES.nCycles,
+      periodSeconds: 1 / (DEFAULT_VALUES.frequencyHz * DEFAULT_VALUES.nCycles),
+    },
     waveform: {
       type: DEFAULT_VALUES.waveformType,
       highVoltage: DEFAULT_VALUES.highLevelV,

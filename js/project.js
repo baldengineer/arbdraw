@@ -31,9 +31,19 @@ function parseProject(raw) {
   const source = raw.waveform,
     number = (key, fallback) =>
       Number.isFinite(Number(source[key])) ? Number(source[key]) : fallback,
-    defaults = createDefaultDocument().waveform;
-  const sampleCount = Math.max(2, Math.round(number('sampleCount', defaults.sampleCount))),
-    sampleRateMSa = Math.max(0.000001, number('sampleRateMSa', defaults.sampleRateMSa));
+    defaultsDocument = createDefaultDocument(),
+    defaults = defaultsDocument.waveform,
+    sourceAwg = raw.AWG && typeof raw.AWG === 'object' && !Array.isArray(raw.AWG) ? raw.AWG : {},
+    awgNumber = (key, fallback) =>
+      Number.isFinite(Number(sourceAwg[key])) ? Number(sourceAwg[key]) : fallback;
+  const sampleCount = Math.max(
+      2,
+      Math.round(awgNumber('sampleCount', number('sampleCount', defaults.sampleCount))),
+    ),
+    sampleRateMSa = Math.max(
+      0.000001,
+      awgNumber('sampleRateMSa', number('sampleRateMSa', defaults.sampleRateMSa)),
+    );
   const values =
     Array.isArray(source.values) &&
     source.values.length === sampleCount &&
@@ -48,6 +58,19 @@ function parseProject(raw) {
     schema: 'arbdraw.waveform',
     version: 1,
     name: String(raw.name || 'Imported waveform').slice(0, 120),
+    AWG: {
+      profileId:
+        typeof sourceAwg.profileId === 'string'
+          ? sourceAwg.profileId
+          : defaultsDocument.AWG.profileId,
+      sampleRateType: sourceAwg.sampleRateType === 'Variable' ? 'Variable' : 'Fixed',
+      sampleRateMSa,
+      sampleCount,
+      tsResolutionSeconds:
+        sampleCount > 1 ? durationMs / 1000 / (sampleCount - 1) : null,
+      frequencyHz: frequencyHz * cycles,
+      periodSeconds: 1 / (frequencyHz * cycles),
+    },
     waveform: {
       type: titles[importedType] ? importedType : 'custom',
       highVoltage: number('highVoltage', defaults.highVoltage),
@@ -70,6 +93,7 @@ function parseProject(raw) {
 }
 function loadProject(raw) {
   projectDocument = parseProject(raw);
+  restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
   state.redo = [];
   renderDocument();
@@ -112,6 +136,7 @@ projectNameInput.addEventListener('keydown', (event) => {
 $('confirmNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
   projectDocument = createDefaultDocument();
+  restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
   state.redo = [];
   renderDocument();

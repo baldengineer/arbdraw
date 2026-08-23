@@ -18,6 +18,15 @@ The current format identifier is:
   "schema": "arbdraw.waveform",
   "version": 1,
   "name": "One Cycle Example",
+  "AWG": {
+    "profileId": "owon-xdg3000",
+    "sampleRateType": "Fixed",
+    "sampleRateMSa": 0.001,
+    "sampleCount": 8,
+    "tsResolutionSeconds": 0.000001,
+    "frequencyHz": 125,
+    "periodSeconds": 0.008
+  },
   "waveform": {
     "type": "sine",
     "highVoltage": 1,
@@ -50,6 +59,7 @@ The current format identifier is:
 | `schema` | string | Yes | Must be exactly `arbdraw.waveform`. |
 | `version` | number | Yes | Must be exactly `1`. |
 | `name` | string | No | Project name. ArbDraw truncates imported names to 120 characters. |
+| `AWG` | object | No | Selected AWG profile and the AWG settings shown in the interface. |
 | `waveform` | object | Yes | Waveform metadata and sample values. |
 
 Unknown top-level fields are ignored.
@@ -72,6 +82,20 @@ Unknown top-level fields are ignored.
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
 
 All waveform numbers use canonical units. UI display prefixes such as mV, kHz, and µs are not stored in the project JSON.
+
+## AWG fields
+
+The top-level `AWG` object stores the selected profile and the AWG settings shown in the UI. `frequencyHz` and `periodSeconds` are linked; for N cycles, the AWG frequency is `waveform.frequencyHz × waveform.cycles`. The saved `sampleRateMSa` and `sampleCount` are applied after the profile is selected when a project is opened.
+
+| Field | Type | Unit | Description |
+| --- | --- | --- | --- |
+| `profileId` | string | — | AWG profile identifier. |
+| `sampleRateType` | string | — | Currently `Fixed`; `Variable` is reserved for future support. |
+| `sampleRateMSa` | number | MSa/s | Sample rate saved with the project. |
+| `sampleCount` | integer | samples | Sample count saved with the project. |
+| `tsResolutionSeconds` | number | s | Timestamp resolution derived from the saved sample rate and sample count. |
+| `frequencyHz` | number | Hz | Frequency to set on the AWG. |
+| `periodSeconds` | number | s | Period to set on the AWG, equal to `1 / frequencyHz`. |
 
 ## Authoritative and derived values
 

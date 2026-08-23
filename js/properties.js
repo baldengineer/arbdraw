@@ -54,6 +54,25 @@ function applyAwgProfile(profile) {
   persistCurrentSettings();
 }
 
+function restoreAwgSettingsFromDocument(awg = {}) {
+  const profile = profileById(awg.profileId);
+  if (profile) {
+    selectedAwgProfile = profile;
+    awgProfileSelect.value = profile.id;
+    if (Number.isFinite(profile.sampleDepth?.max)) $('samplesEdit').max = profile.sampleDepth.max;
+    else $('samplesEdit').removeAttribute('max');
+  }
+  const rate = Number(awg.sampleRateMSa),
+    samples = Number(awg.sampleCount),
+    maximumSamples = Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
+      ? selectedAwgProfile.sampleDepth.max
+      : Number.POSITIVE_INFINITY;
+  if (Number.isFinite(rate) && rate > 0) state.sampleRate = rate;
+  if (Number.isFinite(samples) && samples >= 2)
+    state.samples = Math.min(Math.round(samples), maximumSamples);
+  state.duration = state.samples / (state.sampleRate * 1000);
+}
+
 renderAwgProfiles();
 awgProfileSelect?.addEventListener('change', () => {
   applyAwgProfile(profileById(awgProfileSelect.value));
@@ -170,6 +189,16 @@ function renderAwgTiming() {
   $('awgFrequencyUnit').textContent = frequencyUnit.label;
   $('awgPeriodEdit').value = Number((awgPeriod / periodUnit.scale).toPrecision(10));
   $('awgPeriodUnit').textContent = periodUnit.label;
+  projectDocument.AWG = {
+    ...(projectDocument.AWG || {}),
+    profileId: selectedAwgProfile?.id || globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || 'other',
+    sampleRateType: selectedAwgProfile?.sampleRateType || 'Fixed',
+    sampleRateMSa: state.sampleRate,
+    sampleCount: state.samples,
+    tsResolutionSeconds: state.duration / 1000 / Math.max(1, state.samples - 1),
+    frequencyHz: awgFrequency,
+    periodSeconds: awgPeriod,
+  };
 }
 function formatRate(value) {
   return value >= 100
