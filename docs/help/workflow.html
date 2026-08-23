@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="help.css">
+<article>
+  <h1>ArbDraw Workflow</h1>
+  <p>ArbDraw follows a simple three-step process: draw the waveform, transfer the data, and configure the AWG to generate it.</p>
+
+  <h2>1. Draw</h2>
+  <p>Create the waveform you need in the editor.</p>
+  <ul>
+    <li>Edit individual waveform points in the Editor view.</li>
+    <li>Choose a waveshape such as sine, square, triangle, or DC and configure its properties.</li>
+    <li>Add noise or other processing with the Filters menu.</li>
+    <li>Select Serial to generate a UART stream from a text or hexadecimal payload.</li>
+  </ul>
+  <p>Use the AWG controls to choose the instrument profile and define the sample rate, sample count, and timestamp resolution. The AWG Frequency and AWG Period fields show the timing settings to use on the instrument.</p>
+
+  <h2>2. Transfer</h2>
+  <p>Move the generated waveform data to your test equipment using one of these methods:</p>
+  <ul>
+    <li>Download a CSV file and load it with the AWG's software or storage workflow.</li>
+    <li>Use the Python bridge to transfer the waveform directly to supported AWG models and adapters.</li>
+  </ul>
+  <p>Choose the transfer method that matches your AWG and connection. The CSV contains the waveform points; the instrument timing and voltage settings are configured in the next step.</p>
+
+  <h2>3. Generate</h2>
+  <p>Configure the AWG to reproduce the waveform:</p>
+  <ol>
+    <li>Load the pattern if the instrument requires a separate load or recall operation.</li>
+    <li>Set the AWG Frequency to the value shown in ArbDraw's <strong>AWG Frequency</strong> field, or set the AWG Period to the value shown in <strong>AWG Period</strong>.</li>
+    <li>Set the output voltage, amplitude, offset, and output state as desired.</li>
+  </ol>
+  <p>For a single-cycle waveform, the timing controls and AWG settings correspond directly. When the waveform contains multiple cycles, use the AWG Frequency or AWG Period shown for one cycle so the generated waveform has the intended timing.</p>
+</article>
