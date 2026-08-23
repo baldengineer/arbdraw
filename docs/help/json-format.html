@@ -58,7 +58,7 @@
   <p>UI prefixes such as mV, kHz, and µs are display choices. Project JSON always uses the canonical units above.</p>
 
   <h2>AWG fields</h2>
-  <p>The top-level <code>AWG</code> object stores the selected profile and the AWG settings shown in the interface. <code>frequencyHz</code> and <code>periodSeconds</code> are linked; for N cycles, the AWG frequency is <code>waveform.frequencyHz × waveform.cycles</code>. When a project is opened, its profile is selected first, then its saved sample rate and sample count are applied.</p>
+  <p>The top-level <code>AWG</code> object stores the selected profile and the AWG settings shown in the interface. <code>frequencyHz</code> and <code>periodSeconds</code> are linked; for N cycles, the AWG period is <code>N × waveform period</code>, so the AWG frequency is <code>waveform.frequencyHz ÷ waveform.cycles</code>. When a project is opened, its profile is selected first, then its saved sample rate and sample count are applied.</p>
   <table>
     <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
     <tbody>

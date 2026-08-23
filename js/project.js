@@ -68,8 +68,8 @@ function parseProject(raw) {
       sampleCount,
       tsResolutionSeconds:
         sampleCount > 1 ? durationMs / 1000 / (sampleCount - 1) : null,
-      frequencyHz: frequencyHz * cycles,
-      periodSeconds: 1 / (frequencyHz * cycles),
+      frequencyHz: frequencyHz / cycles,
+      periodSeconds: cycles / frequencyHz,
     },
     waveform: {
       type: titles[importedType] ? importedType : 'custom',

@@ -216,8 +216,8 @@ function createDefaultDocument() {
       sampleRateMSa: DEFAULT_VALUES.sampleRateMSa,
       sampleCount: DEFAULT_VALUES.sampleCount,
       tsResolutionSeconds: durationMs / 1000 / Math.max(1, DEFAULT_VALUES.sampleCount - 1),
-      frequencyHz: DEFAULT_VALUES.frequencyHz * DEFAULT_VALUES.nCycles,
-      periodSeconds: 1 / (DEFAULT_VALUES.frequencyHz * DEFAULT_VALUES.nCycles),
+      frequencyHz: DEFAULT_VALUES.frequencyHz / Math.max(1, DEFAULT_VALUES.nCycles),
+      periodSeconds: Math.max(1, DEFAULT_VALUES.nCycles) / DEFAULT_VALUES.frequencyHz,
     },
     waveform: {
       type: DEFAULT_VALUES.waveformType,

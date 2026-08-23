@@ -85,7 +85,7 @@ All waveform numbers use canonical units. UI display prefixes such as mV, kHz, a
 
 ## AWG fields
 
-The top-level `AWG` object stores the selected profile and the AWG settings shown in the UI. `frequencyHz` and `periodSeconds` are linked; for N cycles, the AWG frequency is `waveform.frequencyHz × waveform.cycles`. The saved `sampleRateMSa` and `sampleCount` are applied after the profile is selected when a project is opened.
+The top-level `AWG` object stores the selected profile and the AWG settings shown in the UI. `frequencyHz` and `periodSeconds` are linked; for N cycles, the AWG period is `N × waveform period`, so the AWG frequency is `waveform.frequencyHz ÷ waveform.cycles`. The saved `sampleRateMSa` and `sampleCount` are applied after the profile is selected when a project is opened.
 
 | Field | Type | Unit | Description |
 | --- | --- | --- | --- |

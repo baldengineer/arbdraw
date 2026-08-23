@@ -181,7 +181,7 @@ function renderFrequency() {
 }
 function renderAwgTiming() {
   if (!$('awgFrequencyEdit') || !Number.isFinite(state.frequency) || state.frequency <= 0) return;
-  const awgFrequency = state.frequency * Math.max(1, state.cycles),
+  const awgFrequency = state.frequency / Math.max(1, state.cycles),
     awgPeriod = 1 / awgFrequency,
     frequencyUnit = displayUnitFor(awgFrequency, frequencyDisplayUnits),
     periodUnit = displayUnitFor(awgPeriod, periodDisplayUnits);
