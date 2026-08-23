@@ -1,12 +1,14 @@
 import json
+import sys
 import threading
 import time
+from types import SimpleNamespace
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from python_bridge.server import BridgeService, create_server
+from python_bridge.server import BridgeService, PyVisaBackend, create_server
 
 
 class FakeVisa:
@@ -137,6 +139,49 @@ class PythonBridgeTests(unittest.TestCase):
         second.join()
         self.assertFalse(errors)
         self.assertEqual(maximum_active, 1)
+
+    def test_pyvisa_backend_does_not_reuse_manager_after_adapter_cleanup(self):
+        managers = []
+
+        class Instrument:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def query(self, command):
+                return f"response:{command}"
+
+        class Manager:
+            def __init__(self):
+                self.closed = False
+                managers.append(self)
+
+            def list_resources(self):
+                return ("USB0::INSTR",)
+
+            def open_resource(self, _resource):
+                return Instrument()
+
+            def close(self):
+                self.closed = True
+
+        fake_pyvisa = SimpleNamespace(ResourceManager=Manager)
+        original = sys.modules.get("pyvisa")
+        sys.modules["pyvisa"] = fake_pyvisa
+        try:
+            backend = PyVisaBackend()
+            self.assertEqual(backend.list_resources(), ["USB0::INSTR"])
+            self.assertEqual(backend.query("USB0::INSTR", "*IDN?", 1000), "response:*IDN?")
+        finally:
+            if original is None:
+                sys.modules.pop("pyvisa", None)
+            else:
+                sys.modules["pyvisa"] = original
+
+        self.assertEqual(len(managers), 2)
+        self.assertTrue(all(manager.closed for manager in managers))
 
 
 if __name__ == "__main__":

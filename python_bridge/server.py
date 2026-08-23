@@ -40,37 +40,43 @@ class PyVisaBackend:
 
     def __init__(self, visa_library: str | None = None):
         self.visa_library = visa_library
-        self._resource_manager = None
         self._lock = threading.Lock()
 
     def _manager(self):
-        if self._resource_manager is None:
-            try:
-                import pyvisa
-            except ImportError as error:
-                raise BridgeError(
-                    HTTPStatus.SERVICE_UNAVAILABLE,
-                    "pyvisa_unavailable",
-                    "PyVISA is not installed in the Python bridge environment.",
-                ) from error
-            try:
-                self._resource_manager = (
-                    pyvisa.ResourceManager()
-                    if self.visa_library is None
-                    else pyvisa.ResourceManager(self.visa_library)
-                )
-            except Exception as error:
-                raise BridgeError(
-                    HTTPStatus.BAD_GATEWAY,
-                    "visa_initialization_failed",
-                    f"Could not initialize VISA: {error}",
-                ) from error
-        return self._resource_manager
+        try:
+            import pyvisa
+        except ImportError as error:
+            raise BridgeError(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "pyvisa_unavailable",
+                "PyVISA is not installed in the Python bridge environment.",
+            ) from error
+        try:
+            return (
+                pyvisa.ResourceManager()
+                if self.visa_library is None
+                else pyvisa.ResourceManager(self.visa_library)
+            )
+        except Exception as error:
+            raise BridgeError(
+                HTTPStatus.BAD_GATEWAY,
+                "visa_initialization_failed",
+                f"Could not initialize VISA: {error}",
+            ) from error
+
+    @staticmethod
+    def _close_manager(manager: Any) -> None:
+        try:
+            manager.close()
+        except Exception:
+            # The VISA operation's result or error is more useful than a cleanup error.
+            pass
 
     def list_resources(self) -> list[str]:
         with self._lock:
+            manager = self._manager()
             try:
-                return list(self._manager().list_resources())
+                return list(manager.list_resources())
             except BridgeError:
                 raise
             except Exception as error:
@@ -79,11 +85,14 @@ class PyVisaBackend:
                     "visa_list_failed",
                     f"VISA resource discovery failed: {error}",
                 ) from error
+            finally:
+                self._close_manager(manager)
 
     def query(self, resource: str, command: str, timeout_ms: int) -> str:
         with self._lock:
+            manager = self._manager()
             try:
-                with self._manager().open_resource(resource) as instrument:
+                with manager.open_resource(resource) as instrument:
                     instrument.timeout = timeout_ms
                     # SCPI instruments commonly require LF to terminate a
                     # command and use LF to terminate the response. Do this
@@ -99,6 +108,8 @@ class PyVisaBackend:
                     "visa_query_failed",
                     f"VISA query failed for {resource}: {error}",
                 ) from error
+            finally:
+                self._close_manager(manager)
 
 
 WaveformHandler = Callable[[dict[str, Any]], dict[str, Any] | None]
