@@ -58,6 +58,12 @@ renderAwgProfiles();
 awgProfileSelect?.addEventListener('change', () => {
   applyAwgProfile(profileById(awgProfileSelect.value));
 });
+awgProfileSelect?.addEventListener('dblclick', () => {
+  applyAwgProfile(profileById(awgProfileSelect.value));
+});
+awgProfileSelect?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') applyAwgProfile(profileById(awgProfileSelect.value));
+});
 
 function persistCurrentSettings() {
   const toolNames = { pointer: 'Pointer', pencil: 'Edit', erase: 'Delete' },
@@ -143,7 +149,7 @@ function renderTiming() {
   $('samplesEdit').value = state.samples;
   $('rateEdit').value = Number(state.sampleRate.toPrecision(10));
   $('tsResolutionEdit').value = Number(
-    ((1 / (state.sampleRate * 1e6)) / tsResolutionUnitScale).toPrecision(10),
+    ((state.duration / 1000 / Math.max(1, state.samples - 1)) / tsResolutionUnitScale).toPrecision(10),
   );
   $('sampleRateField').title = 'Not used but saved in the JSON.';
   $('samplesField').removeAttribute('title');
@@ -584,15 +590,20 @@ function closeTimingUnitMenus() {
 function openTimingUnitMenu(kind) {
   const button = $(kind + 'UnitBtn'),
     menu = $(kind + 'UnitMenu'),
-    rect = button.getBoundingClientRect(),
     scale = kind === 'frequency'
       ? frequencyUnitScale
       : kind === 'period'
         ? periodUnitScale
         : tsResolutionUnitScale;
-  menu.style.left = Math.min(rect.left, innerWidth - 100) + 'px';
-  menu.style.top = rect.bottom + 4 + 'px';
   menu.classList.add('open');
+  const buttonRect = button.getBoundingClientRect(),
+    menuRect = menu.getBoundingClientRect(),
+    left = Math.max(4, Math.min(buttonRect.left, innerWidth - menuRect.width - 4)),
+    belowTop = buttonRect.bottom + 4,
+    aboveTop = buttonRect.top - menuRect.height - 4,
+    top = belowTop + menuRect.height <= innerHeight - 4 ? belowTop : Math.max(4, aboveTop);
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
   button.setAttribute('aria-expanded', 'true');
   menu
     .querySelectorAll('button')
