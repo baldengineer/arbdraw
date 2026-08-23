@@ -56,6 +56,7 @@ function normalizeDefaults(source = {}) {
   const amplitudeUnit = unit('amplitudeUnit', amplitudeUnits, 'Vpp');
   const frequencyUnit = unit('frequencyUnit', frequencyUnits, 'Hz');
   const periodUnit = unit('periodUnit', periodUnits, 'µs');
+  const tsResolutionUnit = unit('tsResolutionUnit', periodUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
   const waveformTypes = ['sine', 'square', 'triangle', 'ramp', 'pulse', 'dc', 'noise', 'custom', 'serial'];
@@ -85,6 +86,7 @@ function normalizeDefaults(source = {}) {
     amplitudeUnit,
     frequencyUnit,
     periodUnit,
+    tsResolutionUnit,
     sampleRateUnit,
     sampleCountUnit,
     waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',

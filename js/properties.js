@@ -4,7 +4,8 @@
 const voltageScaleByLabel = { V: 1, mV: 0.001, µV: 0.000001 },
   amplitudeScaleByLabel = { Vpp: 1, mVpp: 0.001, µVpp: 0.000001 },
   frequencyScaleByLabel = { mHz: 0.001, Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 },
-  periodScaleByLabel = { Ms: 1e6, s: 1, ms: 0.001, µs: 1e-6, ns: 1e-9 };
+  periodScaleByLabel = { Ms: 1e6, s: 1, ms: 0.001, µs: 1e-6, ns: 1e-9 },
+  tsResolutionScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 };
 let amplitudeUnitScale = amplitudeScaleByLabel[DEFAULT_VALUES.amplitudeUnit];
 const voltageUnitScales = {
   highInput: voltageScaleByLabel[DEFAULT_VALUES.highLevelUnit],
@@ -12,7 +13,8 @@ const voltageUnitScales = {
   offsetInput: voltageScaleByLabel[DEFAULT_VALUES.offsetUnit],
 };
 let frequencyUnitScale = frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],
-  periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit];
+  periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit],
+  tsResolutionUnitScale = tsResolutionScaleByLabel[DEFAULT_VALUES.tsResolutionUnit] || 1e-9;
 
 const awgProfileSelect = $('awgProfileSelect');
 const awgProfiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
@@ -78,6 +80,7 @@ function persistCurrentSettings() {
     frequencyHz: state.frequency / frequencyUnitScale,
     frequencyUnit: $('frequencyUnitBtn').textContent,
     periodUnit: $('periodUnitBtn').textContent,
+    tsResolutionUnit: $('tsResolutionUnitBtn').textContent,
     phaseDegrees: state.phase,
     dutyCyclePercent: state.duty,
     filtersEnabled: state.filters?.enabled !== false,
@@ -129,6 +132,7 @@ function inputPeriodFrequency() {
 $('amplitudeUnitBtn').textContent = DEFAULT_VALUES.amplitudeUnit;
 $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
+$('tsResolutionUnitBtn').textContent = DEFAULT_VALUES.tsResolutionUnit;
 document.querySelector('.voltage-unit-button[data-input="highInput"]').textContent =
   DEFAULT_VALUES.highLevelUnit;
 document.querySelector('.voltage-unit-button[data-input="lowInput"]').textContent =
@@ -136,12 +140,13 @@ document.querySelector('.voltage-unit-button[data-input="lowInput"]').textConten
 document.querySelector('.voltage-unit-button[data-input="offsetInput"]').textContent =
   DEFAULT_VALUES.offsetUnit;
 function renderTiming() {
-  state.sampleRate = state.samples / state.duration / 1000;
   $('samplesEdit').value = state.samples;
   $('rateEdit').value = Number(state.sampleRate.toPrecision(10));
-  const duration = formatDurationParts(state.duration);
-  $('durationEdit').value = duration.value;
-  $('durationUnit').textContent = duration.unit;
+  $('tsResolutionEdit').value = Number(
+    ((1 / (state.sampleRate * 1e6)) / tsResolutionUnitScale).toPrecision(10),
+  );
+  $('sampleRateField').title = 'Not used but saved in the JSON.';
+  $('samplesField').removeAttribute('title');
 }
 function renderFrequency() {
   $('frequencyInput').value = displayFrequency(state.frequency);
@@ -159,12 +164,6 @@ function formatDuration(value) {
   if (value < 1) return (value * 1000).toFixed(3) + ' µs';
   if (value < 1000) return value.toFixed(3) + ' ms';
   return (value / 1000).toFixed(3) + ' s';
-}
-function formatDurationParts(value) {
-  if (value < 0.001) return { value: (value * 1e6).toFixed(2), unit: 'ns' };
-  if (value < 1) return { value: (value * 1000).toFixed(3), unit: 'µs' };
-  if (value < 1000) return { value: value.toFixed(3), unit: 'ms' };
-  return { value: (value / 1000).toFixed(3), unit: 's' };
 }
 function syncInputs() {
   state.high = inputVoltage('highInput');
@@ -185,7 +184,11 @@ function syncInputs() {
 }
 
 function commitTimingInput(kind) {
-  const input = kind === 'rate' ? $('rateEdit') : $('samplesEdit'),
+  const input = kind === 'rate'
+      ? $('rateEdit')
+      : kind === 'samples'
+        ? $('samplesEdit')
+        : $('tsResolutionEdit'),
     value = Number(input.value);
   if (!Number.isFinite(value) || value <= 0) {
     renderTiming();
@@ -201,6 +204,26 @@ function commitTimingInput(kind) {
     renderTiming();
     pushHistory();
     draw();
+    persistCurrentSettings();
+  } else if (kind === 'tsResolution') {
+    const desiredResolutionSeconds = value * tsResolutionUnitScale,
+      durationSeconds = state.samples / (state.sampleRate * 1e6),
+      samples = Math.ceil(durationSeconds / desiredResolutionSeconds) + 1,
+      maximumSamples = Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
+        ? selectedAwgProfile.sampleDepth.max
+        : Number.POSITIVE_INFINITY;
+    if (
+      !Number.isFinite(desiredResolutionSeconds) ||
+      desiredResolutionSeconds <= 0 ||
+      !Number.isFinite(samples)
+    ) {
+      renderTiming();
+      return;
+    }
+    state.samples = Math.min(Math.max(2, samples), maximumSamples);
+    renderTiming();
+    pushHistory();
+    generate();
     persistCurrentSettings();
   } else {
     const samples = Math.min(
@@ -219,8 +242,10 @@ function commitTimingInput(kind) {
     generate();
   }
 }
-for (const kind of ['rate', 'samples']) {
-  const input = $(kind === 'rate' ? 'rateEdit' : 'samplesEdit');
+for (const kind of ['rate', 'samples', 'tsResolution']) {
+  const input = $(
+    kind === 'rate' ? 'rateEdit' : kind === 'samples' ? 'samplesEdit' : 'tsResolutionEdit',
+  );
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -551,7 +576,7 @@ for (const inputId of Object.keys(voltageUnitScales))
     selectVoltageUnit(inputId, unit.scale, unit.label);
   });
 function closeTimingUnitMenus() {
-  for (const id of ['frequency', 'period']) {
+  for (const id of ['frequency', 'period', 'tsResolution']) {
     $(id + 'UnitMenu').classList.remove('open');
     $(id + 'UnitBtn').setAttribute('aria-expanded', 'false');
   }
@@ -560,7 +585,11 @@ function openTimingUnitMenu(kind) {
   const button = $(kind + 'UnitBtn'),
     menu = $(kind + 'UnitMenu'),
     rect = button.getBoundingClientRect(),
-    scale = kind === 'frequency' ? frequencyUnitScale : periodUnitScale;
+    scale = kind === 'frequency'
+      ? frequencyUnitScale
+      : kind === 'period'
+        ? periodUnitScale
+        : tsResolutionUnitScale;
   menu.style.left = Math.min(rect.left, innerWidth - 100) + 'px';
   menu.style.top = rect.bottom + 4 + 'px';
   menu.classList.add('open');
@@ -634,6 +663,20 @@ for (const kind of ['frequency', 'period']) {
           selectTimingUnit(kind, +option.dataset.scale, option.dataset.label)),
     );
 }
+function selectTsResolutionUnit(scale, label) {
+  tsResolutionUnitScale = scale;
+  $('tsResolutionUnitBtn').textContent = label;
+  renderTiming();
+  persistCurrentSettings();
+  closeTimingUnitMenus();
+}
+$('tsResolutionUnitBtn').onclick = (event) => {
+  event.stopPropagation();
+  openTimingUnitMenu('tsResolution');
+};
+$('tsResolutionUnitMenu').querySelectorAll('button').forEach(
+  (option) => (option.onclick = () => selectTsResolutionUnit(+option.dataset.scale, option.dataset.label)),
+);
 const frequencySuffixes = {
     h: { scale: 1, label: 'Hz' },
     H: { scale: 1, label: 'Hz' },

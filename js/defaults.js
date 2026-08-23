@@ -26,6 +26,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   frequencyHz: 2.5,
   frequencyUnit: 'kHz',
   periodUnit: 'us',
+  tsResolutionUnit: 'ns',
   phaseDegrees: 0,
   phaseUnit: '°',
   dutyCyclePercent: 50,

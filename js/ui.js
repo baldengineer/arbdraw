@@ -27,7 +27,7 @@ document.addEventListener('pointerdown', (event) => {
   )
     closeVoltageUnitMenu();
   if (
-    !event.target.closest?.('#frequencyUnitMenu,#periodUnitMenu,#frequencyUnitBtn,#periodUnitBtn')
+    !event.target.closest?.('#frequencyUnitMenu,#periodUnitMenu,#tsResolutionUnitMenu,#frequencyUnitBtn,#periodUnitBtn,#tsResolutionUnitBtn')
   )
     closeTimingUnitMenus();
   if (!event.target.closest?.('#scopeVoltageUnitMenu,#scopeVoltageUnitBtn'))
