@@ -153,10 +153,23 @@ function renderTiming() {
   );
   $('sampleRateField').title = 'Not used but saved in the JSON.';
   $('samplesField').removeAttribute('title');
+  renderAwgTiming();
 }
 function renderFrequency() {
   $('frequencyInput').value = displayFrequency(state.frequency);
   $('periodInput').value = displayPeriod(state.frequency);
+  renderAwgTiming();
+}
+function renderAwgTiming() {
+  if (!$('awgFrequencyEdit') || !Number.isFinite(state.frequency) || state.frequency <= 0) return;
+  const awgFrequency = state.frequency * Math.max(1, state.cycles),
+    awgPeriod = 1 / awgFrequency,
+    frequencyUnit = displayUnitFor(awgFrequency, frequencyDisplayUnits),
+    periodUnit = displayUnitFor(awgPeriod, periodDisplayUnits);
+  $('awgFrequencyEdit').value = Number((awgFrequency / frequencyUnit.scale).toPrecision(10));
+  $('awgFrequencyUnit').textContent = frequencyUnit.label;
+  $('awgPeriodEdit').value = Number((awgPeriod / periodUnit.scale).toPrecision(10));
+  $('awgPeriodUnit').textContent = periodUnit.label;
 }
 function formatRate(value) {
   return value >= 100
@@ -265,41 +278,6 @@ for (const kind of ['rate', 'samples', 'tsResolution']) {
   });
   input.addEventListener('blur', () => commitTimingInput(kind));
 }
-function nextLower125(value) {
-  if (!Number.isFinite(value) || value <= 0) return value;
-  const exponent = Math.floor(Math.log10(value)),
-    power = 10 ** exponent,
-    normalized = value / power,
-    epsilon = 1e-12;
-  for (const step of [5, 2, 1]) if (step < normalized - epsilon) return step * power;
-  return (5 * power) / 10;
-}
-function samplesForOneCycle(rateMSa, frequencyHz) {
-  return Math.max(2, Math.ceil((rateMSa * 1e6) / frequencyHz));
-}
-$('oneCycleBtn').onclick = () => {
-  let rate = state.sampleRate,
-    samples = samplesForOneCycle(rate, state.frequency),
-    steps = 0;
-  while (samples > state.samples && steps++ < 100) {
-    rate = nextLower125(rate);
-    samples = samplesForOneCycle(rate, state.frequency);
-  }
-  if (
-    !Number.isFinite(rate) ||
-    rate <= 0 ||
-    !Number.isFinite(samples) ||
-    (rate === state.sampleRate && samples === state.samples)
-  )
-    return;
-  state.sampleRate = rate;
-  state.samples = samples;
-  state.duration = state.samples / (state.sampleRate * 1000);
-  renderTiming();
-  generate();
-  refreshScopeTime();
-  persistCurrentSettings();
-};
 function propertiesDiffer() {
   const values = [
       inputVoltage('highInput'),

@@ -81,8 +81,15 @@
           <div id="tsResolutionField" class="status-timing-field" title="TS means timestamps. Some AWGs ignore this value.">
             <span class="status-label">TS RESOLUTION</span><div class="unit-input status-input"><input id="tsResolutionEdit" aria-label="TS resolution" type="number" min="0.000001" step="0.001" value="0.8"><button id="tsResolutionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">ns</button></div>
           </div>
+          <span class="timing-separator" aria-hidden="true"></span>
+          <div id="awgFrequencyField" class="status-timing-field" title="Set the AWG frequency to this value.">
+            <span class="status-label">AWG FREQUENCY</span><div class="unit-input status-input calculated"><input id="awgFrequencyEdit" aria-label="AWG frequency" type="text" readonly><span id="awgFrequencyUnit">Hz</span></div>
+          </div>
+          <div id="awgPeriodField" class="status-timing-field" title="Set the AWG period to this value.">
+            <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
+          </div>
           <div class="timing-actions">
-            <button id="oneCycleBtn" class="one-cycle-button" title="Fit one waveform cycle into the sample range" disabled>One Cycle</button><div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
+            <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
           </div>
           </div>
           <div id="viewerControls" class="control-group hidden"></div>
