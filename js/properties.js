@@ -14,6 +14,49 @@ const voltageUnitScales = {
 let frequencyUnitScale = frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],
   periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit];
 
+const awgProfileSelect = $('awgProfileSelect');
+const awgProfiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
+let selectedAwgProfile = null;
+
+function profileById(id) {
+  return awgProfiles.find((profile) => profile.id === id) || awgProfiles[0] || null;
+}
+
+function renderAwgProfiles() {
+  if (!awgProfileSelect) return;
+  awgProfileSelect.replaceChildren(
+    ...awgProfiles.map((profile) => new Option(profile.name, profile.id)),
+  );
+  awgProfileSelect.value =
+    globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || awgProfiles[0]?.id || '';
+  selectedAwgProfile = profileById(awgProfileSelect.value);
+  if (Number.isFinite(selectedAwgProfile?.sampleDepth?.max)) {
+    $('samplesEdit').max = selectedAwgProfile.sampleDepth.max;
+  }
+}
+
+function applyAwgProfile(profile) {
+  if (!profile) return;
+  selectedAwgProfile = profile;
+  if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
+  if (Number.isFinite(profile.sampleDepth?.default)) state.samples = profile.sampleDepth.default;
+  if (Number.isFinite(profile.sampleDepth?.max)) {
+    state.samples = Math.min(state.samples, profile.sampleDepth.max);
+    $('samplesEdit').max = profile.sampleDepth.max;
+  } else {
+    $('samplesEdit').removeAttribute('max');
+  }
+  state.duration = state.samples / (state.sampleRate * 1000);
+  renderTiming();
+  generate();
+  persistCurrentSettings();
+}
+
+renderAwgProfiles();
+awgProfileSelect?.addEventListener('change', () => {
+  applyAwgProfile(profileById(awgProfileSelect.value));
+});
+
 function persistCurrentSettings() {
   const toolNames = { pointer: 'Pointer', pencil: 'Edit', erase: 'Delete' },
     serial = typeof serialSettings === 'function' ? serialSettings() : {};
@@ -160,7 +203,12 @@ function commitTimingInput(kind) {
     draw();
     persistCurrentSettings();
   } else {
-    const samples = Math.max(2, Math.round(value));
+    const samples = Math.min(
+      Math.max(2, Math.round(value)),
+      Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
+        ? selectedAwgProfile.sampleDepth.max
+        : Number.POSITIVE_INFINITY,
+    );
     if (samples === state.samples) {
       renderTiming();
       return;

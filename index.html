@@ -66,6 +66,9 @@
 
         <div class="statusbar panel">
           <div id="editorControls" class="control-group">
+          <div class="status-timing-field awg-profile-field">
+            <label class="status-label" for="awgProfileSelect">AWG PROFILE</label><select id="awgProfileSelect" class="status-select" aria-label="AWG profile"></select>
+          </div>
           <div class="status-timing-field">
             <span class="status-label" title="Not used but saved in the JSON.">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number" min="0.000001" step="0.001" value="1250"><span>MSa/s</span></div>
           </div>
@@ -213,6 +216,7 @@
   </div>
   <datalist id="serialBaudRates"><option value="300"></option><option value="1200"></option><option value="2400"></option><option value="4800"></option><option value="9600"></option><option value="19200"></option><option value="38400"></option><option value="57600"></option><option value="115200"></option><option value="230400"></option><option value="460800"></option><option value="921600"></option></datalist>
   <div id="toast" class="toast">Waveform exported as CSV</div>
+  <script src="js/awg-profiles.js"></script>
   <script src="js/defaults.js"></script>
   <script src="js/core.js"></script>
   <script src="js/bridge-client.js"></script>
