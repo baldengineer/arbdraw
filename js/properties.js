@@ -5,7 +5,8 @@ const voltageScaleByLabel = { V: 1, mV: 0.001, µV: 0.000001 },
   amplitudeScaleByLabel = { Vpp: 1, mVpp: 0.001, µVpp: 0.000001 },
   frequencyScaleByLabel = { mHz: 0.001, Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 },
   periodScaleByLabel = { Ms: 1e6, s: 1, ms: 0.001, µs: 1e-6, ns: 1e-9 },
-  tsResolutionScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 };
+  tsResolutionScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 },
+  transitionTimeScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 };
 let amplitudeUnitScale = amplitudeScaleByLabel[DEFAULT_VALUES.amplitudeUnit];
 const voltageUnitScales = {
   highInput: voltageScaleByLabel[DEFAULT_VALUES.highLevelUnit],
@@ -15,6 +16,10 @@ const voltageUnitScales = {
 let frequencyUnitScale = frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],
   periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit],
   tsResolutionUnitScale = tsResolutionScaleByLabel[DEFAULT_VALUES.tsResolutionUnit] || 1e-9;
+const transitionTimeUnitScales = {
+  riseTimeInput: transitionTimeScaleByLabel[DEFAULT_VALUES.riseTimeUnit] || 1e-9,
+  fallTimeInput: transitionTimeScaleByLabel[DEFAULT_VALUES.fallTimeUnit] || 1e-9,
+};
 
 const awgProfileSelect = $('awgProfileSelect');
 const awgProfiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
@@ -108,6 +113,14 @@ function persistCurrentSettings() {
     tsResolutionUnit: $('tsResolutionUnitBtn').textContent,
     phaseDegrees: state.phase,
     dutyCyclePercent: state.duty,
+    riseTimeSeconds: state.riseTime,
+    riseTimeUnit: document.querySelector(
+      '.transition-time-unit-button[data-input="riseTimeInput"]',
+    ).textContent,
+    fallTimeSeconds: state.fallTime,
+    fallTimeUnit: document.querySelector(
+      '.transition-time-unit-button[data-input="fallTimeInput"]',
+    ).textContent,
     filtersEnabled: state.filters?.enabled !== false,
     noisePercent: state.filters?.noisePercent ?? DEFAULT_VALUES.noisePercent,
     noisePercentMax: DEFAULT_VALUES.noisePercentMax,
@@ -154,10 +167,24 @@ function displayPeriod(hertz) {
 function inputPeriodFrequency() {
   return 1 / (+$('periodInput').value * periodUnitScale);
 }
+function displayTransitionTime(inputId, seconds) {
+  return Number((seconds / transitionTimeUnitScales[inputId]).toPrecision(10));
+}
+function inputTransitionTime(inputId) {
+  return +$(inputId).value * transitionTimeUnitScales[inputId];
+}
+function renderTransitionTimes() {
+  $('riseTimeInput').value = displayTransitionTime('riseTimeInput', state.riseTime);
+  $('fallTimeInput').value = displayTransitionTime('fallTimeInput', state.fallTime);
+}
 $('amplitudeUnitBtn').textContent = DEFAULT_VALUES.amplitudeUnit;
 $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
 $('tsResolutionUnitBtn').textContent = DEFAULT_VALUES.tsResolutionUnit;
+document.querySelector('.transition-time-unit-button[data-input="riseTimeInput"]').textContent =
+  DEFAULT_VALUES.riseTimeUnit;
+document.querySelector('.transition-time-unit-button[data-input="fallTimeInput"]').textContent =
+  DEFAULT_VALUES.fallTimeUnit;
 document.querySelector('.voltage-unit-button[data-input="highInput"]').textContent =
   DEFAULT_VALUES.highLevelUnit;
 document.querySelector('.voltage-unit-button[data-input="lowInput"]').textContent =
@@ -221,12 +248,15 @@ function syncInputs() {
   state.frequency = Math.max(0.000001, inputFrequency());
   state.phase = +$('phaseInput').value;
   state.duty = +$('dutyInput').value;
+  state.riseTime = Math.max(0, inputTransitionTime('riseTimeInput'));
+  state.fallTime = Math.max(0, inputTransitionTime('fallTimeInput'));
   $('highInput').value = displayVoltage('highInput', state.high);
   $('lowInput').value = displayVoltage('lowInput', state.low);
   $('amplitudeInput').value = displayAmplitude(state.high - state.low);
   $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
   $('cyclesInput').value = state.cycles;
   $('dutyValue').textContent = state.duty + '%';
+  renderTransitionTimes();
   renderFrequency();
   renderTiming();
 }
@@ -315,8 +345,19 @@ function propertiesDiffer() {
       inputFrequency(),
       +$('phaseInput').value,
       +$('dutyInput').value,
+      inputTransitionTime('riseTimeInput'),
+      inputTransitionTime('fallTimeInput'),
     ],
-    current = [state.high, state.low, state.cycles, state.frequency, state.phase, state.duty];
+    current = [
+      state.high,
+      state.low,
+      state.cycles,
+      state.frequency,
+      state.phase,
+      state.duty,
+      state.riseTime,
+      state.fallTime,
+    ];
   return values.some(
     (value, index) =>
       !Number.isFinite(value) ||
@@ -332,12 +373,16 @@ function propertiesValid() {
       $('frequencyInput'),
       $('phaseInput'),
       $('dutyInput'),
+      $('riseTimeInput'),
+      $('fallTimeInput'),
     ].every(
       (input) => Number.isFinite(+input.value),
     ) &&
     Number.isInteger(+$('cyclesInput').value) &&
     +$('cyclesInput').value >= 1 &&
-    inputFrequency() > 0
+    inputFrequency() > 0 &&
+    inputTransitionTime('riseTimeInput') >= 0 &&
+    inputTransitionTime('fallTimeInput') >= 0
   );
 }
 function valueChanged(value, current) {
@@ -346,12 +391,17 @@ function valueChanged(value, current) {
 function applyProperties() {
   if (!propertiesValid() || !propertiesDiffer()) return;
   const frequencyChanged = valueChanged(inputFrequency(), state.frequency);
+  const transitionChanged =
+    valueChanged(inputTransitionTime('riseTimeInput'), state.riseTime) ||
+    valueChanged(inputTransitionTime('fallTimeInput'), state.fallTime);
   const amplitudeChanged =
     valueChanged(inputVoltage('highInput'), state.high) ||
     valueChanged(inputVoltage('lowInput'), state.low);
   const waveformChanged =
     amplitudeChanged ||
-    (state.type === 'serial' && frequencyChanged) ||
+    ((state.type === 'serial' || state.type === 'square' || state.type === 'pulse') &&
+      frequencyChanged) ||
+    transitionChanged ||
     valueChanged(+$('cyclesInput').value, state.cycles) ||
     valueChanged(+$('phaseInput').value, state.phase) ||
     valueChanged(+$('dutyInput').value, state.duty);
@@ -442,6 +492,8 @@ const propertyDefaultMap = {
   periodInput: 'frequencyHz',
   phaseInput: 'phaseDegrees',
   dutyInput: 'dutyCyclePercent',
+  riseTimeInput: 'riseTimeSeconds',
+  fallTimeInput: 'fallTimeSeconds',
 };
 function setPropertyInputDefault(input) {
   const key = propertyDefaultMap[input.id];
@@ -451,11 +503,13 @@ function setPropertyInputDefault(input) {
       ? displayPeriod(DEFAULT_VALUES.frequencyHz)
       : input.id === 'frequencyInput'
         ? displayFrequency(DEFAULT_VALUES.frequencyHz)
-        : input.id === 'amplitudeInput'
-          ? displayAmplitude(DEFAULT_VALUES.amplitudeVpp)
-          : voltageUnitScales[input.id]
-            ? displayVoltage(input.id, DEFAULT_VALUES[key])
-            : DEFAULT_VALUES[key];
+        : input.id === 'riseTimeInput' || input.id === 'fallTimeInput'
+          ? displayTransitionTime(input.id, DEFAULT_VALUES[key])
+          : input.id === 'amplitudeInput'
+            ? displayAmplitude(DEFAULT_VALUES.amplitudeVpp)
+            : voltageUnitScales[input.id]
+              ? displayVoltage(input.id, DEFAULT_VALUES[key])
+              : DEFAULT_VALUES[key];
   input.dispatchEvent(new Event('input', { bubbles: true }));
   applyProperties();
 }
@@ -593,6 +647,10 @@ function closeTimingUnitMenus() {
     $(id + 'UnitMenu').classList.remove('open');
     $(id + 'UnitBtn').setAttribute('aria-expanded', 'false');
   }
+  $('transitionTimeUnitMenu').classList.remove('open');
+  document
+    .querySelectorAll('.transition-time-unit-button')
+    .forEach((button) => button.setAttribute('aria-expanded', 'false'));
 }
 function openTimingUnitMenu(kind) {
   const button = $(kind + 'UnitBtn'),
@@ -695,6 +753,44 @@ $('tsResolutionUnitBtn').onclick = (event) => {
 $('tsResolutionUnitMenu').querySelectorAll('button').forEach(
   (option) => (option.onclick = () => selectTsResolutionUnit(+option.dataset.scale, option.dataset.label)),
 );
+let activeTransitionTimeInput = null;
+document.querySelectorAll('.transition-time-unit-button').forEach((button) => {
+  button.onclick = (event) => {
+    event.stopPropagation();
+    activeTransitionTimeInput = button.dataset.input;
+    const menu = $('transitionTimeUnitMenu'),
+      rect = button.getBoundingClientRect();
+    menu.style.left = Math.min(rect.left, innerWidth - 100) + 'px';
+    menu.style.top = rect.bottom + 4 + 'px';
+    menu.classList.add('open');
+    button.setAttribute('aria-expanded', 'true');
+    menu.querySelectorAll('button').forEach((option) =>
+      option.setAttribute(
+        'aria-checked',
+        String(+option.dataset.scale === transitionTimeUnitScales[activeTransitionTimeInput]),
+      ),
+    );
+  };
+});
+function selectTransitionTimeUnit(inputId, scale, label) {
+  const seconds = inputTransitionTime(inputId);
+  transitionTimeUnitScales[inputId] = scale;
+  document.querySelector(`.transition-time-unit-button[data-input="${inputId}"]`).textContent =
+    label;
+  $(inputId).value = displayTransitionTime(inputId, seconds);
+  persistCurrentSettings();
+  closeTimingUnitMenus();
+}
+$('transitionTimeUnitMenu').querySelectorAll('button').forEach((option) => {
+  option.onclick = () => {
+    if (activeTransitionTimeInput)
+      selectTransitionTimeUnit(
+        activeTransitionTimeInput,
+        +option.dataset.scale,
+        option.dataset.label,
+      );
+  };
+});
 const frequencySuffixes = {
     h: { scale: 1, label: 'Hz' },
     H: { scale: 1, label: 'Hz' },
@@ -713,6 +809,16 @@ const frequencySuffixes = {
     U: { scale: 0.000001, label: 'µs' },
     n: { scale: 0.000000001, label: 'ns' },
     N: { scale: 0.000000001, label: 'ns' },
+  },
+  transitionTimeSuffixes = {
+    s: { scale: 1, label: 's' },
+    m: { scale: 0.001, label: 'ms' },
+    u: { scale: 0.000001, label: 'µs' },
+    U: { scale: 0.000001, label: 'µs' },
+    n: { scale: 0.000000001, label: 'ns' },
+    N: { scale: 0.000000001, label: 'ns' },
+    p: { scale: 0.000000000001, label: 'ps' },
+    P: { scale: 0.000000000001, label: 'ps' },
   };
 $('frequencyInput').addEventListener('keydown', (event) => {
   const unit = frequencySuffixes[event.key];
@@ -726,3 +832,11 @@ $('periodInput').addEventListener('keydown', (event) => {
   event.preventDefault();
   selectTimingUnit('period', unit.scale, unit.label);
 });
+for (const inputId of Object.keys(transitionTimeUnitScales)) {
+  $(inputId).addEventListener('keydown', (event) => {
+    const unit = transitionTimeSuffixes[event.key];
+    if (!unit || event.ctrlKey || event.metaKey || event.altKey) return;
+    event.preventDefault();
+    selectTransitionTimeUnit(inputId, unit.scale, unit.label);
+  });
+}

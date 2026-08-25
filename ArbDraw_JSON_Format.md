@@ -37,6 +37,8 @@ The current format identifier is:
     "cycles": 1,
     "phaseDegrees": 0,
     "dutyCyclePercent": 50,
+    "riseTimeSeconds": 0,
+    "fallTimeSeconds": 0,
     "sampleCount": 8,
     "values": [
       0,
@@ -77,6 +79,8 @@ Unknown top-level fields are ignored.
 | `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
+| `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |
+| `fallTimeSeconds` | number | s | Linear high-to-low transition time for square and pulse waveforms. `0` means an ideal step. |
 | `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
@@ -211,6 +215,7 @@ ArbDraw applies the following rules while opening a file:
 - `cycles` is rounded to an integer and limited to a minimum of 1.
 - `sampleRateMSa` and `frequencyHz` are limited to a minimum of `0.000001`.
 - `dutyCyclePercent` is limited to the range 1 through 99.
+- `riseTimeSeconds` and `fallTimeSeconds` are limited to zero or greater. A transition longer than its available portion of the cycle is capped to that portion during generation.
 - `values` must contain exactly `sampleCount` entries.
 - Every `values` entry must already be a finite JSON number. Numeric strings are not accepted in this array.
 - If any sample-array validation fails, the entire `values` array is discarded and ArbDraw regenerates samples from the waveform metadata.

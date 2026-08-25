@@ -19,13 +19,29 @@ function generate(type = state.type, recordHistory = true) {
       case 'sine':
         return mid + amp * Math.sin(2 * Math.PI * state.cycles * t + phase);
       case 'square':
-        return p < state.duty / 100 ? state.high : state.low;
+        return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
+          phase: p,
+          high: state.high,
+          low: state.low,
+          dutyPercent: state.duty,
+          frequencyHz: state.frequency,
+          riseTimeSeconds: state.riseTime,
+          fallTimeSeconds: state.fallTime,
+        });
       case 'triangle':
         return mid + amp * (1 - 4 * Math.abs(p - 0.5));
       case 'ramp':
         return state.low + (state.high - state.low) * p;
       case 'pulse':
-        return p < state.duty / 100 ? state.high : state.low;
+        return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
+          phase: p,
+          high: state.high,
+          low: state.low,
+          dutyPercent: state.duty,
+          frequencyHz: state.frequency,
+          riseTimeSeconds: state.riseTime,
+          fallTimeSeconds: state.fallTime,
+        });
       case 'dc':
         return mid;
       case 'noise':
@@ -272,12 +288,19 @@ function updateDcPropertyAvailability(type) {
     label.classList.toggle('disabled', disabled);
   }
 }
+function updateTransitionPropertiesVisibility(type) {
+  const visible = type === 'square' || type === 'pulse';
+  document.querySelectorAll('.transition-property').forEach((property) => {
+    property.hidden = !visible;
+  });
+}
 function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
   updateDutyAvailability(type);
   updateCyclesAvailability(type);
   updateDcPropertyAvailability(type);
+  updateTransitionPropertiesVisibility(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }

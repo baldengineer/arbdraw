@@ -32,6 +32,13 @@ function normalizeDefaults(source = {}) {
     µs: 1e-6,
     ns: 1e-9,
   };
+  const transitionTimeUnits = {
+    s: 1,
+    ms: 0.001,
+    µs: 1e-6,
+    ns: 1e-9,
+    ps: 1e-12,
+  };
   const sampleRateUnits = {
     'Sa/s': 1e-6,
     'kSa/s': 0.001,
@@ -57,6 +64,8 @@ function normalizeDefaults(source = {}) {
   const frequencyUnit = unit('frequencyUnit', frequencyUnits, 'Hz');
   const periodUnit = unit('periodUnit', periodUnits, 'µs');
   const tsResolutionUnit = unit('tsResolutionUnit', periodUnits, 'ns');
+  const riseTimeUnit = unit('riseTimeUnit', transitionTimeUnits, 'ns');
+  const fallTimeUnit = unit('fallTimeUnit', transitionTimeUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
   const waveformTypes = ['sine', 'square', 'triangle', 'ramp', 'pulse', 'dc', 'noise', 'custom', 'serial'];
@@ -87,6 +96,8 @@ function normalizeDefaults(source = {}) {
     frequencyUnit,
     periodUnit,
     tsResolutionUnit,
+    riseTimeUnit,
+    fallTimeUnit,
     sampleRateUnit,
     sampleCountUnit,
     waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
@@ -111,6 +122,8 @@ function normalizeDefaults(source = {}) {
     ),
     phaseDegrees: finite('phaseDegrees', 0),
     dutyCyclePercent: Math.min(99, Math.max(1, finite('dutyCyclePercent', 50))),
+    riseTimeSeconds: Math.max(0, finite('riseTimeSeconds', 0)),
+    fallTimeSeconds: Math.max(0, finite('fallTimeSeconds', 0)),
     filtersEnabled: source.filtersEnabled !== false,
     noisePercent,
     noisePercentMax,
@@ -229,6 +242,8 @@ function createDefaultDocument() {
       cycles: DEFAULT_VALUES.nCycles,
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
+      riseTimeSeconds: DEFAULT_VALUES.riseTimeSeconds,
+      fallTimeSeconds: DEFAULT_VALUES.fallTimeSeconds,
       filters: {
         enabled: DEFAULT_VALUES.filtersEnabled,
         noiseEnabled: false,
@@ -282,6 +297,8 @@ const documentFields = {
   cycles: 'cycles',
   phase: 'phaseDegrees',
   duty: 'dutyCyclePercent',
+  riseTime: 'riseTimeSeconds',
+  fallTime: 'fallTimeSeconds',
   filters: 'filters',
   samples: 'sampleCount',
   data: 'values',

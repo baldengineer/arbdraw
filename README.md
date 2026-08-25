@@ -21,7 +21,7 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 
 ## Features
 
-- Sine, square, triangle, custom, and serial (UART) waveform types
+- Sine, square, pulse, triangle, custom, and serial (UART) waveform types
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
