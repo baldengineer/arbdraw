@@ -7,6 +7,16 @@ const helpItems = [
   { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
 ];
+const keyboardShortcuts = [
+  { keys: ['?'], description: 'Show keyboard shortcuts' },
+  { keys: ['Ctrl / ⌘', 'Z'], description: 'Undo' },
+  {
+    keys: ['Ctrl / ⌘', 'Shift', 'Z'],
+    description: 'Redo',
+  },
+  { keys: ['Ctrl', 'Y'], description: 'Redo (Windows/Linux)' },
+  { keys: ['Esc'], description: 'Close open menus and dialogs' },
+];
 
 const helpButton = document.createElement('button');
 helpButton.id = 'helpBtn';
@@ -40,8 +50,42 @@ helpDialog.innerHTML = `
   </div>
 `;
 
+const shortcutDialog = document.createElement('dialog');
+shortcutDialog.id = 'shortcutDialog';
+shortcutDialog.className = 'shortcut-dialog';
+shortcutDialog.setAttribute('aria-labelledby', 'shortcutDialogTitle');
+shortcutDialog.innerHTML = `
+  <form method="dialog" class="shortcut-dialog-form">
+    <div class="help-dialog-heading">
+      <div>
+        <span class="eyebrow">KEYBOARD SHORTCUTS</span>
+        <h2 id="shortcutDialogTitle">Keyboard shortcuts</h2>
+      </div>
+      <button class="icon-btn" value="cancel" aria-label="Close">×</button>
+    </div>
+    <p class="shortcut-dialog-intro">Use these shortcuts anywhere in the editor. Shortcuts are paused while typing in a field.</p>
+    <div class="shortcut-list" role="list"></div>
+    <div class="help-dialog-actions">
+      <button value="cancel" class="ghost" type="submit">Close</button>
+    </div>
+  </form>
+`;
+
 document.querySelector('.project-actions').append(helpMenuAnchor);
-document.body.append(helpDialog);
+document.body.append(helpDialog, shortcutDialog);
+
+const shortcutList = shortcutDialog.querySelector('.shortcut-list');
+keyboardShortcuts.forEach((shortcut) => {
+  const row = document.createElement('div');
+  row.className = 'shortcut-row';
+  row.setAttribute('role', 'listitem');
+  const keys = shortcut.keys;
+  row.innerHTML = `
+    <span class="shortcut-keys">${keys.map((key) => `<kbd>${key}</kbd>`).join('<span class="shortcut-plus">+</span>')}</span>
+    <span>${shortcut.description}</span>
+  `;
+  shortcutList.append(row);
+});
 
 function closeHelpMenu() {
   helpMenu.classList.remove('open');
@@ -83,4 +127,11 @@ document.addEventListener('pointerdown', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeHelpMenu();
+
+  const editing = event.target.matches?.('input, textarea, select, [contenteditable="true"]');
+  if (editing || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === '?' || (event.code === 'Slash' && event.shiftKey)) {
+    event.preventDefault();
+    if (!shortcutDialog.open) shortcutDialog.showModal();
+  }
 });
