@@ -45,3 +45,13 @@ test('symmetry defaults, saved JSON round trip, and legacy ramp migration', () =
   assert.equal(migrated.symmetryPercent, 100);
   assert.deepEqual(Array.from(migrated.values), doc.waveform.values);
 });
+
+test('smoothing filter settings survive project JSON round trips', () => {
+  const context = projectContext();
+  const doc = context.createDefaultDocument();
+  doc.waveform.filters.smoothingEnabled = true;
+  doc.waveform.filters.smoothingWindowPoints = 9;
+  const imported = context.parseProject(JSON.parse(JSON.stringify(doc))).waveform.filters;
+  assert.equal(imported.smoothingEnabled, true);
+  assert.equal(imported.smoothingWindowPoints, 9);
+});

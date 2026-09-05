@@ -41,6 +41,15 @@ The current format identifier is:
     "riseTimeSeconds": 0,
     "fallTimeSeconds": 0,
     "noiseColor": "white",
+    "filters": {
+      "enabled": true,
+      "noiseEnabled": false,
+      "noisePercent": 1,
+      "lowPassEnabled": false,
+      "lowPassCutoffHz": null,
+      "smoothingEnabled": false,
+      "smoothingWindowPoints": 5
+    },
     "sampleCount": 8,
     "values": [
       0,
@@ -85,11 +94,16 @@ Unknown top-level fields are ignored.
 | `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |
 | `fallTimeSeconds` | number | s | Linear high-to-low transition time for square and pulse waveforms. `0` means an ideal step. |
 | `noiseColor` | string | — | Noise spectrum used by the `noise` waveform. Allowed values are `white` and `pink`. |
+| `filters` | object | — | Post-processing filter settings. |
 | `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
 
 All waveform numbers use canonical units. UI display prefixes such as mV, kHz, and µs are not stored in the project JSON.
+
+The `filters` object contains `enabled`, `noiseEnabled`, `noisePercent`, `lowPassEnabled`,
+`lowPassCutoffHz`, `smoothingEnabled`, and `smoothingWindowPoints`. Smoothing uses a centered,
+odd-sized moving-average window and preserves the configured voltage limits.
 
 ## AWG fields
 
