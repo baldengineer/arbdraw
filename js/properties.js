@@ -5,6 +5,8 @@ const voltageScaleByLabel = { V: 1, mV: 0.001, µV: 0.000001 },
   amplitudeScaleByLabel = { Vpp: 1, mVpp: 0.001, µVpp: 0.000001 },
   frequencyScaleByLabel = { mHz: 0.001, Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 },
   periodScaleByLabel = { Ms: 1e6, s: 1, ms: 0.001, µs: 1e-6, ns: 1e-9 },
+  sampleRateScaleByLabel = { 'pts/s': 1e-6, 'Kpts/s': 0.001, 'Mpts/s': 1, 'Sa/s': 1e-6, 'kSa/s': 0.001, 'MSa/s': 1, 'GSa/s': 1e3 },
+  sampleCountScaleByLabel = { pts: 1, Kpts: 1e3, Mpts: 1e6 },
   tsResolutionScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 },
   transitionTimeScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 };
 let amplitudeUnitScale = amplitudeScaleByLabel[DEFAULT_VALUES.amplitudeUnit];
@@ -15,7 +17,14 @@ const voltageUnitScales = {
 };
 let frequencyUnitScale = frequencyScaleByLabel[DEFAULT_VALUES.frequencyUnit],
   periodUnitScale = periodScaleByLabel[DEFAULT_VALUES.periodUnit],
+  sampleRateUnitScale = sampleRateScaleByLabel[DEFAULT_VALUES.sampleRateUnit] || 1,
+  sampleCountUnitScale = sampleCountScaleByLabel[DEFAULT_VALUES.sampleCountUnit] || 1,
   tsResolutionUnitScale = tsResolutionScaleByLabel[DEFAULT_VALUES.tsResolutionUnit] || 1e-9;
+const sampleRateDisplayUnits = [
+  { scale: 1, label: 'Mpts/s' },
+  { scale: 0.001, label: 'Kpts/s' },
+  { scale: 0.000001, label: 'pts/s' },
+];
 const transitionTimeUnitScales = {
   riseTimeInput: transitionTimeScaleByLabel[DEFAULT_VALUES.riseTimeUnit] || 1e-9,
   fallTimeInput: transitionTimeScaleByLabel[DEFAULT_VALUES.fallTimeUnit] || 1e-9,
@@ -102,9 +111,9 @@ function persistCurrentSettings() {
     offsetUnit: $('offsetInput').closest('label').querySelector('.voltage-unit-button').textContent,
     amplitudeUnit: $('amplitudeUnitBtn').textContent,
     sampleRateMSa: state.sampleRate,
-    sampleRateUnit: 'MSa/s',
+    sampleRateUnit: $('sampleRateUnitBtn').textContent,
     sampleCount: state.samples,
-    sampleCountUnit: 'pts',
+    sampleCountUnit: $('sampleCountUnitBtn').textContent,
     waveformType: state.type,
     nCycles: state.cycles,
     frequencyHz: state.frequency / frequencyUnitScale,
@@ -182,6 +191,9 @@ function renderTransitionTimes() {
 $('amplitudeUnitBtn').textContent = DEFAULT_VALUES.amplitudeUnit;
 $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
+$('sampleRateUnitBtn').textContent =
+  sampleRateDisplayUnits.find((unit) => unit.scale === sampleRateUnitScale)?.label || 'Mpts/s';
+$('sampleCountUnitBtn').textContent = DEFAULT_VALUES.sampleCountUnit;
 $('tsResolutionUnitBtn').textContent = DEFAULT_VALUES.tsResolutionUnit;
 document.querySelector('.transition-time-unit-button[data-input="riseTimeInput"]').textContent =
   DEFAULT_VALUES.riseTimeUnit;
@@ -194,8 +206,14 @@ document.querySelector('.voltage-unit-button[data-input="lowInput"]').textConten
 document.querySelector('.voltage-unit-button[data-input="offsetInput"]').textContent =
   DEFAULT_VALUES.offsetUnit;
 function renderTiming() {
-  $('samplesEdit').value = state.samples;
-  $('rateEdit').value = Number(state.sampleRate.toPrecision(10));
+  $('samplesEdit').value = Number((state.samples / sampleCountUnitScale).toPrecision(10));
+  $('rateEdit').value = Number((state.sampleRate / sampleRateUnitScale).toPrecision(10));
+  $('rateEdit').min = 0.000001 / sampleRateUnitScale;
+  $('rateEdit').step = 0.000001 / sampleRateUnitScale;
+  $('samplesEdit').min = 2 / sampleCountUnitScale;
+  $('samplesEdit').step = 1 / sampleCountUnitScale;
+  if (Number.isFinite(selectedAwgProfile?.sampleDepth?.max))
+    $('samplesEdit').max = selectedAwgProfile.sampleDepth.max / sampleCountUnitScale;
   $('tsResolutionEdit').value = Number(
     ((state.duration / 1000 / Math.max(1, state.samples - 1)) / tsResolutionUnitScale).toPrecision(10),
   );
@@ -276,13 +294,14 @@ function commitTimingInput(kind) {
     return;
   }
   if (kind === 'rate') {
-    if (Math.abs(value - state.sampleRate) <= Math.max(1, state.sampleRate) * 1e-10) {
+    const sampleRate = value * sampleRateUnitScale;
+    if (Math.abs(sampleRate - state.sampleRate) <= Math.max(1, state.sampleRate) * 1e-10) {
       renderTiming();
       return;
     }
     globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
     globalThis.updateAudioPlaybackButton?.();
-    state.sampleRate = Math.max(0.000001, value);
+    state.sampleRate = Math.max(0.000001, sampleRate);
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
     pushHistory();
@@ -310,7 +329,7 @@ function commitTimingInput(kind) {
     persistCurrentSettings();
   } else {
     const samples = Math.min(
-      Math.max(2, Math.round(value)),
+      Math.max(2, Math.round(value * sampleCountUnitScale)),
       Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
         ? selectedAwgProfile.sampleDepth.max
         : Number.POSITIVE_INFINITY,
@@ -661,7 +680,7 @@ for (const inputId of Object.keys(voltageUnitScales))
     selectVoltageUnit(inputId, unit.scale, unit.label);
   });
 function closeTimingUnitMenus() {
-  for (const id of ['frequency', 'period', 'tsResolution']) {
+  for (const id of ['frequency', 'period', 'tsResolution', 'sampleRate', 'sampleCount']) {
     $(id + 'UnitMenu').classList.remove('open');
     $(id + 'UnitBtn').setAttribute('aria-expanded', 'false');
   }
@@ -677,7 +696,11 @@ function openTimingUnitMenu(kind) {
       ? frequencyUnitScale
       : kind === 'period'
         ? periodUnitScale
-        : tsResolutionUnitScale;
+        : kind === 'sampleRate'
+          ? sampleRateUnitScale
+          : kind === 'sampleCount'
+            ? sampleCountUnitScale
+            : tsResolutionUnitScale;
   menu.classList.add('open');
   const buttonRect = button.getBoundingClientRect(),
     menuRect = menu.getBoundingClientRect(),
@@ -764,6 +787,32 @@ function selectTsResolutionUnit(scale, label) {
   persistCurrentSettings();
   closeTimingUnitMenus();
 }
+$('sampleRateUnitBtn').onclick = (event) => {
+  event.stopPropagation();
+  openTimingUnitMenu('sampleRate');
+};
+$('sampleRateUnitMenu').querySelectorAll('button').forEach(
+  (option) => (option.onclick = () => {
+    sampleRateUnitScale = +option.dataset.scale;
+    $('sampleRateUnitBtn').textContent = option.dataset.label;
+    renderTiming();
+    persistCurrentSettings();
+    closeTimingUnitMenus();
+  }),
+);
+$('sampleCountUnitBtn').onclick = (event) => {
+  event.stopPropagation();
+  openTimingUnitMenu('sampleCount');
+};
+$('sampleCountUnitMenu').querySelectorAll('button').forEach(
+  (option) => (option.onclick = () => {
+    sampleCountUnitScale = +option.dataset.scale;
+    $('sampleCountUnitBtn').textContent = option.dataset.label;
+    renderTiming();
+    persistCurrentSettings();
+    closeTimingUnitMenus();
+  }),
+);
 $('tsResolutionUnitBtn').onclick = (event) => {
   event.stopPropagation();
   openTimingUnitMenu('tsResolution');

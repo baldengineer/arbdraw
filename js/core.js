@@ -44,6 +44,9 @@ function normalizeDefaults(source = {}) {
     'kSa/s': 0.001,
     'MSa/s': 1,
     'GSa/s': 1e3,
+    'pts/s': 1e-6,
+    'Kpts/s': 0.001,
+    'Mpts/s': 1,
   };
   const sampleCountUnits = {
     pts: 1,

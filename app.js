@@ -23,6 +23,7 @@ $('playWaveformBtn').onclick = async () => {
   try {
     await ARBDRAW_AUDIO_PLAYBACK.play(state.data, {
       sampleRateHz: state.sampleRate * 1e6,
+      durationSeconds: Math.max(1, state.cycles) / state.frequency,
       onEnded: updateAudioPlaybackButton,
     });
     updateAudioPlaybackButton();
