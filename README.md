@@ -27,6 +27,7 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 - CSV export with optional waveform metadata headers
 - SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - WAV export as mono 16-bit PCM at the current sample rate, with peak normalization (use the Audio profile for 48 kHz)
+- Browser audio playback with a Play/Stop control and automatic output-rate conversion
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)

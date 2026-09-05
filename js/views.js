@@ -83,6 +83,8 @@ $('copyJsonBtn').onclick = async () => {
   }
 };
 function updateSampleVoltage(input, recordHistory = false) {
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
   const index = +input.dataset.index,
     value = Number(input.value);
   if (!Number.isFinite(value)) return;

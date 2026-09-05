@@ -89,6 +89,7 @@
             <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
           </div>
           <div class="timing-actions">
+            <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
             <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
           </div>
           </div>
@@ -253,6 +254,7 @@
   <script src="js/views.js"></script>
   <script src="js/svg-export.js"></script>
   <script src="js/wav-export.js"></script>
+  <script src="js/audio-playback.js"></script>
   <script src="js/project.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>

@@ -280,6 +280,8 @@ function commitTimingInput(kind) {
       renderTiming();
       return;
     }
+    globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+    globalThis.updateAudioPlaybackButton?.();
     state.sampleRate = Math.max(0.000001, value);
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
