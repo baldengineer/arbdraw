@@ -58,6 +58,8 @@ function renderFilterMenu() {
 }
 
 function regenerateWithFilters() {
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
   if (state.type === 'custom') {
     state.data = applyFilters([...state.data]);
     pushHistory();

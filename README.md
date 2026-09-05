@@ -27,6 +27,7 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 - CSV export with optional waveform metadata headers
 - SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - WAV export as mono 16-bit PCM at the current sample rate, with peak normalization (use the Audio profile for 48 kHz)
+- Browser audio playback with a Play/Stop control and automatic output-rate conversion
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
@@ -56,7 +57,8 @@ Choose **Export Waveform**, select **CSV**, **SVG**, or **WAV**, and enter a fil
 
 1. Select **Audio** in **AWG Profile** before creating your waveform. This sets the sample rate to **48 kHz** and the sample count to **1,000**, with a maximum of **100,000** points.
 2. Adjust the sample count and create or edit your waveform.
-3. Choose **Export Waveform → WAV**, enter a filename, and select **Export WAV**.
+3. Use **Play** in the AWG controls to hear the waveform through the browser. Playback follows the configured frequency and repeats until you select **Stop**.
+4. Choose **Export Waveform → WAV**, enter a filename, and select **Export WAV**.
 
 The WAV sample rate comes from the current waveform settings and is shown in the export dialog. The exporter accepts rates from **8 to 384 kHz**. Hardware generator profiles can use much higher rates, so select the Audio profile when preparing audio files for applications such as Adobe Audition.
 

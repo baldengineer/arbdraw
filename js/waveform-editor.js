@@ -4,6 +4,8 @@
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');
 function generate(type = state.type, recordHistory = true) {
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
   state.type = type;
   const n = state.samples,
     mid = (state.high + state.low) / 2,
@@ -91,6 +93,8 @@ function cloneWaveform(source = projectDocument.waveform) {
   };
 }
 function restoreWaveform(snapshot) {
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
   projectDocument.waveform = cloneWaveform(snapshot);
   renderDocument();
 }
@@ -344,6 +348,8 @@ function markCustom() {
 }
 canvas.addEventListener('pointerdown', (e) => {
   if (state.tool === 'pointer') return;
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
   markCustom();
   state.drawing = true;
   canvas.setPointerCapture(e.pointerId);

@@ -18,7 +18,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   amplitudeVpp: 10,
   amplitudeUnit: 'Vpp',
   sampleRateMSa: 1250,
-  sampleRateUnit: 'MSa/s',
+  sampleRateUnit: 'Mpts/s',
   sampleCount: 1000,
   sampleCountUnit: 'pts',
   waveformType: 'serial',

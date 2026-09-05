@@ -70,10 +70,10 @@
             <label class="status-label" for="awgProfileSelect">AWG PROFILE</label><select id="awgProfileSelect" class="status-select" aria-label="AWG profile"></select>
           </div>
           <div id="sampleRateField" class="status-timing-field">
-            <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number" min="0.000001" step="0.001" value="1250"><span>MSa/s</span></div>
+            <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number"><button id="sampleRateUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Mpts/s</button></div>
           </div>
           <div id="samplesField" class="status-timing-field">
-            <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number" min="2" step="1" value="1000"><span>pts</span></div>
+            <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number"><button id="sampleCountUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">pts</button></div>
           </div>
           <span class="timing-link-icon" title="Sample rate and samples determine waveform timing" aria-label="Sample rate and samples determine waveform timing">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 14.5 5-5M7.2 17.8l-1.1 1.1a3.3 3.3 0 0 1-4.7-4.7l4.2-4.2a3.3 3.3 0 0 1 4.7 0M16.8 6.2l1.1-1.1a3.3 3.3 0 0 1 4.7 4.7l-4.2 4.2a3.3 3.3 0 0 1-4.7 0"/></svg>
@@ -89,6 +89,7 @@
             <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
           </div>
           <div class="timing-actions">
+            <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
             <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
           </div>
           </div>
@@ -223,6 +224,8 @@
   <div id="periodUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1000000" data-label="Ms" role="menuitem">Ms</button><button data-scale="1" data-label="s" role="menuitem">s</button><button data-scale="0.001" data-label="ms" role="menuitem">ms</button><button data-scale="0.000001" data-label="µs" role="menuitem">µs</button><button data-scale="0.000000001" data-label="ns" role="menuitem">ns</button></div>
   <div id="transitionTimeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.000000000001" data-label="ps" role="menuitem">ps</button><button data-scale="0.000000001" data-label="ns" role="menuitem">ns</button><button data-scale="0.000001" data-label="µs" role="menuitem">µs</button><button data-scale="0.001" data-label="ms" role="menuitem">ms</button><button data-scale="1" data-label="s" role="menuitem">s</button></div>
   <div id="tsResolutionUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.000000000001" data-label="ps" role="menuitem">ps</button><button data-scale="0.000000001" data-label="ns" role="menuitem">ns</button><button data-scale="0.000001" data-label="µs" role="menuitem">µs</button><button data-scale="0.001" data-label="ms" role="menuitem">ms</button><button data-scale="1" data-label="s" role="menuitem">s</button></div>
+  <div id="sampleRateUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="Mpts/s" role="menuitem">Mpts/s</button><button data-scale="0.001" data-label="Kpts/s" role="menuitem">Kpts/s</button><button data-scale="0.000001" data-label="pts/s" role="menuitem">pts/s</button></div>
+  <div id="sampleCountUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1000000" data-label="Mpts" role="menuitem">Mpts</button><button data-scale="1000" data-label="Kpts" role="menuitem">Kpts</button><button data-scale="1" data-label="pts" role="menuitem">pts</button></div>
   <div id="scopeVoltageUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V/div" role="menuitem">V/div</button><button data-scale="0.001" data-label="mV/div" role="menuitem">mV/div</button></div>
   <div id="scopePositionUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="1" data-label="V" role="menuitem">V</button><button data-scale="0.001" data-label="mV" role="menuitem">mV</button></div>
   <div id="scopeTimeUnitMenu" class="context-menu unit-menu" role="menu"><button data-scale="0.000000001" data-label="ps/div" role="menuitem">ps/div</button><button data-scale="0.000001" data-label="ns/div" role="menuitem">ns/div</button><button data-scale="0.001" data-label="µs/div" role="menuitem">µs/div</button><button data-scale="1" data-label="ms/div" role="menuitem">ms/div</button><button data-scale="1000" data-label="s/div" role="menuitem">s/div</button></div>
@@ -253,6 +256,7 @@
   <script src="js/views.js"></script>
   <script src="js/svg-export.js"></script>
   <script src="js/wav-export.js"></script>
+  <script src="js/audio-playback.js"></script>
   <script src="js/project.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>
