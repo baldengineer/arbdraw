@@ -173,9 +173,11 @@
     <form method="dialog">
       <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export Waveform</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
       <p>Choose the file format and filename.</p>
-      <label class="save-filename-label" for="exportFormatSelect">Format<select id="exportFormatSelect"><option value="csv">CSV</option><option value="svg">SVG</option></select></label>
+      <label class="save-filename-label" for="exportFormatSelect">Format<select id="exportFormatSelect"><option value="csv">CSV</option><option value="svg">SVG</option><option value="wav">WAV</option></select></label>
       <label id="svgAxesOption" class="save-name-option" hidden><input id="includeSvgAxes" type="checkbox"> Include axes and grid</label>
       <p id="svgExportDescription" hidden>Black waveform lines on a transparent background.</p>
+      <p id="wavExportDescription" hidden>Mono, 16-bit PCM at the current sample rate, normalized to full scale. Select the Audio profile for 48 kHz.</p>
+      <div id="exportError" class="open-error" role="alert"></div>
       <label class="save-filename-label" for="exportFilenameInput">Filename<input id="exportFilenameInput" type="text" spellcheck="false"></label>
       <label class="save-name-option"><input id="updateProjectNameOnExport" type="checkbox" checked> Update project name from saved filename</label>
       <label id="csvHeadersOption" class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
@@ -250,6 +252,7 @@
   <script src="js/scope-view.js"></script>
   <script src="js/views.js"></script>
   <script src="js/svg-export.js"></script>
+  <script src="js/wav-export.js"></script>
   <script src="js/project.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>

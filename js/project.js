@@ -169,7 +169,7 @@ exportButton.className = 'ghost';
 exportButton.type = 'button';
 exportButton.setAttribute('aria-haspopup', 'menu');
 exportButton.setAttribute('aria-expanded', 'false');
-exportButton.title = 'CSV or SVG';
+exportButton.title = 'CSV, SVG, or WAV';
 exportButton.textContent = 'Export Waveform';
 $('saveBtn').after(exportButton);
 $('saveBtn').title = 'JSON';
@@ -192,7 +192,7 @@ function projectNameFromFilename(filename) {
   return (
     String(filename)
       .trim()
-      .replace(/(?:(?:\.arbdraw\.json)|(?:\.arbdraw)|(?:\.json)|(?:\.csv)|(?:\.svg))+$/i, '')
+      .replace(/(?:(?:\.arbdraw\.json)|(?:\.arbdraw)|(?:\.json)|(?:\.csv)|(?:\.svg)|(?:\.wav))+$/i, '')
       .trim() || 'Untitled waveform'
   );
 }
@@ -289,13 +289,29 @@ function downloadSvg(filename) {
   URL.revokeObjectURL(link.href);
   showToast('Waveform exported as SVG');
 }
+function downloadWav(filename) {
+  const buffer = ARBDRAW_WAV_EXPORT.waveformWav({
+    values: state.data,
+    sampleRateHz: state.sampleRate * 1e6,
+  });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('Waveform exported as WAV');
+}
 function updateExportFormat() {
-  const svg = $('exportFormatSelect').value === 'svg';
-  $('exportFilenameInput').value = $('exportFilenameInput').value.replace(/\.(csv|svg)$/i, svg ? '.svg' : '.csv');
-  $('csvHeadersOption').hidden = svg;
+  const format = $('exportFormatSelect').value, svg = format === 'svg';
+  $('exportFilenameInput').value = $('exportFilenameInput').value.replace(/\.(csv|svg|wav)$/i, `.${format}`);
+  $('csvHeadersOption').hidden = format !== 'csv';
   $('svgAxesOption').hidden = !svg;
   $('svgExportDescription').hidden = !svg;
-  $('confirmExportBtn').textContent = svg ? 'Export SVG' : 'Export CSV';
+  $('wavExportDescription').hidden = format !== 'wav';
+  $('wavExportDescription').textContent =
+    `Mono, 16-bit PCM at ${(state.sampleRate * 1e6).toLocaleString()} Hz, normalized to full scale. WAV export supports 8–384 kHz; select the Audio profile for 48 kHz.`;
+  $('exportError').textContent = '';
+  $('confirmExportBtn').textContent = `Export ${format.toUpperCase()}`;
 }
 $('exportFormatSelect').addEventListener('change', updateExportFormat);
 function closeExportMenu() {
@@ -316,16 +332,22 @@ $('exportBtn').onclick = (event) => {
   $('exportFilenameInput').select();
 };
 $('confirmExportBtn').onclick = () => {
-  const format = $('exportFormatSelect').value === 'svg' ? 'svg' : 'csv';
+  const format = $('exportFormatSelect').value;
   let filename = $('exportFilenameInput').value.trim() || `Untitled waveform.${format}`;
   if (!filename.toLowerCase().endsWith(`.${format}`)) filename += `.${format}`;
   const savedName = projectNameFromFilename(filename);
+  try {
+    if (format === 'svg') downloadSvg(filename);
+    else if (format === 'wav') downloadWav(filename);
+    else downloadCsv($('includeCsvHeaders').checked, filename);
+  } catch (error) {
+    $('exportError').textContent = error.message;
+    return;
+  }
   if ($('updateProjectNameOnExport').checked) {
     projectDocument.name = savedName;
     document.querySelector('.document-name').value = savedName;
   }
-  if (format === 'svg') downloadSvg(filename);
-  else downloadCsv($('includeCsvHeaders').checked, filename);
   $('exportDialog').close();
 };
 for (const [inputId, buttonId] of [
