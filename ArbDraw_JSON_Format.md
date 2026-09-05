@@ -39,6 +39,7 @@ The current format identifier is:
     "dutyCyclePercent": 50,
     "riseTimeSeconds": 0,
     "fallTimeSeconds": 0,
+    "noiseColor": "white",
     "sampleCount": 8,
     "values": [
       0,
@@ -81,6 +82,7 @@ Unknown top-level fields are ignored.
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
 | `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |
 | `fallTimeSeconds` | number | s | Linear high-to-low transition time for square and pulse waveforms. `0` means an ideal step. |
+| `noiseColor` | string | — | Noise spectrum used by the `noise` waveform. Allowed values are `white` and `pink`. |
 | `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
@@ -155,6 +157,10 @@ Version 1 recognizes:
 - `dc`
 - `noise`
 
+The `noise` waveform generates independent, uniformly distributed samples for white noise. Pink
+noise passes white samples through a seven-pole approximation of a 1/f spectrum. Both variants are
+centered on the configured offset and scaled to the configured high/low voltage range.
+
 The legacy value `free` is imported as `custom`. Unknown values are also imported as `custom`.
 
 ## Serial settings
@@ -216,6 +222,7 @@ ArbDraw applies the following rules while opening a file:
 - `sampleRateMSa` and `frequencyHz` are limited to a minimum of `0.000001`.
 - `dutyCyclePercent` is limited to the range 1 through 99.
 - `riseTimeSeconds` and `fallTimeSeconds` are limited to zero or greater. A transition longer than its available portion of the cycle is capped to that portion during generation.
+- `noiseColor` accepts `white` or `pink`; missing or unrecognized values become `white`.
 - `values` must contain exactly `sampleCount` entries.
 - Every `values` entry must already be a finite JSON number. Numeric strings are not accepted in this array.
 - If any sample-array validation fails, the entire `values` array is discarded and ArbDraw regenerates samples from the waveform metadata.

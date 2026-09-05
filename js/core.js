@@ -125,6 +125,7 @@ function normalizeDefaults(source = {}) {
     riseTimeSeconds: Math.max(0, finite('riseTimeSeconds', 0)),
     fallTimeSeconds: Math.max(0, finite('fallTimeSeconds', 0)),
     filtersEnabled: source.filtersEnabled !== false,
+    noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
     noisePercent,
     noisePercentMax,
     serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
@@ -244,6 +245,7 @@ function createDefaultDocument() {
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
       riseTimeSeconds: DEFAULT_VALUES.riseTimeSeconds,
       fallTimeSeconds: DEFAULT_VALUES.fallTimeSeconds,
+      noiseColor: DEFAULT_VALUES.noiseColor,
       filters: {
         enabled: DEFAULT_VALUES.filtersEnabled,
         noiseEnabled: false,
@@ -299,6 +301,7 @@ const documentFields = {
   duty: 'dutyCyclePercent',
   riseTime: 'riseTimeSeconds',
   fallTime: 'fallTimeSeconds',
+  noiseColor: 'noiseColor',
   filters: 'filters',
   samples: 'sampleCount',
   data: 'values',
@@ -320,7 +323,7 @@ const titles = {
   ramp: 'Ramp wave',
   pulse: 'Pulse wave',
   dc: 'DC level',
-  noise: 'White noise',
+  noise: 'Noise',
   custom: 'Custom waveform',
   serial: 'Serial data',
 };

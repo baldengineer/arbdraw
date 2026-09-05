@@ -101,6 +101,7 @@
         <div class="section function-section">
           <div class="section-title">Function</div>
           <label>Waveshape <button id="functionSelectBtn" class="function-select-button" type="button" aria-haspopup="menu" aria-expanded="false"><canvas aria-hidden="true"></canvas><span>Sine</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button></label>
+          <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
         </div>
         <div class="section">
           <div class="section-title">Amplitude</div>
@@ -229,7 +230,7 @@
     <button data-wave="ramp" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Ramp</span></button>
     <button data-wave="pulse" role="menuitem"><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem"><canvas aria-hidden="true"></canvas><span>DC</span></button>
-    <button data-wave="noise" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Noise</span></button>
+    <button data-wave="noise" role="menuitem"><canvas aria-hidden="true"></canvas><span>Noise</span></button>
   </div>
   <datalist id="serialBaudRates"><option value="300"></option><option value="1200"></option><option value="2400"></option><option value="4800"></option><option value="9600"></option><option value="19200"></option><option value="38400"></option><option value="57600"></option><option value="115200"></option><option value="230400"></option><option value="460800"></option><option value="921600"></option></datalist>
   <div id="toast" class="toast">Waveform exported as CSV</div>

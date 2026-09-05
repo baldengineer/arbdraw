@@ -121,6 +121,7 @@ function persistCurrentSettings() {
     fallTimeUnit: document.querySelector(
       '.transition-time-unit-button[data-input="fallTimeInput"]',
     ).textContent,
+    noiseColor: state.noiseColor,
     filtersEnabled: state.filters?.enabled !== false,
     noisePercent: state.filters?.noisePercent ?? DEFAULT_VALUES.noisePercent,
     noisePercentMax: DEFAULT_VALUES.noisePercentMax,

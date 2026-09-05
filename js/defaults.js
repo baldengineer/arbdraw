@@ -36,6 +36,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   fallTimeSeconds: 0,
   fallTimeUnit: 'ns',
   filtersEnabled: true,
+  noiseColor: 'white',
   noisePercent: 1,
   noisePercentMax: 10,
   serialProtocol: 'UART',

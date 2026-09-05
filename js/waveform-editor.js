@@ -11,6 +11,15 @@ function generate(type = state.type, recordHistory = true) {
     phase = (state.phase * Math.PI) / 180,
     serialBits = type === 'serial' ? serialBitPattern() : null,
     serialBaud = type === 'serial' ? serialSettings().baud : null,
+    noiseSamples =
+      type === 'noise'
+        ? ARBDRAW_WAVEFORM_SHAPES.generateNoiseSamples({
+            count: n,
+            high: state.high,
+            low: state.low,
+            color: state.noiseColor,
+          })
+        : null,
     bufferDurationSeconds = waveformDurationMs() / 1000;
   const generatedData = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1),
@@ -45,7 +54,7 @@ function generate(type = state.type, recordHistory = true) {
       case 'dc':
         return mid;
       case 'noise':
-        return mid + (Math.random() * 2 - 1) * amp;
+        return noiseSamples[i];
       case 'serial':
         {
           const elapsedSeconds = (i / (n - 1)) * bufferDurationSeconds;
@@ -294,6 +303,14 @@ function updateTransitionPropertiesVisibility(type) {
     property.hidden = !visible;
   });
 }
+function updateNoisePropertiesVisibility(type) {
+  $('noiseColorProperty').hidden = type !== 'noise';
+}
+$('noiseColorSelect').addEventListener('change', () => {
+  state.noiseColor = $('noiseColorSelect').value === 'pink' ? 'pink' : 'white';
+  if (state.type === 'noise') generate('noise');
+  else persistCurrentSettings();
+});
 function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
@@ -301,6 +318,7 @@ function selectPreset(type) {
   updateCyclesAvailability(type);
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
+  updateNoisePropertiesVisibility(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }

@@ -14,6 +14,7 @@ function renderDocument() {
   $('phaseInput').value = state.phase;
   $('dutyInput').value = state.duty;
   $('dutyValue').textContent = state.duty + '%';
+  $('noiseColorSelect').value = state.noiseColor;
   renderTransitionTimes();
   renderTiming();
   document.querySelector('.preset.active')?.classList.remove('active');
@@ -22,6 +23,7 @@ function renderDocument() {
   updateCyclesAvailability(state.type);
   updateDcPropertyAvailability(state.type);
   updateTransitionPropertiesVisibility(state.type);
+  updateNoisePropertiesVisibility(state.type);
   renderSerialProperties();
   renderFilterMenu();
   updateFunctionSelect(state.type);
@@ -88,6 +90,7 @@ function parseProject(raw) {
       ),
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
+      noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
       filters: normalizeFilterSettings(source.filters),
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
       sampleCount,
@@ -243,6 +246,7 @@ function downloadCsv(includeHeader, filename) {
       ['Duty cycle (%)', state.duty],
       ['Rise time (s)', state.riseTime],
       ['Fall time (s)', state.fallTime],
+      ['Noise color', state.noiseColor],
       ['Sample rate (MSa/s)', state.sampleRate],
       ['Sample count', sampleCount],
       ['Time min (s)', 0],
