@@ -37,6 +37,17 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
     preferredBackend: 'file',
   }),
+  audio: Object.freeze({
+    id: 'audio',
+    name: 'Audio',
+    vid: null,
+    pid: null,
+    sampleRateType: 'Fixed',
+    sampleRateMSa: 0.048,
+    sampleDepth: Object.freeze({ default: 1000, max: 100_000 }),
+    transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
+    preferredBackend: null,
+  }),
   other: Object.freeze({
     id: 'other',
     name: 'Other',
