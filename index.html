@@ -171,11 +171,14 @@
   </dialog>
   <dialog id="exportDialog" class="open-dialog">
     <form method="dialog">
-      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export CSV</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
-      <p>Choose the filename and CSV options.</p>
+      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export Waveform</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p>Choose the file format and filename.</p>
+      <label class="save-filename-label" for="exportFormatSelect">Format<select id="exportFormatSelect"><option value="csv">CSV</option><option value="svg">SVG</option></select></label>
+      <label id="svgAxesOption" class="save-name-option" hidden><input id="includeSvgAxes" type="checkbox"> Include axes and grid</label>
+      <p id="svgExportDescription" hidden>Black waveform lines on a transparent background.</p>
       <label class="save-filename-label" for="exportFilenameInput">Filename<input id="exportFilenameInput" type="text" spellcheck="false"></label>
       <label class="save-name-option"><input id="updateProjectNameOnExport" type="checkbox" checked> Update project name from saved filename</label>
-      <label class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
+      <label id="csvHeadersOption" class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmExportBtn" type="button" class="primary">Export CSV</button></div>
     </form>
   </dialog>
@@ -246,6 +249,7 @@
   <script src="js/serial-properties.js"></script>
   <script src="js/scope-view.js"></script>
   <script src="js/views.js"></script>
+  <script src="js/svg-export.js"></script>
   <script src="js/project.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>

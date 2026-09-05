@@ -23,6 +23,7 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 
 - Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), white/pink noise, custom, and serial (UART) waveform types
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
+- SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)

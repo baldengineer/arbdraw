@@ -127,3 +127,5 @@ button { color:inherit; }
 }
 
 .symmetry-presets{display:flex;width:126px;margin:-3px 0 9px auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}.symmetry-presets button{flex:1;padding:5px 0;color:var(--muted);background:var(--field);border:0;cursor:pointer;font:inherit;font-size:11px}.symmetry-presets button+button{border-left:1px solid var(--line)}.symmetry-presets button:hover{color:var(--ink);background:var(--soft)}.symmetry-presets button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+
+#exportDialog [hidden]{display:none}.save-filename-label select{display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:7px;font:inherit}.save-filename-label select:focus{outline:2px solid var(--focus)}
