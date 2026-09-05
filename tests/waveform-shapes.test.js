@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { generateNoiseSamples, squarePulseVoltage } = require('../js/waveform-shapes.js');
+const { generateNoiseSamples, smoothSamples, squarePulseVoltage } = require('../js/waveform-shapes.js');
 
 const base = {
   high: 5,
@@ -100,4 +100,11 @@ test('pink noise emphasizes low-frequency correlation and stays within voltage l
   assert.ok(lagOneCorrelation(pink) > 0.7);
   assert.ok(pink.every((value) => value >= -2 && value <= 2));
   assert.ok(pink.some((value) => Math.abs(value) === 2));
+});
+
+test('smoothing uses a centered odd window, preserves sample count, and clamps limits', () => {
+  const values = smoothSamples([0, 20, 0], { windowPoints: 4, low: 0, high: 10 });
+  assert.equal(values.length, 3);
+  assert.deepEqual(values, [10, 20 / 3, 10]);
+  assert.ok(values.every((value) => value >= 0 && value <= 10));
 });

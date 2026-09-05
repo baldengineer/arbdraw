@@ -101,5 +101,22 @@
     return pinkSamples.map((value) => midpoint + amplitude * ((value - mean) / (peak || 1)));
   }
 
-  return Object.freeze({ generateNoiseSamples, squarePulseVoltage, triangleVoltage, createSerialVoltage });
+  function smoothSamples(values, { windowPoints = 5, low = -Infinity, high = Infinity } = {}) {
+    if (!values.length) return [];
+    const maximumWindow = values.length % 2 ? values.length : Math.max(1, values.length - 1),
+      requestedWindow = Math.max(1, Math.round(Number(windowPoints) || 1)),
+      window = Math.min(maximumWindow, requestedWindow % 2 ? requestedWindow : requestedWindow + 1),
+      radius = Math.floor(window / 2),
+      result = new Array(values.length);
+    for (let index = 0; index < values.length; index++) {
+      const start = Math.max(0, index - radius),
+        end = Math.min(values.length - 1, index + radius);
+      let sum = 0;
+      for (let sample = start; sample <= end; sample++) sum += values[sample];
+      result[index] = Math.min(high, Math.max(low, sum / (end - start + 1)));
+    }
+    return result;
+  }
+
+  return Object.freeze({ generateNoiseSamples, smoothSamples, squarePulseVoltage, triangleVoltage, createSerialVoltage });
 });

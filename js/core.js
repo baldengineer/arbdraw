@@ -209,7 +209,9 @@ persistSettings({ ...globalThis.ARBDRAW_DEFAULTS, ...STORED_SETTINGS });
 
 function normalizeFilterSettings(source = {}) {
   const noisePercent = Number(source.noisePercent);
-  const cutoff = Number(source.lowPassCutoffHz);
+  const cutoff = Number(source.lowPassCutoffHz),
+    smoothingWindow = Number(source.smoothingWindowPoints);
+  const roundedSmoothingWindow = Math.round(smoothingWindow);
   return {
     enabled: source.enabled !== false,
     noiseEnabled: source.noiseEnabled === true,
@@ -218,6 +220,13 @@ function normalizeFilterSettings(source = {}) {
       : DEFAULT_VALUES.noisePercent,
     lowPassEnabled: source.lowPassEnabled === true,
     lowPassCutoffHz: Number.isFinite(cutoff) && cutoff > 0 ? cutoff : null,
+    smoothingEnabled: source.smoothingEnabled === true,
+    smoothingWindowPoints: Number.isFinite(smoothingWindow)
+      ? Math.min(
+          101,
+          Math.max(3, roundedSmoothingWindow % 2 ? roundedSmoothingWindow : roundedSmoothingWindow + 1),
+        )
+      : 5,
   };
 }
 
@@ -257,6 +266,8 @@ function createDefaultDocument() {
         noisePercent: DEFAULT_VALUES.noisePercent,
         lowPassEnabled: false,
         lowPassCutoffHz: null,
+        smoothingEnabled: false,
+        smoothingWindowPoints: 5,
       },
       serial: {
         protocol: DEFAULT_VALUES.serialProtocol,

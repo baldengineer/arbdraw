@@ -2,6 +2,8 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Waveform filter settings, menu controls, and post-processing.
 const LOW_PASS_INITIAL_HZ = 1_000;
+const SMOOTHING_INITIAL_WINDOW = 5;
+const SMOOTHING_MAX_WINDOW = 101;
 const FILTER_MENU_ENABLED = new URLSearchParams(window.location.search).get('lpf') === '1';
 
 const lowPassFilterButton = $('lowPassFilterBtn');
@@ -29,6 +31,14 @@ function applyLowPassFilter(values, cutoffHz) {
   return filtered;
 }
 
+function applySmoothingFilter(values, windowPoints) {
+  return ARBDRAW_WAVEFORM_SHAPES.smoothSamples(values, {
+    windowPoints,
+    low: Math.min(state.low, state.high),
+    high: Math.max(state.low, state.high),
+  });
+}
+
 function applyFilters(values) {
   if (!state.filters?.enabled) return values;
   let filtered = values;
@@ -36,6 +46,8 @@ function applyFilters(values) {
     filtered = applyNoiseFilter(filtered, state.filters.noisePercent);
   if (state.filters.lowPassEnabled && state.filters.lowPassCutoffHz)
     filtered = applyLowPassFilter(filtered, state.filters.lowPassCutoffHz);
+  if (state.filters.smoothingEnabled)
+    filtered = applySmoothingFilter(filtered, state.filters.smoothingWindowPoints);
   return filtered;
 }
 
@@ -53,8 +65,17 @@ function renderFilterMenu() {
     'aria-checked',
     String(state.filters?.lowPassEnabled === true),
   );
+  $('smoothingFilterBtn').setAttribute(
+    'aria-checked',
+    String(state.filters?.smoothingEnabled === true),
+  );
+  const smoothingWindow = Number.isFinite(state.filters?.smoothingWindowPoints)
+    ? state.filters.smoothingWindowPoints
+    : SMOOTHING_INITIAL_WINDOW;
   $('noiseFilterValue').textContent = `${Number(noisePercent.toPrecision(6))}%`;
   $('noiseFilterDefaultValue').textContent = `${Number(DEFAULT_VALUES.noisePercent.toPrecision(6))}%`;
+  $('smoothingFilterValue').textContent = `${smoothingWindow} pts`;
+  $('smoothingFilterDefaultValue').textContent = `${SMOOTHING_INITIAL_WINDOW} pts`;
 }
 
 function regenerateWithFilters() {
@@ -88,7 +109,7 @@ function openFilterDialog(kind) {
     input.step = 'any';
     input.setAttribute('aria-label', 'Noise percentage');
     unit.textContent = '%';
-  } else {
+  } else if (kind === 'lowPass') {
     title.textContent = 'Low-Pass Filter';
     description.textContent = 'Set the low-pass filter cut-off frequency.';
     input.value = state.filters.lowPassCutoffHz
@@ -99,6 +120,17 @@ function openFilterDialog(kind) {
     input.step = 'any';
     input.setAttribute('aria-label', 'Cut-off frequency in kHz');
     unit.textContent = 'kHz';
+  } else {
+    title.textContent = 'Smoothing';
+    description.textContent = 'Set the centered moving-average window size. Larger windows smooth more variation.';
+    input.value = Number.isFinite(state.filters.smoothingWindowPoints)
+      ? state.filters.smoothingWindowPoints
+      : SMOOTHING_INITIAL_WINDOW;
+    input.min = 3;
+    input.max = SMOOTHING_MAX_WINDOW;
+    input.step = 2;
+    input.setAttribute('aria-label', 'Smoothing window size in points');
+    unit.textContent = 'pts';
   }
   dialog.dataset.filter = kind;
   dialog.showModal();
@@ -117,8 +149,10 @@ $('enableFiltersBtn').onclick = () => {
   state.filters.enabled = true;
   state.filters.noiseEnabled = true;
   state.filters.lowPassEnabled = true;
+  state.filters.smoothingEnabled = true;
   if (!state.filters.noisePercent) state.filters.noisePercent = DEFAULT_VALUES.noisePercent;
   if (!state.filters.lowPassCutoffHz) state.filters.lowPassCutoffHz = LOW_PASS_INITIAL_HZ;
+  if (!state.filters.smoothingWindowPoints) state.filters.smoothingWindowPoints = SMOOTHING_INITIAL_WINDOW;
   renderFilterMenu();
   regenerateWithFilters();
 };
@@ -126,6 +160,7 @@ $('disableFiltersBtn').onclick = () => {
   state.filters.enabled = false;
   state.filters.noiseEnabled = false;
   state.filters.lowPassEnabled = false;
+  state.filters.smoothingEnabled = false;
   renderFilterMenu();
   regenerateWithFilters();
 };
@@ -153,6 +188,23 @@ $('lowPassFilterBtn').onclick = () => {
     regenerateWithFilters();
   } else openFilterDialog('lowPass');
 };
+$('smoothingFilterBtn').onclick = () => {
+  if (state.filters.smoothingEnabled) {
+    state.filters.smoothingEnabled = false;
+    renderFilterMenu();
+    closeFiltersMenu();
+    regenerateWithFilters();
+  } else openFilterDialog('smoothing');
+};
+$('changeSmoothingFilterBtn').onclick = () => openFilterDialog('smoothing');
+$('defaultSmoothingFilterBtn').onclick = () => {
+  state.filters.enabled = true;
+  state.filters.smoothingWindowPoints = SMOOTHING_INITIAL_WINDOW;
+  state.filters.smoothingEnabled = true;
+  renderFilterMenu();
+  closeFiltersMenu();
+  regenerateWithFilters();
+};
 $('applyFilterDialogBtn').onclick = () => {
   const dialog = $('filterDialog'),
     value = Number($('filterDialogInput').value);
@@ -160,9 +212,14 @@ $('applyFilterDialogBtn').onclick = () => {
   if (dialog.dataset.filter === 'noise') {
     state.filters.noisePercent = Math.min(DEFAULT_VALUES.noisePercentMax, value);
     state.filters.noiseEnabled = true;
-  } else {
+  } else if (dialog.dataset.filter === 'lowPass') {
     state.filters.lowPassCutoffHz = value * 1e3;
     state.filters.lowPassEnabled = true;
+  } else {
+    const roundedWindow = Math.max(3, Math.min(SMOOTHING_MAX_WINDOW, Math.round(value)));
+    state.filters.enabled = true;
+    state.filters.smoothingWindowPoints = roundedWindow % 2 ? roundedWindow : roundedWindow + 1;
+    state.filters.smoothingEnabled = true;
   }
   renderFilterMenu();
   dialog.close();
