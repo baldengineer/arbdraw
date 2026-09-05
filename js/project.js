@@ -13,6 +13,7 @@ function renderDocument() {
   renderFrequency();
   $('phaseInput').value = state.phase;
   $('dutyInput').value = state.duty;
+  $('symmetryInput').value = state.symmetry;
   $('dutyValue').textContent = state.duty + '%';
   $('noiseColorSelect').value = state.noiseColor;
   renderTransitionTimes();
@@ -24,6 +25,7 @@ function renderDocument() {
   updateDcPropertyAvailability(state.type);
   updateTransitionPropertiesVisibility(state.type);
   updateNoisePropertiesVisibility(state.type);
+  updateSymmetryVisibility(state.type);
   renderSerialProperties();
   renderFilterMenu();
   updateFunctionSelect(state.type);
@@ -54,7 +56,7 @@ function parseProject(raw) {
     source.values.every(Number.isFinite)
       ? source.values.map(Number)
       : [];
-  const importedType = source.type === 'free' ? 'custom' : source.type;
+  const importedType = source.type === 'ramp' ? 'triangle' : source.type === 'free' ? 'custom' : source.type;
   const durationMs = sampleCount / (sampleRateMSa * 1000),
     cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
     frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
@@ -88,6 +90,7 @@ function parseProject(raw) {
         99,
         Math.max(1, number('dutyCyclePercent', defaults.dutyCyclePercent)),
       ),
+      symmetryPercent: source.type === 'ramp' ? 100 : Math.min(100, Math.max(0, number('symmetryPercent', 50))),
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
@@ -244,6 +247,7 @@ function downloadCsv(includeHeader, filename) {
       ['Cycles', state.cycles],
       ['Phase (degrees)', state.phase],
       ['Duty cycle (%)', state.duty],
+      ['Symmetry (%)', state.symmetry],
       ['Rise time (s)', state.riseTime],
       ['Fall time (s)', state.fallTime],
       ['Noise color', state.noiseColor],

@@ -38,9 +38,12 @@ function generate(type = state.type, recordHistory = true) {
           fallTimeSeconds: state.fallTime,
         });
       case 'triangle':
-        return mid + amp * (1 - 4 * Math.abs(p - 0.5));
-      case 'ramp':
-        return state.low + (state.high - state.low) * p;
+        return ARBDRAW_WAVEFORM_SHAPES.triangleVoltage({
+          phase: p,
+          high: state.high,
+          low: state.low,
+          symmetryPercent: state.symmetry,
+        });
       case 'pulse':
         return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
           phase: p,
@@ -67,6 +70,7 @@ function generate(type = state.type, recordHistory = true) {
     }
   });
   state.data = applyFilters(generatedData);
+  if (type === 'triangle') updateFunctionSelect(type);
   if (recordHistory) pushHistory();
   draw();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
@@ -269,7 +273,6 @@ const dutyDisabledTypes = new Set([
   'custom',
   'sine',
   'triangle',
-  'ramp',
   'dc',
   'noise',
   'serial',
@@ -303,6 +306,10 @@ function updateTransitionPropertiesVisibility(type) {
     property.hidden = !visible;
   });
 }
+function updateSymmetryVisibility(type) {
+  $('symmetryProperty').hidden = type !== 'triangle';
+  $('symmetryPresets').hidden = type !== 'triangle';
+}
 function updateNoisePropertiesVisibility(type) {
   $('noiseColorProperty').hidden = type !== 'noise';
 }
@@ -319,6 +326,7 @@ function selectPreset(type) {
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
   updateNoisePropertiesVisibility(type);
+  updateSymmetryVisibility(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }
@@ -404,8 +412,8 @@ function drawMini(c, type) {
       y = 0.5;
     if (type === 'sine') y = 0.5 - 0.34 * Math.sin(t * Math.PI * 4);
     if (type === 'square' || type === 'pulse') y = p < 0.5 ? 0.2 : 0.8;
-    if (type === 'triangle') y = 0.2 + 0.6 * Math.abs(2 * p - 1);
-    if (type === 'ramp') y = 0.8 - 0.6 * p;
+    if (type === 'triangle') y = 0.8 - 0.6 * ARBDRAW_WAVEFORM_SHAPES.triangleVoltage({ phase: p, low: 0, high: 1, symmetryPercent: state.symmetry });
+
     if (type === 'dc') y = 0.5;
     if (type === 'noise') y = 0.2 + Math.random() * 0.6;
     if (type === 'custom') y = 0.5;

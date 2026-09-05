@@ -30,6 +30,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   phaseDegrees: 0,
   phaseUnit: '°',
   dutyCyclePercent: 50,
+  symmetryPercent: 50,
   dutyCycleUnit: '%',
   riseTimeSeconds: 0,
   riseTimeUnit: 'ns',

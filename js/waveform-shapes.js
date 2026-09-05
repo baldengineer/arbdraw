@@ -30,6 +30,14 @@
     return low;
   }
 
+  function triangleVoltage({ phase, high, low, symmetryPercent = 50 }) {
+    const p = ((phase % 1) + 1) % 1,
+      rise = Math.min(100, Math.max(0, symmetryPercent)) / 100;
+    const level = rise === 0 ? 1 - p : rise === 1 ? p :
+      p < rise ? p / rise : (1 - p) / (1 - rise);
+    return low + (high - low) * level;
+  }
+
   function generateNoiseSamples({ count, high, low, color = 'white', random = Math.random }) {
     const sampleCount = Math.max(0, Math.floor(count)),
       midpoint = (high + low) / 2,
@@ -64,5 +72,5 @@
     return pinkSamples.map((value) => midpoint + amplitude * ((value - mean) / (peak || 1)));
   }
 
-  return Object.freeze({ generateNoiseSamples, squarePulseVoltage });
+  return Object.freeze({ generateNoiseSamples, squarePulseVoltage, triangleVoltage });
 });

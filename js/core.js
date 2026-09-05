@@ -68,7 +68,7 @@ function normalizeDefaults(source = {}) {
   const fallTimeUnit = unit('fallTimeUnit', transitionTimeUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
-  const waveformTypes = ['sine', 'square', 'triangle', 'ramp', 'pulse', 'dc', 'noise', 'custom', 'serial'];
+  const waveformTypes = ['sine', 'square', 'triangle', 'pulse', 'dc', 'noise', 'custom', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -100,7 +100,7 @@ function normalizeDefaults(source = {}) {
     fallTimeUnit,
     sampleRateUnit,
     sampleCountUnit,
-    waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
+    waveformType: source.waveformType === 'ramp' ? 'triangle' : waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
     phaseUnit: String(source.phaseUnit || '°'),
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
@@ -121,6 +121,7 @@ function normalizeDefaults(source = {}) {
       finite('frequencyHz', 750000 / frequencyUnits[frequencyUnit]) * frequencyUnits[frequencyUnit],
     ),
     phaseDegrees: finite('phaseDegrees', 0),
+    symmetryPercent: source.waveformType === 'ramp' ? 100 : Math.min(100, Math.max(0, finite('symmetryPercent', 50))),
     dutyCyclePercent: Math.min(99, Math.max(1, finite('dutyCyclePercent', 50))),
     riseTimeSeconds: Math.max(0, finite('riseTimeSeconds', 0)),
     fallTimeSeconds: Math.max(0, finite('fallTimeSeconds', 0)),
@@ -243,6 +244,7 @@ function createDefaultDocument() {
       cycles: DEFAULT_VALUES.nCycles,
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
+      symmetryPercent: DEFAULT_VALUES.symmetryPercent,
       riseTimeSeconds: DEFAULT_VALUES.riseTimeSeconds,
       fallTimeSeconds: DEFAULT_VALUES.fallTimeSeconds,
       noiseColor: DEFAULT_VALUES.noiseColor,
@@ -299,6 +301,7 @@ const documentFields = {
   cycles: 'cycles',
   phase: 'phaseDegrees',
   duty: 'dutyCyclePercent',
+  symmetry: 'symmetryPercent',
   riseTime: 'riseTimeSeconds',
   fallTime: 'fallTimeSeconds',
   noiseColor: 'noiseColor',
@@ -320,7 +323,6 @@ const titles = {
   sine: 'Sine wave',
   square: 'Square wave',
   triangle: 'Triangle wave',
-  ramp: 'Ramp wave',
   pulse: 'Pulse wave',
   dc: 'DC level',
   noise: 'Noise',

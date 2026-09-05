@@ -37,6 +37,7 @@ The current format identifier is:
     "cycles": 1,
     "phaseDegrees": 0,
     "dutyCyclePercent": 50,
+    "symmetryPercent": 50,
     "riseTimeSeconds": 0,
     "fallTimeSeconds": 0,
     "noiseColor": "white",
@@ -78,6 +79,7 @@ Unknown top-level fields are ignored.
 | `sampleRateMSa` | number | MSa/s | Sample rate in millions of samples per second. `1` means 1,000,000 samples/second. |
 | `frequencyHz` | number | Hz | Nominal waveform frequency. |
 | `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
+| `symmetryPercent` | number | % | Triangle rise time as a percentage of the cycle, from 0 to 100. Default: 50. 0 produces a falling ramp; 100 produces a rising ramp. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
 | `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |
@@ -152,7 +154,6 @@ Version 1 recognizes:
 - `sine`
 - `square`
 - `triangle`
-- `ramp`
 - `pulse`
 - `dc`
 - `noise`
@@ -160,6 +161,8 @@ Version 1 recognizes:
 The `noise` waveform generates independent, uniformly distributed samples for white noise. Pink
 noise passes white samples through a seven-pole approximation of a 1/f spectrum. Both variants are
 centered on the configured offset and scaled to the configured high/low voltage range.
+
+Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values in older files use 50%; imported values are clamped to 0–100. Legacy `ramp` files load as `triangle` with 100% symmetry, preserving saved sample values. The editable default is `symmetryPercent` in `js/defaults.js`.
 
 The legacy value `free` is imported as `custom`. Unknown values are also imported as `custom`.
 

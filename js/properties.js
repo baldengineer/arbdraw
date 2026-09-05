@@ -113,6 +113,7 @@ function persistCurrentSettings() {
     tsResolutionUnit: $('tsResolutionUnitBtn').textContent,
     phaseDegrees: state.phase,
     dutyCyclePercent: state.duty,
+    symmetryPercent: state.symmetry,
     riseTimeSeconds: state.riseTime,
     riseTimeUnit: document.querySelector(
       '.transition-time-unit-button[data-input="riseTimeInput"]',
@@ -249,6 +250,7 @@ function syncInputs() {
   state.frequency = Math.max(0.000001, inputFrequency());
   state.phase = +$('phaseInput').value;
   state.duty = +$('dutyInput').value;
+  state.symmetry = +$('symmetryInput').value;
   state.riseTime = Math.max(0, inputTransitionTime('riseTimeInput'));
   state.fallTime = Math.max(0, inputTransitionTime('fallTimeInput'));
   $('highInput').value = displayVoltage('highInput', state.high);
@@ -346,6 +348,7 @@ function propertiesDiffer() {
       inputFrequency(),
       +$('phaseInput').value,
       +$('dutyInput').value,
+      +$('symmetryInput').value,
       inputTransitionTime('riseTimeInput'),
       inputTransitionTime('fallTimeInput'),
     ],
@@ -356,6 +359,7 @@ function propertiesDiffer() {
       state.frequency,
       state.phase,
       state.duty,
+      state.symmetry,
       state.riseTime,
       state.fallTime,
     ];
@@ -374,6 +378,7 @@ function propertiesValid() {
       $('frequencyInput'),
       $('phaseInput'),
       $('dutyInput'),
+      $('symmetryInput'),
       $('riseTimeInput'),
       $('fallTimeInput'),
     ].every(
@@ -382,6 +387,8 @@ function propertiesValid() {
     Number.isInteger(+$('cyclesInput').value) &&
     +$('cyclesInput').value >= 1 &&
     inputFrequency() > 0 &&
+    +$('symmetryInput').value >= 0 &&
+    +$('symmetryInput').value <= 100 &&
     inputTransitionTime('riseTimeInput') >= 0 &&
     inputTransitionTime('fallTimeInput') >= 0
   );
@@ -405,7 +412,8 @@ function applyProperties() {
     transitionChanged ||
     valueChanged(+$('cyclesInput').value, state.cycles) ||
     valueChanged(+$('phaseInput').value, state.phase) ||
-    valueChanged(+$('dutyInput').value, state.duty);
+    valueChanged(+$('dutyInput').value, state.duty) ||
+    valueChanged(+$('symmetryInput').value, state.symmetry);
   syncInputs();
   if (waveformChanged) {
     generate();
@@ -418,6 +426,12 @@ function applyProperties() {
   }
   persistCurrentSettings();
 }
+document.querySelectorAll('[data-symmetry]').forEach((button) => {
+  button.addEventListener('click', () => {
+    $('symmetryInput').value = button.dataset.symmetry;
+    applyProperties();
+  });
+});
 $('dutyInput').oninput = () => {
   if ($('dutyInput').disabled) return;
   state.duty = +$('dutyInput').value;
@@ -493,6 +507,7 @@ const propertyDefaultMap = {
   periodInput: 'frequencyHz',
   phaseInput: 'phaseDegrees',
   dutyInput: 'dutyCyclePercent',
+  symmetryInput: 'symmetryPercent',
   riseTimeInput: 'riseTimeSeconds',
   fallTimeInput: 'fallTimeSeconds',
 };

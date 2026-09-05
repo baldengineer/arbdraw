@@ -101,6 +101,8 @@
         <div class="section function-section">
           <div class="section-title">Function</div>
           <label>Waveshape <button id="functionSelectBtn" class="function-select-button" type="button" aria-haspopup="menu" aria-expanded="false"><canvas aria-hidden="true"></canvas><span>Sine</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button></label>
+          <label id="symmetryProperty" class="symmetry-property" hidden title="Percentage of each cycle spent rising: 0% falling ramp, 50% triangle, 100% rising ramp.">Symmetry <div class="unit-input"><input id="symmetryInput" aria-label="Triangle symmetry" type="number" min="0" max="100" step="1" value="50"><span>%</span></div></label>
+          <div id="symmetryPresets" class="symmetry-property symmetry-presets" role="group" aria-label="Quick set triangle symmetry" hidden><button type="button" data-symmetry="0" aria-label="Set symmetry to 0 percent" title="Falling ramp">0</button><button type="button" data-symmetry="50" aria-label="Set symmetry to 50 percent" title="Standard triangle">50</button><button type="button" data-symmetry="100" aria-label="Set symmetry to 100 percent" title="Rising ramp">100</button></div>
           <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
         </div>
         <div class="section">
@@ -227,7 +229,6 @@
     <button data-wave="square" role="menuitem"><canvas aria-hidden="true"></canvas><span>Square</span></button>
     <button data-wave="triangle" role="menuitem"><canvas aria-hidden="true"></canvas><span>Triangle</span></button>
     <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>Serial</span></button>
-    <button data-wave="ramp" role="menuitem" disabled><canvas aria-hidden="true"></canvas><span>Ramp</span></button>
     <button data-wave="pulse" role="menuitem"><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem"><canvas aria-hidden="true"></canvas><span>DC</span></button>
     <button data-wave="noise" role="menuitem"><canvas aria-hidden="true"></canvas><span>Noise</span></button>
