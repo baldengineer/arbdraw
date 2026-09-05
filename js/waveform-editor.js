@@ -11,6 +11,14 @@ function generate(type = state.type, recordHistory = true) {
     phase = (state.phase * Math.PI) / 180,
     serialBits = type === 'serial' ? serialBitPattern() : null,
     serialBaud = type === 'serial' ? serialSettings().baud : null,
+    serialVoltage = type === 'serial' ? ARBDRAW_WAVEFORM_SHAPES.createSerialVoltage({
+      bits: serialBits,
+      baud: serialBaud,
+      high: state.high,
+      low: state.low,
+      riseTimeSeconds: state.riseTime,
+      fallTimeSeconds: state.fallTime,
+    }) : null,
     noiseSamples =
       type === 'noise'
         ? ARBDRAW_WAVEFORM_SHAPES.generateNoiseSamples({
@@ -61,9 +69,7 @@ function generate(type = state.type, recordHistory = true) {
       case 'serial':
         {
           const elapsedSeconds = (i / (n - 1)) * bufferDurationSeconds;
-          const bitIndex = Math.floor(elapsedSeconds * serialBaud);
-          if (bitIndex >= serialBits.length) return state.high;
-          return serialBits[bitIndex] ? state.high : state.low;
+          return serialVoltage(elapsedSeconds);
         }
       default:
         return mid;
@@ -301,7 +307,7 @@ function updateDcPropertyAvailability(type) {
   }
 }
 function updateTransitionPropertiesVisibility(type) {
-  const visible = type === 'square' || type === 'pulse';
+  const visible = type === 'square' || type === 'pulse' || type === 'serial';
   document.querySelectorAll('.transition-property').forEach((property) => {
     property.hidden = !visible;
   });

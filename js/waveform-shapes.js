@@ -30,6 +30,35 @@
     return low;
   }
 
+  function createSerialVoltage({ bits, baud, high, low, riseTimeSeconds, fallTimeSeconds }) {
+    const edges = [];
+    let previous = 1; // Serial lines idle high before and after the payload.
+    for (let i = 0; i <= bits.length; i++) {
+      const bit = i < bits.length ? bits[i] : 1;
+      if (bit !== previous) edges.push({ time: i / baud, bit });
+      previous = bit;
+    }
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      edge.duration = Math.min(
+        Math.max(0, edge.bit ? riseTimeSeconds : fallTimeSeconds),
+        i + 1 < edges.length ? edges[i + 1].time - edge.time : Infinity,
+      );
+    }
+    return (elapsedSeconds) => {
+      let left = 0, right = edges.length;
+      while (left < right) {
+        const middle = Math.floor((left + right) / 2);
+        if (edges[middle].time <= elapsedSeconds) left = middle + 1;
+        else right = middle;
+      }
+      if (!left) return high;
+      const edge = edges[left - 1],
+        progress = edge.duration > 0 ? Math.min(1, (elapsedSeconds - edge.time) / edge.duration) : 1;
+      return edge.bit ? low + (high - low) * progress : high - (high - low) * progress;
+    };
+  }
+
   function triangleVoltage({ phase, high, low, symmetryPercent = 50 }) {
     const p = ((phase % 1) + 1) % 1,
       rise = Math.min(100, Math.max(0, symmetryPercent)) / 100;
@@ -72,5 +101,5 @@
     return pinkSamples.map((value) => midpoint + amplitude * ((value - mean) / (peak || 1)));
   }
 
-  return Object.freeze({ generateNoiseSamples, squarePulseVoltage, triangleVoltage });
+  return Object.freeze({ generateNoiseSamples, squarePulseVoltage, triangleVoltage, createSerialVoltage });
 });

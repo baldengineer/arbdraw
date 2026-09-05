@@ -31,6 +31,7 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
+- Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
 
 ## ArbDraw Files
 
