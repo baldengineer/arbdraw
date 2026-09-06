@@ -39,6 +39,14 @@ Start the bridge and a local copy of ArbDraw with `python -m python_bridge --ser
 
 The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth.
 
+## URL parameters
+
+The initial waveform can be selected and configured from the URL. URL parameters override saved browser settings. For example:
+
+`?waveshape=triangle&frequencyHz=1000&nCycles=2&symmetryPercent=25`
+
+Parameters use the same names as the editable defaults in `js/defaults.js`. `wave`, `waveshape`, `waveform`, and `type` are aliases for `waveformType`; `frequency` and `period` are aliases for `frequencyHz` and `periodSeconds`. If both frequency and period are supplied, frequency takes precedence so the linked controls remain synchronized.
+
 - Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values.
 - Use **Open** to restore a project from a JSON file or pasted JSON text.
 

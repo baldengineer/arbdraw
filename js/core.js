@@ -199,10 +199,61 @@ function resetStoredSettings() {
   }
 }
 
+function readUrlSettings() {
+  if (typeof window === 'undefined' || !window.location?.search) return {};
+
+  const params = new URLSearchParams(window.location.search),
+    settings = {},
+    aliases = {
+      wave: 'waveformType',
+      waveshape: 'waveformType',
+      waveform: 'waveformType',
+      type: 'waveformType',
+      frequency: 'frequencyHz',
+      period: 'periodSeconds',
+    };
+  const knownKeys = new Set(Object.keys(globalThis.ARBDRAW_DEFAULTS || {}));
+
+  for (const [key, value] of params) {
+    const settingKey = aliases[key.toLowerCase()] || key;
+    if (knownKeys.has(settingKey) || settingKey === 'periodSeconds') settings[settingKey] = value;
+  }
+
+  const numberKeys = new Set([
+    'highLevelV', 'lowLevelV', 'offsetV', 'amplitudeVpp', 'sampleRateMSa', 'sampleCount',
+    'nCycles', 'frequencyHz', 'periodSeconds', 'phaseDegrees', 'dutyCyclePercent',
+    'symmetryPercent', 'riseTimeSeconds', 'fallTimeSeconds', 'noisePercent',
+    'serialBaud', 'serialWordSize', 'serialPreIdleBits', 'serialPostIdleBits', 'serialStopBits',
+    'waveformVerticalDivisions',
+  ]);
+  const booleanKeys = new Set(['filtersEnabled', 'serialInvertData', 'serialStartBit', 'serial_debug']);
+  for (const key of Object.keys(settings)) {
+    if (numberKeys.has(key)) {
+      const value = Number(settings[key]);
+      if (Number.isFinite(value)) settings[key] = value;
+      else delete settings[key];
+    } else if (booleanKeys.has(key)) {
+      const value = String(settings[key]).toLowerCase();
+      if (['1', 'true', 'yes', 'on'].includes(value)) settings[key] = true;
+      else if (['0', 'false', 'no', 'off'].includes(value)) settings[key] = false;
+      else delete settings[key];
+    }
+  }
+
+  // Frequency and period describe the same value. Frequency wins when both
+  // are supplied, matching the UI's frequency/period synchronization rule.
+  if (Object.hasOwn(settings, 'frequencyHz')) delete settings.periodSeconds;
+  else if (Object.hasOwn(settings, 'periodSeconds') && settings.periodSeconds > 0)
+    settings.frequencyHz = 1 / settings.periodSeconds;
+  delete settings.periodSeconds;
+  return settings;
+}
+
 const STORED_SETTINGS = readStoredSettings();
 const DEFAULT_VALUES = normalizeDefaults({
   ...globalThis.ARBDRAW_DEFAULTS,
   ...STORED_SETTINGS,
+  ...readUrlSettings(),
 });
 // Merge newly added defaults into the stored settings without overwriting user values.
 persistSettings({ ...globalThis.ARBDRAW_DEFAULTS, ...STORED_SETTINGS });
