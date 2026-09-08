@@ -5,10 +5,10 @@
 :root[data-theme="light"] { color-scheme:light; --bg:#eef1f4; --panel:#fff; --panel-raised:#f8fafb; --field:#fff; --ink:#17212b; --muted:#697580; --soft:#e5eaed; --line:#dbe1e6; --orange:#AE6227; --orange-deep:#AE6227; --blue:#3779B2; --blue-strong:#3779B2; --blue-soft:#66A5D9; --focus:#3779B2; --scope:#090d0f; --green:#7bffb2; --top:#11191f; }
 :root[data-theme="contrast"] { color-scheme:dark; --bg:#000; --panel:#000; --panel-raised:#080808; --field:#000; --ink:#fff; --muted:#fff; --soft:#171717; --line:#fff; --orange:#F68B1E; --orange-deep:#AE6227; --blue:#69B0E0; --blue-strong:#66A5D9; --blue-soft:#66A5D9; --focus:#69B0E0; --scope:#000; --green:#fff200; --top:#000; }
 * { box-sizing:border-box; }
-body { margin:0; min-width:0; height:100vh; overflow:hidden; background:var(--bg); color:var(--ink); font:14px/1.35 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { margin:0; min-width:0; height:100vh; height:100dvh; overflow:hidden; background:var(--bg); color:var(--ink); font:14px/1.35 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 button,input,select { font:inherit; }
 button { color:inherit; }
-.app-shell { height:100vh; display:flex; flex-direction:column; }
+.app-shell { height:100vh; height:100dvh; display:flex; flex-direction:column; }
 .topbar { height:64px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 22px; background:#11191f; color:#ecf0f2; border-bottom:1px solid #26313a; }
 .brand,.file-actions { display:flex; align-items:center; gap:10px; }.brand { font-size:18px; font-weight:700; letter-spacing:-.02em; }.brand-mark { display:block; width:31px; height:31px; object-fit:cover; border-radius:8px; }.badge { margin-left:5px; padding:3px 7px; border:1px solid #53606a; border-radius:4px; color:#aeb8bf; font-size:9px; letter-spacing:.12em; }.ghost,.icon-btn,.tool { border:0; background:transparent; cursor:pointer; }.topbar .ghost { color:#bdc5ca; padding:8px 9px; }.topbar .ghost:hover { color:white; }.divider { width:1px; height:22px; background:#344049; margin:0 4px; }.icon-btn { border-radius:6px; padding:6px 9px; color:#8b969e; }.icon-btn:hover { background:#edf1f3; color:#26313a; }.topbar .icon-btn:hover { background:#263139; color:white; }
 .primary { border:0; border-radius:7px; padding:10px 15px; background:var(--orange); color:white; cursor:pointer; font-weight:700; box-shadow:0 1px 0 rgba(0,0,0,.16); }.primary:hover { background:var(--orange-deep); }
@@ -56,9 +56,29 @@ button { color:inherit; }
 #serialBaud::-webkit-inner-spin-button,#serialBaud::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
 /* Responsive layout */
+@media (min-width: 901px) and (max-width: 1400px) {
+  .statusbar { height:auto; min-height:120px; padding-top:10px; padding-bottom:10px; }
+  #editorControls { display:grid; grid-template-columns:minmax(160px,1.3fr) repeat(2,minmax(120px,1fr)) 18px minmax(120px,1fr); gap:10px 12px; }
+  #editorControls.hidden { display:none; }
+  #editorControls .status-timing-field, #editorControls .status-input, #editorControls .status-select { width:100%; min-width:0; }
+  #editorControls .timing-link-icon { grid-column:4; grid-row:1; }
+  #editorControls #tsResolutionField { grid-column:5; grid-row:1; }
+  #editorControls .timing-separator { display:none; }
+  #editorControls #awgFrequencyField { grid-column:1; grid-row:2; }
+  #editorControls #awgPeriodField { grid-column:2; grid-row:2; }
+  #editorControls .timing-actions { grid-column:3 / 6; grid-row:2; margin-left:0; }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  .document-bar { height:auto; min-height:103px; align-items:flex-start; flex-wrap:wrap; gap:4px 16px; padding:8px 14px 0; }
+  .document-leading { width:100%; justify-content:space-between; }
+  .view-tabs { width:100%; min-height:38px; justify-content:flex-end; }
+  .view-tabs button { min-height:38px; }
+}
+
 @media (max-width: 900px) {
-  body { height:auto; min-height:100vh; overflow:auto; }
-  .app-shell { min-height:100vh; height:auto; }
+  body { height:auto; min-height:100vh; min-height:100dvh; overflow:auto; }
+  .app-shell { min-height:100vh; min-height:100dvh; height:auto; }
   .workspace { display:flex; flex-direction:column; gap:1px; }
   .editor-column { min-height:0; }
   .document-bar { height:auto; min-height:61px; align-items:flex-start; flex-wrap:wrap; gap:8px 16px; padding:10px 14px 0; }
