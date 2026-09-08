@@ -195,7 +195,7 @@
   </dialog>
   <dialog id="bridgeDialog" class="open-dialog bridge-dialog">
     <form method="dialog">
-      <div class="dialog-heading"><div><span class="eyebrow">PYTHON BRIDGE</span><h2>Instruments</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <div class="dialog-heading"><div><div class="bridge-heading-row"><span class="eyebrow">PYTHON BRIDGE</span><a class="bridge-download-link" href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">Download Bridge ↗</a></div><h2>Instruments</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
       <p>Connect ArbDraw to the local Python service that owns VISA and instrument-specific waveform transfers.</p>
       <div class="bridge-connection-row">
         <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off"></label>
@@ -214,6 +214,7 @@
         <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
       </div>
       <pre id="bridgeResult" class="bridge-result" aria-live="polite"></pre>
+      <p id="bridgeErrorHelp" class="bridge-error-help" hidden>Need help? <a href="docs/help/python-bridge.html" target="_blank" rel="noopener noreferrer">Open the Python bridge guide ↗</a></p>
       <div class="dialog-actions"><button value="cancel" class="ghost">Close</button></div>
     </form>
   </dialog>

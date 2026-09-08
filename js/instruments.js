@@ -22,6 +22,7 @@
   const enableOutputCheckbox = $('instrumentEnableOutput');
   const statusElement = $('bridgeStatus');
   const resultElement = $('bridgeResult');
+  const errorHelpElement = $('bridgeErrorHelp');
   let bridgeClient = null;
   let bridgeOnline = false;
   let busy = false;
@@ -48,6 +49,7 @@
     resultElement.textContent = `${prefix}${message}`;
     resultElement.classList.toggle('error', isError);
     resultElement.classList.toggle('success', isSuccess && !isError);
+    errorHelpElement.hidden = !isError;
   }
 
   function markBridgeOnline(health) {
