@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="help.css">
+<article>
+  <h1>Python bridge</h1>
+  <p>The ArbDraw Python bridge is a small local server that connects the browser-based editor to VISA instruments and installed waveform adapters. It runs on your computer and listens only on <code>127.0.0.1</code> by default.</p>
+
+  <h2>Download</h2>
+  <p>Open the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">current Python bridge release</a> and download the asset whose name ends in <code>.whl</code>.</p>
+  <p>A wheel is a ready-to-install Python package. The <code>py3-none-any</code> part of the filename means the bridge contains platform-independent Python 3 code and works on Windows, macOS, and Linux. Python 3.10 or newer is required.</p>
+  <p>The <code>.tar.gz</code> asset is the source distribution intended mainly for developers and packaging tools. Most users should choose the <code>.whl</code> file.</p>
+
+  <h2>Install and start</h2>
+  <p>Open a terminal in the folder containing the downloaded wheel, then run:</p>
+  <pre><code>python -m pip install ./arbdraw_python_bridge-0.1.0-py3-none-any.whl
+arbdraw-bridge</code></pre>
+  <p>On Windows, <code>py -m pip</code> can be used instead of <code>python -m pip</code>. Leave the terminal open while using an instrument. Press <code>Ctrl+C</code> in that terminal to stop the bridge.</p>
+
+  <h2>Connect from ArbDraw</h2>
+  <ol>
+    <li>Start the bridge and wait for it to report <code>http://127.0.0.1:8876</code>.</li>
+    <li>In ArbDraw, choose <strong>File → Instruments</strong>.</li>
+    <li>Use the default bridge URL, then connect or refresh the instrument list.</li>
+    <li>Select a VISA resource and use <strong>Identify</strong> to confirm the connection.</li>
+    <li>Select an installed adapter before sending a waveform.</li>
+  </ol>
+
+  <h2>VISA backend</h2>
+  <p>The bridge installs PyVISA, but instrument access also requires a VISA implementation. A vendor installation such as NI-VISA normally works without another option. To use the pure-Python backend, install <code>pyvisa-py</code> and select it when starting the bridge:</p>
+  <pre><code>python -m pip install pyvisa-py
+arbdraw-bridge --visa-library @py</code></pre>
+
+  <h2>Instrument adapters</h2>
+  <p>Adapters add model-specific waveform transfer support and are installed separately in the same Python environment as the bridge. Without an adapter, the bridge can still perform health checks, discover VISA resources, and issue identification or SCPI queries, but it cannot send a waveform.</p>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Bridge offline:</strong> Confirm the terminal is still running and the URL is <code>http://127.0.0.1:8876</code>.</li>
+    <li><strong>No VISA resources:</strong> Confirm your vendor VISA software or <code>pyvisa-py</code> is installed and can see the instrument.</li>
+    <li><strong>No waveform adapter:</strong> Install a compatible adapter in the same Python environment, then restart the bridge.</li>
+    <li><strong>Command not found:</strong> Try <code>python -m python_bridge</code>, or ensure your Python scripts directory is on <code>PATH</code>.</li>
+  </ul>
+
+  <p>For advanced options, API endpoints, source installation, and adapter development, see the <a href="https://github.com/baldengineer/arbdraw/blob/main/python_bridge/README.md" target="_blank" rel="noopener noreferrer">complete Python bridge documentation</a>.</p>
+</article>
