@@ -6,6 +6,8 @@ ArbDraw fields have three layers:
 2. `js/fields.js` owns the draft lifecycle, validation state, keyboard handling, and canonical unit conversion.
 3. Feature files own model reads, coupled values, rendering, persistence, and undo.
 
+Numeric inputs use `ARBDRAW_DEFAULTS.inputDecimalPlaces` from `js/defaults.js`, which defaults to `4`. A field definition can override it with `decimalPlaces`. Values are truncated when they are committed or leave focus; intermediate drafts remain editable. Inputs inside the Samples view are excluded so sample data keeps its existing precision.
+
 Use `ARBDRAW_FIELDS.attach(existingInput, definition, adapter)` when migrating existing markup. Use `ARBDRAW_FIELDS.create(definition, adapter)` when a feature owns the markup. The adapter should accept canonical values and return `false` when a commit is rejected.
 
 ```js

@@ -8,6 +8,10 @@
  * directly from disk. Values use volts, hertz, and degrees.
  */
 globalThis.ARBDRAW_DEFAULTS = {
+  // Display precision for numeric input controls. Individual field
+  // definitions may override this value when a control needs different
+  // precision.
+  inputDecimalPlaces: 4,
   bridgeUrl: 'http://127.0.0.1:8876',
   highLevelV: 500,
   highLevelUnit: 'mV',

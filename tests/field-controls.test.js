@@ -21,3 +21,9 @@ test('numeric field validation keeps incomplete and out-of-range drafts invalid'
   assert.equal(fields.validNumber('4.5', { integer: true }).valid, false);
   assert.equal(fields.validNumber('4', { min: 1, max: 5 }).value, 4);
 });
+
+test('numeric input formatting truncates to the configurable default precision', () => {
+  assert.equal(fields.formatNumber(1.23459), '1.2345');
+  assert.equal(fields.formatNumber(-1.23459), '-1.2345');
+  assert.equal(fields.formatNumber(1.23459, 2), '1.23');
+});

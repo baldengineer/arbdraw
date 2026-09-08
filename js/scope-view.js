@@ -45,6 +45,7 @@ function refreshScopeVertical() {
   $('scopeVoltsDiv').value = Number(
     (scopeState.voltsPerDiv / scopeVoltageUnitScale).toPrecision(8),
   );
+  ARBDRAW_FIELDS.formatInputs();
   drawScope();
 }
 function scopeTimeUnitFor(milliseconds) {
@@ -59,6 +60,7 @@ function renderScopeTime() {
   scopeTimeUnitScaleMs = unit.scale;
   $('scopeTimeUnitBtn').textContent = unit.label;
   $('scopeTimeDiv').value = Number((scopeState.timePerDivMs / unit.scale).toPrecision(8));
+  ARBDRAW_FIELDS.formatInputs();
 }
 function fittedScopeTime() {
   return Math.min(

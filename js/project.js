@@ -30,6 +30,7 @@ function renderDocument() {
   renderFilterMenu();
   updateFunctionSelect(state.type);
   draw();
+  ARBDRAW_FIELDS.formatInputs();
 }
 function parseProject(raw) {
   if (!raw || raw.schema !== 'arbdraw.waveform' || raw.version !== 1 || !raw.waveform)

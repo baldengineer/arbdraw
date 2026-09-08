@@ -17,6 +17,11 @@
       },
       true,
     );
+    document.addEventListener(
+      'focusout',
+      (event) => formatInput(event.target),
+      true,
+    );
   }
 
   const unitFamilies = {
@@ -31,6 +36,34 @@
     scopePosition: { V: 1, mV: 1e-3 },
     scopeTime: { 's/div': 1000, 'ms/div': 1, 'µs/div': 1e-3, 'ns/div': 1e-6, 'ps/div': 1e-9 },
   };
+
+  const defaultDecimalPlaces = Number.isInteger(Number(globalThis.ARBDRAW_DEFAULTS?.inputDecimalPlaces))
+    ? Math.max(0, Number(globalThis.ARBDRAW_DEFAULTS.inputDecimalPlaces))
+    : 4;
+
+  function truncateNumber(value, decimalPlaces = defaultDecimalPlaces) {
+    const number = Number(value), places = Math.max(0, Math.floor(Number(decimalPlaces)));
+    if (!Number.isFinite(number) || !Number.isFinite(places) || places > 20) return number;
+    const factor = 10 ** places;
+    return Math.trunc(number * factor) / factor;
+  }
+
+  function formatNumber(value, decimalPlaces = defaultDecimalPlaces) {
+    const number = truncateNumber(value, decimalPlaces);
+    return Number.isFinite(number) ? String(number) : '';
+  }
+
+  function formatInput(input, decimalPlaces) {
+    if (!input || input.type !== 'number' || input.closest?.('#samplesView, .samples-view')) return;
+    if (input.ownerDocument?.activeElement === input) return;
+    const value = Number(input.value);
+    if (Number.isFinite(value)) input.value = formatNumber(value, decimalPlaces ?? input.dataset.decimalPlaces);
+  }
+
+  function formatInputs(root = typeof document === 'undefined' ? null : document) {
+    if (!root?.querySelectorAll) return;
+    root.querySelectorAll('input[type="number"]').forEach((input) => formatInput(input));
+  }
 
   function units(family) {
     return { ...(unitFamilies[family] || {}) };
@@ -90,6 +123,8 @@
 
     input.dataset.field = config.id || input.id || '';
     input.dataset.fieldKind = config.kind;
+    if (config.kind === 'number')
+      input.dataset.decimalPlaces = String(config.decimalPlaces ?? defaultDecimalPlaces);
     if (config.label && !input.getAttribute('aria-label')) input.setAttribute('aria-label', config.label);
 
     function setError(message = '') {
@@ -120,6 +155,7 @@
         const accepted = adapter.commit(next, { reason, input, definition: config });
         if (accepted === false) return false;
       }
+      if (config.kind === 'number') input.value = formatNumber(next, config.decimalPlaces);
       committed.value = input.type === 'checkbox' ? input.checked : input.value;
       setError('');
       return true;
@@ -138,7 +174,11 @@
       const next = value === undefined ? adapter.read?.() : value;
       if (next !== undefined && next !== null) {
         if (config.kind === 'checkbox') input.checked = Boolean(next);
-        else input.value = config.format ? config.format(next) : String(next);
+        else input.value = config.format
+          ? config.format(next)
+          : config.kind === 'number'
+            ? formatNumber(next, config.decimalPlaces)
+            : String(next);
       }
       committed.value = input.type === 'checkbox' ? input.checked : input.value;
       setError('');
@@ -231,5 +271,16 @@
     return control;
   }
 
-  return { unitFamilies, units, convert, validNumber, attach, create };
+  return {
+    unitFamilies,
+    units,
+    convert,
+    validNumber,
+    truncateNumber,
+    formatNumber,
+    formatInput,
+    formatInputs,
+    attach,
+    create,
+  };
 });
