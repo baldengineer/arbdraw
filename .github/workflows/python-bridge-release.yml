@@ -1,0 +1,66 @@
+name: Release Python bridge
+
+on:
+  push:
+    tags:
+      - "python-bridge-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: python -m pip install --upgrade build
+
+      - name: Validate tag and package version
+        if: github.ref_type == 'tag'
+        shell: python
+        run: |
+          import os
+          from python_bridge import __version__
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          expected = f"python-bridge-v{__version__}"
+          if tag != expected:
+              raise SystemExit(f"Tag {tag!r} does not match package version {expected!r}")
+
+      - name: Test bridge
+        run: python -m unittest discover -s tests -p "test_python_bridge.py"
+
+      - name: Build wheel and source distribution
+        run: python -m build
+
+      - name: Check distributions
+        run: |
+          python -m pip install --upgrade twine
+          python -m twine check dist/*
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arbdraw-python-bridge
+          path: dist/*
+
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" dist/*
+          --title "ArbDraw Python bridge v${GITHUB_REF_NAME#python-bridge-v}"
+          --generate-notes

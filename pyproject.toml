@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arbdraw-python-bridge"
+dynamic = ["version"]
+description = "Local REST bridge between ArbDraw and VISA instruments"
+readme = "python_bridge/README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Bald Engineer" },
+]
+dependencies = [
+  "PyVISA>=1.13",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+pyvisa-py = ["PyVISA-py>=0.7"]
+
+[project.scripts]
+arbdraw-bridge = "python_bridge.server:main"
+
+[project.urls]
+Homepage = "https://baldengineer.github.io/arbdraw/"
+Documentation = "https://github.com/baldengineer/arbdraw/blob/main/python_bridge/README.md"
+Repository = "https://github.com/baldengineer/arbdraw"
+Issues = "https://github.com/baldengineer/arbdraw/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "python_bridge.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["python_bridge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

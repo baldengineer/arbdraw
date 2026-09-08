@@ -4,14 +4,25 @@ The bridge is the only process that talks to VISA or vendor utilities. ArbDraw t
 
 ## Start it
 
-Install PyVISA in the Python environment that can see your VISA implementation:
+Download the wheel from the
+[latest Python bridge release](https://github.com/baldengineer/arbdraw/releases?q=python-bridge-v&expanded=true),
+then install it in the Python environment that can see your VISA implementation:
 
 ```powershell
-python -m pip install pyvisa
-python -m python_bridge --serve-app .
+python -m pip install .\arbdraw_python_bridge-0.1.0-py3-none-any.whl
+arbdraw-bridge
 ```
 
-Then open `http://127.0.0.1:8876` and use **Instruments** inside ArbDraw. If ArbDraw is already open from GitHub Pages or another web server, start the bridge without `--serve-app`.
+Then open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Instruments**. The bridge listens only on `http://127.0.0.1:8876` by default.
+
+From a source checkout, the equivalent command is:
+
+```powershell
+python -m pip install -e .
+python -m python_bridge
+```
+
+Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
 
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
 
