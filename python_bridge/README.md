@@ -2,20 +2,28 @@
 
 The bridge is the only process that talks to VISA or vendor utilities. ArbDraw talks to it over a versioned REST API at `http://127.0.0.1:8876` by default.
 
-## Start it
+## Download and install
 
-Download the wheel from the
-[latest Python bridge release](https://github.com/baldengineer/arbdraw/releases?q=python-bridge-v&expanded=true),
-then install it in the Python environment that can see your VISA implementation:
+Open the [current Python bridge release](https://github.com/baldengineer/arbdraw/releases/latest)
+and download the asset whose name ends in `.whl`. A wheel is a ready-to-install
+Python package. The `py3-none-any` part of the filename means this wheel contains
+platform-independent Python 3 code, so the same file works on Windows, macOS,
+and Linux. Python 3.10 or newer is required.
+
+Install the downloaded wheel in the Python environment that can see your VISA
+implementation, then start the bridge:
 
 ```powershell
 python -m pip install .\arbdraw_python_bridge-0.1.0-py3-none-any.whl
 arbdraw-bridge
 ```
 
-Then open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Instruments**. The bridge listens only on `http://127.0.0.1:8876` by default.
+The `.tar.gz` asset is a source distribution intended mainly for developers and
+packaging tools. Most users should download the `.whl` file.
 
-From a source checkout, the equivalent command is:
+## Install from source
+
+From an ArbDraw source checkout, install and start the bridge with:
 
 ```powershell
 python -m pip install -e .
@@ -23,6 +31,11 @@ python -m python_bridge
 ```
 
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
+
+## Connect ArbDraw
+
+Open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Instruments**.
+The bridge listens only on `http://127.0.0.1:8876` by default.
 
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
 
