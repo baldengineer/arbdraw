@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Human-editable definitions for common ArbDraw fields.
+// Field definitions live-update by default; set liveUpdate: false for an
+// explicit-submit control.
 
 const ARBDRAW_FIELD_DEFINITIONS = {
   inspector: {
@@ -74,6 +76,7 @@ const ARBDRAW_FIELD_DEFINITIONS = {
   filterValue: {
     kind: 'number',
     label: 'Filter value',
+    liveUpdate: false,
     behavior: 'manual',
     constraints: { min: 0 },
   },

@@ -117,7 +117,10 @@ function renderSerialProperties() {
   updateSerialPropertiesVisibility();
 }
 
-function commitSerialProperties(event) {
+function commitSerialProperties(event, { preview = false } = {}) {
+  const previewSupport = typeof waveformPreviewTransaction !== 'undefined';
+  const wasPreviewing = previewSupport && Boolean(waveformPreviewTransaction);
+  if (preview && previewSupport) beginWaveformPreview();
   const editingBinary = event?.target?.id === 'serialBinaryPattern';
   const binaryPattern = editingBinary
     ? $('serialBinaryPattern').value.replace(/[^01]/g, '')
@@ -138,8 +141,10 @@ function commitSerialProperties(event) {
   });
   if (state.type === 'serial') ensureSerialPeriodCoversPayload();
   renderSerialProperties();
-  if (state.type === 'serial') generate('serial');
-  else pushHistory();
+  if (state.type === 'serial')
+    generate('serial', !preview && !wasPreviewing, !preview && !wasPreviewing);
+  else if (!preview && !wasPreviewing) pushHistory();
+  if (!preview && wasPreviewing) finishWaveformPreview();
 }
 
 const serialFieldControllers = [];
@@ -182,7 +187,13 @@ for (const id of [
             }
           : {},
       },
-      { commit: (_, meta) => commitSerialProperties({ target: meta.input }) },
+      {
+        commit: (_, meta) => commitSerialProperties({ target: meta.input }),
+        preview: (_, meta) => {
+          if (meta.valid) commitSerialProperties({ target: meta.input }, { preview: true });
+        },
+        cancel: () => cancelWaveformPreview(),
+      },
     ),
   );
 }

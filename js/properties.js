@@ -284,7 +284,36 @@ function syncInputs() {
   renderTiming();
 }
 
-function commitTimingInput(kind) {
+let waveformPreviewTransaction = null;
+
+function beginWaveformPreview() {
+  if (waveformPreviewTransaction) return;
+  waveformPreviewTransaction = {
+    snapshot: cloneWaveform(),
+    historyLength: state.history.length,
+    redo: state.redo.map((snapshot) => cloneWaveform(snapshot)),
+  };
+  pushHistory();
+}
+
+function finishWaveformPreview() {
+  if (!waveformPreviewTransaction) return false;
+  pushHistory();
+  persistCurrentSettings();
+  waveformPreviewTransaction = null;
+  return true;
+}
+
+function cancelWaveformPreview() {
+  if (!waveformPreviewTransaction) return;
+  const { snapshot, historyLength, redo } = waveformPreviewTransaction;
+  restoreWaveform(snapshot);
+  state.history.length = historyLength;
+  state.redo = redo;
+  waveformPreviewTransaction = null;
+}
+
+function commitTimingInput(kind, { preview = false } = {}) {
   const input = kind === 'rate'
       ? $('rateEdit')
       : kind === 'samples'
@@ -295,20 +324,25 @@ function commitTimingInput(kind) {
     renderTiming();
     return;
   }
+  const wasPreviewing = Boolean(waveformPreviewTransaction);
   if (kind === 'rate') {
     const sampleRate = value * sampleRateUnitScale;
     if (Math.abs(sampleRate - state.sampleRate) <= Math.max(1, state.sampleRate) * 1e-10) {
       renderTiming();
+      if (!preview) finishWaveformPreview();
       return;
     }
+    if (preview) beginWaveformPreview();
     globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
     globalThis.updateAudioPlaybackButton?.();
     state.sampleRate = Math.max(0.000001, sampleRate);
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
-    pushHistory();
     draw();
-    persistCurrentSettings();
+    if (!preview && !wasPreviewing) {
+      pushHistory();
+      persistCurrentSettings();
+    } else if (!preview) finishWaveformPreview();
   } else if (kind === 'tsResolution') {
     const desiredResolutionSeconds = value * tsResolutionUnitScale,
       durationSeconds = state.samples / (state.sampleRate * 1e6),
@@ -324,11 +358,11 @@ function commitTimingInput(kind) {
       renderTiming();
       return;
     }
+    if (preview) beginWaveformPreview();
     state.samples = Math.min(Math.max(2, samples), maximumSamples);
     renderTiming();
-    pushHistory();
-    generate();
-    persistCurrentSettings();
+    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing);
+    if (!preview && wasPreviewing) finishWaveformPreview();
   } else {
     const samples = Math.min(
       Math.max(2, Math.round(value * sampleCountUnitScale)),
@@ -338,12 +372,15 @@ function commitTimingInput(kind) {
     );
     if (samples === state.samples) {
       renderTiming();
+      if (!preview) finishWaveformPreview();
       return;
     }
+    if (preview) beginWaveformPreview();
     state.samples = samples;
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
-    generate();
+    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing);
+    if (!preview && wasPreviewing) finishWaveformPreview();
   }
 }
 const timingFieldControllers = [];
@@ -362,7 +399,16 @@ for (const kind of ['rate', 'samples', 'tsResolution']) {
         behavior: 'commitOnExit',
         constraints: { min: Number(input.min) || 0 },
       },
-      { commit: () => commitTimingInput(kind), cancel: () => renderTiming() },
+      {
+        commit: () => commitTimingInput(kind),
+        preview: (_, meta) => {
+          if (meta.valid) commitTimingInput(kind, { preview: true });
+        },
+        cancel: () => {
+          cancelWaveformPreview();
+          renderTiming();
+        },
+      },
     ),
   );
 }
@@ -428,8 +474,11 @@ function propertiesValid() {
 function valueChanged(value, current) {
   return Math.abs(value - current) > Math.max(1, Math.abs(current)) * 1e-10;
 }
-function applyProperties() {
-  if (!propertiesValid() || !propertiesDiffer()) return;
+function applyProperties({ preview = false } = {}) {
+  if (!propertiesValid()) return false;
+  const differs = propertiesDiffer();
+  if (!differs && !waveformPreviewTransaction) return false;
+  if (preview && differs) beginWaveformPreview();
   const frequencyChanged = valueChanged(inputFrequency(), state.frequency);
   const transitionChanged =
     valueChanged(inputTransitionTime('riseTimeInput'), state.riseTime) ||
@@ -448,15 +497,20 @@ function applyProperties() {
     valueChanged(+$('symmetryInput').value, state.symmetry);
   syncInputs();
   if (waveformChanged) {
-    generate();
+    generate(state.type, !preview && !waveformPreviewTransaction, !preview && !waveformPreviewTransaction);
     if (amplitudeChanged) refreshScopeTime();
     else refreshScopeVertical();
   } else {
-    pushHistory();
     draw();
     if (!$('samplesView').classList.contains('hidden')) renderSamples();
   }
-  persistCurrentSettings();
+  if (preview) return true;
+  if (waveformPreviewTransaction) finishWaveformPreview();
+  else {
+    if (!waveformChanged) pushHistory();
+    persistCurrentSettings();
+  }
+  return true;
 }
 document.querySelectorAll('[data-symmetry]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -491,15 +545,9 @@ $('offsetInput').oninput = () => {
     m = inputVoltage('offsetInput');
   $('highInput').value = displayVoltage('highInput', m + a);
   $('lowInput').value = displayVoltage('lowInput', m - a);
-  if (state.type === 'dc') {
-    state.high = m + a;
-    state.low = m - a;
-    generate('dc', false);
-    refreshScopeVertical();
-  }
 };
 $('offsetInput').addEventListener('change', () => {
-  if (state.type === 'dc') pushHistory();
+  if (state.type === 'dc' && !waveformPreviewTransaction) pushHistory();
 });
 $('cyclesInput').addEventListener('blur', () => {
   const value = Number($('cyclesInput').value);
@@ -530,7 +578,13 @@ document
             : {},
           behavior: 'commitOnExit',
         },
-        { commit: () => applyProperties() },
+        {
+          commit: () => applyProperties(),
+          preview: (_, meta) => {
+            if (meta.valid) applyProperties({ preview: true });
+          },
+          cancel: () => cancelWaveformPreview(),
+        },
       ),
     );
   });

@@ -3,7 +3,7 @@
 // Waveform generation, editable canvas rendering, presets, and history.
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');
-function generate(type = state.type, recordHistory = true) {
+function generate(type = state.type, recordHistory = true, persist = true) {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   state.type = type;
@@ -82,7 +82,7 @@ function generate(type = state.type, recordHistory = true) {
   if (recordHistory) pushHistory();
   draw();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
-  persistCurrentSettings();
+  if (persist) persistCurrentSettings();
 }
 function cloneWaveform(source = projectDocument.waveform) {
   return {

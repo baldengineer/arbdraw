@@ -124,6 +124,7 @@
     const config = {
       kind: 'text',
       behavior: 'commitOnExit',
+      liveUpdate: true,
       constraints: {},
       ...definition,
     };
@@ -195,7 +196,14 @@
     function onInput(event) {
       setError('');
       const draft = parse();
-      adapter.preview?.(draft.valid ? draft.value : draft, { event, input, definition: config });
+      if (config.liveUpdate) {
+        adapter.preview?.(draft.valid ? draft.value : draft, {
+          event,
+          input,
+          definition: config,
+          valid: draft.valid,
+        });
+      }
     }
     function onChange() {
       if (config.behavior === 'commitOnChange') commit('change');
