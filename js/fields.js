@@ -107,6 +107,18 @@
     return error;
   }
 
+  function applyDefinition(input, definition = {}) {
+    if (!input) return input;
+    input.dataset.field = definition.id || input.id || '';
+    input.dataset.fieldKind = definition.kind || input.type || 'text';
+    if (definition.kind === 'number')
+      input.dataset.decimalPlaces = String(definition.decimalPlaces ?? defaultDecimalPlaces);
+    if (definition.label && !input.getAttribute('aria-label')) input.setAttribute('aria-label', definition.label);
+    const title = definition.title ?? definition.tooltip;
+    if (title) input.title = title;
+    return input;
+  }
+
   function attach(input, definition = {}, adapter = {}) {
     if (!input) throw new TypeError('Fields.attach requires an input element.');
     const config = {
@@ -121,11 +133,7 @@
     let disposed = false;
     let skipBlurCommit = false;
 
-    input.dataset.field = config.id || input.id || '';
-    input.dataset.fieldKind = config.kind;
-    if (config.kind === 'number')
-      input.dataset.decimalPlaces = String(config.decimalPlaces ?? defaultDecimalPlaces);
-    if (config.label && !input.getAttribute('aria-label')) input.setAttribute('aria-label', config.label);
+    applyDefinition(input, config);
 
     function setError(message = '') {
       input.setAttribute('aria-invalid', message ? 'true' : 'false');
@@ -280,6 +288,7 @@
     formatNumber,
     formatInput,
     formatInputs,
+    applyDefinition,
     attach,
     create,
   };

@@ -15,6 +15,8 @@ const scopeState = {
 let scopeVoltageUnitScale = 1;
 let scopePositionUnitScale = 1;
 let scopeTimeUnitScaleMs = 0.000001;
+for (const [id, definition] of Object.entries(ARBDRAW_FIELD_DEFINITIONS.scope || {}))
+  ARBDRAW_FIELDS.applyDefinition($(id), { ...definition, id });
 function nextUpper125(value) {
   if (!Number.isFinite(value) || value <= 0) return 1;
   const exponent = Math.floor(Math.log10(value)),

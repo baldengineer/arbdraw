@@ -114,6 +114,10 @@ function loadProject(raw) {
 }
 
 const projectNameInput = document.querySelector('.document-name');
+ARBDRAW_FIELDS.applyDefinition(projectNameInput, {
+  ...(ARBDRAW_FIELD_DEFINITIONS.project?.projectName || {}),
+  id: 'projectName',
+});
 let projectNameBeforeEdit = projectDocument.name;
 function beginProjectNameEdit() {
   if (!projectNameInput.readOnly) return;

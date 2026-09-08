@@ -355,15 +355,22 @@ for (const kind of ['rate', 'samples', 'tsResolution']) {
     ARBDRAW_FIELDS.attach(
       input,
       {
+        ...(ARBDRAW_FIELD_DEFINITIONS.timing[input.id] || {}),
         id: input.id,
         kind: 'number',
-        label: input.getAttribute('aria-label') || kind,
+        label: ARBDRAW_FIELD_DEFINITIONS.timing[input.id]?.label || input.getAttribute('aria-label') || kind,
         behavior: 'commitOnExit',
         constraints: { min: Number(input.min) || 0 },
       },
       { commit: () => commitTimingInput(kind), cancel: () => renderTiming() },
     ),
   );
+}
+for (const id of ['awgFrequencyEdit', 'awgPeriodEdit']) {
+  ARBDRAW_FIELDS.applyDefinition($(id), {
+    ...(ARBDRAW_FIELD_DEFINITIONS.timing[id] || {}),
+    id,
+  });
 }
 function propertiesDiffer() {
   const values = [

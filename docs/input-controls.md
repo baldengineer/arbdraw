@@ -8,6 +8,8 @@ ArbDraw fields have three layers:
 
 Numeric inputs use `ARBDRAW_DEFAULTS.inputDecimalPlaces` from `js/defaults.js`, which defaults to `4`. A field definition can override it with `decimalPlaces`. Values are truncated when they are committed or leave focus; intermediate drafts remain editable. Inputs inside the Samples view are excluded so sample data keeps its existing precision.
 
+Field definitions may provide a `title` (or the legacy `tooltip`) property. `ARBDRAW_FIELDS.attach()` and `ARBDRAW_FIELDS.applyDefinition()` copy that text to the native input tooltip, so hover guidance belongs with the field definition instead of being duplicated in HTML labels or wrappers.
+
 Use `ARBDRAW_FIELDS.attach(existingInput, definition, adapter)` when migrating existing markup. Use `ARBDRAW_FIELDS.create(definition, adapter)` when a feature owns the markup. The adapter should accept canonical values and return `false` when a commit is rejected.
 
 ```js
