@@ -344,22 +344,24 @@ function commitTimingInput(kind) {
     generate();
   }
 }
+const timingFieldControllers = [];
 for (const kind of ['rate', 'samples', 'tsResolution']) {
   const input = $(
     kind === 'rate' ? 'rateEdit' : kind === 'samples' ? 'samplesEdit' : 'tsResolutionEdit',
   );
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      input.blur();
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      renderTiming();
-      input.blur();
-    }
-  });
-  input.addEventListener('blur', () => commitTimingInput(kind));
+  timingFieldControllers.push(
+    ARBDRAW_FIELDS.attach(
+      input,
+      {
+        id: input.id,
+        kind: 'number',
+        label: input.getAttribute('aria-label') || kind,
+        behavior: 'commitOnExit',
+        constraints: { min: Number(input.min) || 0 },
+      },
+      { commit: () => commitTimingInput(kind), cancel: () => renderTiming() },
+    ),
+  );
 }
 function propertiesDiffer() {
   const values = [
@@ -494,30 +496,36 @@ $('cyclesInput').addEventListener('blur', () => {
   const value = Number($('cyclesInput').value);
   $('cyclesInput').value = Number.isFinite(value) ? Math.max(1, Math.round(value)) : state.cycles;
 });
-document.querySelectorAll('.inspector input[type="number"]').forEach((input) => {
-  input.addEventListener(
-    'wheel',
-    (event) => {
-      if (input.disabled || event.deltaY === 0) return;
-      event.preventDefault();
-      if (event.deltaY < 0) input.stepUp();
-      else input.stepDown();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      if (input.closest('.serial-section')) commitSerialProperties();
-      else applyProperties();
-    },
-    { passive: false },
-  );
-});
-document.querySelectorAll('.inspector input').forEach((input) => {
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      input.blur();
-    }
+// All ordinary inspector fields share the same draft, validation, Enter, and
+// Escape lifecycle. Feature-specific input/preview handlers above remain
+// responsible for coupled values and waveform rendering.
+const inspectorFieldControllers = [];
+document
+  .querySelectorAll('.inspector input:not(.switch-input):not(#dutyInput)')
+  .forEach((input) => {
+    if (input.closest('.serial-section')) return;
+    inspectorFieldControllers.push(
+      ARBDRAW_FIELDS.attach(
+        input,
+        {
+          ...(ARBDRAW_FIELD_DEFINITIONS.inspector[input.id] || {}),
+          id: input.id,
+          kind: input.type === 'number' ? 'number' : input.type === 'range' ? 'range' : 'text',
+          label: ARBDRAW_FIELD_DEFINITIONS.inspector[input.id]?.label || input.getAttribute('aria-label') || input.id,
+          constraints: input.type === 'number'
+            ? {
+                ...(ARBDRAW_FIELD_DEFINITIONS.inspector[input.id]?.constraints || {}),
+                ...(input.min !== '' ? { min: Number(input.min) } : {}),
+                ...(input.max !== '' ? { max: Number(input.max) } : {}),
+                integer: input.step === '1',
+              }
+            : {},
+          behavior: 'commitOnExit',
+        },
+        { commit: () => applyProperties() },
+      ),
+    );
   });
-  input.addEventListener('blur', applyProperties);
-});
 const propertyDefaultMap = {
   highInput: 'highLevelV',
   lowInput: 'lowLevelV',
@@ -598,8 +606,12 @@ $('amplitudeUnitBtn').onclick = (event) => {
     );
 };
 function selectAmplitudeUnit(scale, label) {
+  const currentLabel = $('amplitudeUnitBtn').textContent,
+    currentValue = Number($('amplitudeInput').value);
   amplitudeUnitScale = scale;
   $('amplitudeUnitBtn').textContent = label;
+  if (Number.isFinite(currentValue))
+    $('amplitudeInput').value = ARBDRAW_FIELDS.convert(currentValue, currentLabel, label, 'amplitude');
   $('amplitudeInput').dispatchEvent(new Event('input', { bubbles: true }));
   applyProperties();
   persistCurrentSettings();
@@ -651,8 +663,13 @@ document.querySelectorAll('.voltage-unit-button').forEach(
     }),
 );
 function selectVoltageUnit(inputId, scale, label) {
+  const button = document.querySelector(`.voltage-unit-button[data-input="${inputId}"]`),
+    currentLabel = button.textContent,
+    currentValue = Number($(inputId).value);
   voltageUnitScales[inputId] = scale;
-  document.querySelector(`.voltage-unit-button[data-input="${inputId}"]`).textContent = label;
+  button.textContent = label;
+  if (Number.isFinite(currentValue))
+    $(inputId).value = ARBDRAW_FIELDS.convert(currentValue, currentLabel, label, 'voltage');
   $(inputId).dispatchEvent(new Event('input', { bubbles: true }));
   applyProperties();
   persistCurrentSettings();
@@ -740,22 +757,33 @@ function displayUnitFor(value, units) {
 
 function selectTimingUnit(kind, scale, label) {
   if (kind === 'frequency') {
+    const currentLabel = $('frequencyUnitBtn').textContent,
+      currentValue = Number($('frequencyInput').value),
+      hertz = Number.isFinite(currentValue)
+        ? ARBDRAW_FIELDS.convert(currentValue, currentLabel, 'Hz', 'frequency')
+        : Number.NaN;
     frequencyUnitScale = scale;
     $('frequencyUnitBtn').textContent = label;
 
-    const hertz = inputFrequency();
     if (Number.isFinite(hertz) && hertz > 0) {
+      $('frequencyInput').value = ARBDRAW_FIELDS.convert(hertz, 'Hz', label, 'frequency');
       const periodUnit = displayUnitFor(1 / hertz, periodDisplayUnits);
       periodUnitScale = periodUnit.scale;
       $('periodUnitBtn').textContent = periodUnit.label;
       $('periodInput').value = displayPeriod(hertz);
     }
   } else {
+    const currentLabel = $('periodUnitBtn').textContent,
+      currentValue = Number($('periodInput').value),
+      seconds = Number.isFinite(currentValue)
+        ? ARBDRAW_FIELDS.convert(currentValue, currentLabel, 's', 'period')
+        : Number.NaN;
     periodUnitScale = scale;
     $('periodUnitBtn').textContent = label;
 
-    const hertz = inputPeriodFrequency();
+    const hertz = Number.isFinite(seconds) && seconds > 0 ? 1 / seconds : Number.NaN;
     if (Number.isFinite(hertz) && hertz > 0) {
+      $('periodInput').value = ARBDRAW_FIELDS.convert(seconds, 's', label, 'period');
       const frequencyUnit = displayUnitFor(hertz, frequencyDisplayUnits);
       frequencyUnitScale = frequencyUnit.scale;
       $('frequencyUnitBtn').textContent = frequencyUnit.label;

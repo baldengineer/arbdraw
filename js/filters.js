@@ -5,6 +5,7 @@ const LOW_PASS_INITIAL_HZ = 1_000;
 const SMOOTHING_INITIAL_WINDOW = 5;
 const SMOOTHING_MAX_WINDOW = 101;
 const FILTER_MENU_ENABLED = new URLSearchParams(window.location.search).get('lpf') === '1';
+let filterDialogField = null;
 
 const lowPassFilterButton = $('lowPassFilterBtn');
 lowPassFilterButton.hidden = !FILTER_MENU_ENABLED;
@@ -98,6 +99,16 @@ function openFilterDialog(kind) {
     description = $('filterDialogDescription'),
     input = $('filterDialogInput'),
     unit = $('filterDialogUnit');
+  if (!filterDialogField) {
+    filterDialogField = ARBDRAW_FIELDS.attach(
+      input,
+      {
+        ...ARBDRAW_FIELD_DEFINITIONS.filterValue,
+        id: 'filterDialogInput',
+      },
+      { commit: () => true },
+    );
+  }
   if (kind === 'noise') {
     title.textContent = 'Add Noise';
     description.textContent = 'Set the amount of random vertical noise to add.';
@@ -132,6 +143,12 @@ function openFilterDialog(kind) {
     input.setAttribute('aria-label', 'Smoothing window size in points');
     unit.textContent = 'pts';
   }
+  filterDialogField.definition.constraints = {
+    min: Number(input.min),
+    ...(input.max ? { max: Number(input.max) } : {}),
+  };
+  filterDialogField.refresh(input.value);
+  filterDialogField.setError('');
   dialog.dataset.filter = kind;
   dialog.showModal();
   input.focus();
@@ -207,7 +224,9 @@ $('defaultSmoothingFilterBtn').onclick = () => {
 };
 $('applyFilterDialogBtn').onclick = () => {
   const dialog = $('filterDialog'),
-    value = Number($('filterDialogInput').value);
+    valueInput = $('filterDialogInput');
+  if (!filterDialogField?.commit('dialog')) return;
+  const value = Number(valueInput.value);
   if (!Number.isFinite(value) || value <= 0) return;
   if (dialog.dataset.filter === 'noise') {
     state.filters.noisePercent = Math.min(DEFAULT_VALUES.noisePercentMax, value);
@@ -225,11 +244,7 @@ $('applyFilterDialogBtn').onclick = () => {
   dialog.close();
   regenerateWithFilters();
 };
-$('filterDialogInput').addEventListener('keydown', (event) => {
-  if (event.key !== 'Enter') return;
-  event.preventDefault();
-  $('applyFilterDialogBtn').click();
-});
+$('filterDialog').addEventListener('close', () => filterDialogField?.cancel('dialog-close'));
 
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#filtersMenu,#filtersBtn')) closeFiltersMenu();
