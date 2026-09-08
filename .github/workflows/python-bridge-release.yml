@@ -32,6 +32,9 @@ jobs:
         shell: python
         run: |
           import os
+          import sys
+
+          sys.path.insert(0, os.getcwd())
           from python_bridge import __version__
 
           tag = os.environ["GITHUB_REF_NAME"]
