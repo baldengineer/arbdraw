@@ -187,13 +187,14 @@ function inputTransitionTime(inputId) {
 function renderTransitionTimes() {
   $('riseTimeInput').value = displayTransitionTime('riseTimeInput', state.riseTime);
   $('fallTimeInput').value = displayTransitionTime('fallTimeInput', state.fallTime);
+  ARBDRAW_FIELDS.formatInputs();
 }
 $('amplitudeUnitBtn').textContent = DEFAULT_VALUES.amplitudeUnit;
 $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
 $('sampleRateUnitBtn').textContent =
   sampleRateDisplayUnits.find((unit) => unit.scale === sampleRateUnitScale)?.label || 'Mpts/s';
-$('sampleCountUnitBtn').textContent = DEFAULT_VALUES.sampleCountUnit;
+  $('sampleCountUnitBtn').textContent = DEFAULT_VALUES.sampleCountUnit;
 $('tsResolutionUnitBtn').textContent = DEFAULT_VALUES.tsResolutionUnit;
 document.querySelector('.transition-time-unit-button[data-input="riseTimeInput"]').textContent =
   DEFAULT_VALUES.riseTimeUnit;
@@ -246,6 +247,7 @@ function renderAwgTiming() {
     frequencyHz: awgFrequency,
     periodSeconds: awgPeriod,
   };
+  ARBDRAW_FIELDS.formatInputs();
 }
 function formatRate(value) {
   return value >= 100
