@@ -179,7 +179,6 @@ for (const id of [
               ...(ARBDRAW_FIELD_DEFINITIONS.serial[id]?.constraints || {}),
               ...(input.min !== '' ? { min: Number(input.min) } : {}),
               ...(input.max !== '' ? { max: Number(input.max) } : {}),
-              integer: input.step === '1',
             }
           : {},
       },

@@ -517,7 +517,6 @@ document
                 ...(ARBDRAW_FIELD_DEFINITIONS.inspector[input.id]?.constraints || {}),
                 ...(input.min !== '' ? { min: Number(input.min) } : {}),
                 ...(input.max !== '' ? { max: Number(input.max) } : {}),
-                integer: input.step === '1',
               }
             : {},
           behavior: 'commitOnExit',
