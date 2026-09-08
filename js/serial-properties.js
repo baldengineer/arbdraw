@@ -142,6 +142,7 @@ function commitSerialProperties(event) {
   else pushHistory();
 }
 
+const serialFieldControllers = [];
 for (const id of [
   'serialProtocol',
   'serialBaud',
@@ -156,8 +157,32 @@ for (const id of [
   'serialPayload',
   'serialBinaryPattern',
 ]) {
-  $(id).addEventListener(
-    id === 'serialPayload' || id === 'serialPostIdle' ? 'input' : 'change',
-    commitSerialProperties,
+  const input = $(id);
+  if (typeof ARBDRAW_FIELDS === 'undefined') {
+    input.addEventListener(
+      id === 'serialPayload' || id === 'serialPostIdle' ? 'input' : 'change',
+      commitSerialProperties,
+    );
+    continue;
+  }
+  serialFieldControllers.push(
+    ARBDRAW_FIELDS.attach(
+      input,
+      {
+        ...(ARBDRAW_FIELD_DEFINITIONS.serial[id] || {}),
+        id,
+        kind: input.type === 'checkbox' ? 'checkbox' : input.tagName === 'SELECT' ? 'select' : input.type === 'number' ? 'number' : 'text',
+        label: input.getAttribute('aria-label') || id,
+        behavior: input.type === 'checkbox' || input.tagName === 'SELECT' ? 'commitOnChange' : 'commitOnExit',
+        constraints: input.type === 'number'
+          ? {
+              ...(ARBDRAW_FIELD_DEFINITIONS.serial[id]?.constraints || {}),
+              ...(input.min !== '' ? { min: Number(input.min) } : {}),
+              ...(input.max !== '' ? { max: Number(input.max) } : {}),
+            }
+          : {},
+      },
+      { commit: (_, meta) => commitSerialProperties({ target: meta.input }) },
+    ),
   );
 }

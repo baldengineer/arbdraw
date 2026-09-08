@@ -1,0 +1,25 @@
+/* Shared field primitives. Feature styles may choose a density or layout, but
+ * the value, focus, invalid, disabled, and calculated states stay consistent. */
+.field { min-width: 0; color: var(--muted); }
+.field-inline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.field-stacked { display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+.field-label { min-width: 0; }
+.field-input { min-width: 0; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; outline: 0; }
+.field-inline .field-input { width: 126px; height: 33px; padding: 0 8px; }
+.field-stacked .field-input { width: 100%; min-height: 33px; padding: 7px 8px; }
+.field-input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent); }
+.field-input.field-invalid { border-color: #e25b5b; box-shadow: 0 0 0 2px color-mix(in srgb, #e25b5b 18%, transparent); }
+.field-input:disabled, .field.is-disabled { opacity: .48; cursor: not-allowed; }
+.field.is-calculated .field-input { opacity: .72; cursor: default; }
+.field-unit { flex: none; color: var(--muted); font-size: 10px; }
+.field-error { flex: 0 0 100%; color: #e25b5b; font-size: 10px; }
+.field-inline > .field-error { margin-left: auto; }
+.field-input[aria-invalid="false"] + .field-error { display: none; }
+.section label:has(> .field-error) { flex-wrap: wrap; }
+.section label > .field-error { margin-left: auto; text-align: right; }
+
+/* Keep the existing compact input shell visually equivalent while it moves
+ * onto the shared token set. */
+.unit-input, .filter-value-input, .bridge-resource-select { transition: border-color .12s, box-shadow .12s; }
+.unit-input:focus-within, .filter-value-input:focus-within, .bridge-resource-select:focus-within { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent); }
+.field-help { margin: 0; color: var(--muted); font-size: 10px; }

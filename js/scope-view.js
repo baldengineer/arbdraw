@@ -45,6 +45,7 @@ function refreshScopeVertical() {
   $('scopeVoltsDiv').value = Number(
     (scopeState.voltsPerDiv / scopeVoltageUnitScale).toPrecision(8),
   );
+  ARBDRAW_FIELDS.formatInputs();
   drawScope();
 }
 function scopeTimeUnitFor(milliseconds) {
@@ -59,6 +60,7 @@ function renderScopeTime() {
   scopeTimeUnitScaleMs = unit.scale;
   $('scopeTimeUnitBtn').textContent = unit.label;
   $('scopeTimeDiv').value = Number((scopeState.timePerDivMs / unit.scale).toPrecision(8));
+  ARBDRAW_FIELDS.formatInputs();
 }
 function fittedScopeTime() {
   return Math.min(
@@ -400,10 +402,20 @@ function closeScopeVoltageUnitMenu() {
   $('scopeVoltageUnitBtn').setAttribute('aria-expanded', 'false');
 }
 function selectScopeVoltageUnit(scale, label) {
+  const currentLabel = $('scopeVoltageUnitBtn').textContent,
+    currentValue = Number($('scopeVoltsDiv').value);
   scopeVoltageUnitScale = scale;
   $('scopeVoltageUnitBtn').textContent = label;
-  const value = Number($('scopeVoltsDiv').value);
-  if (Number.isFinite(value) && value > 0) scopeState.voltsPerDiv = value * scopeVoltageUnitScale;
+  if (Number.isFinite(currentValue) && currentValue > 0) {
+    $('scopeVoltsDiv').value = ARBDRAW_FIELDS.convert(
+      currentValue,
+      currentLabel,
+      label,
+      'scopeVoltage',
+    );
+    scopeState.voltsPerDiv = currentValue *
+      ARBDRAW_FIELDS.convert(1, currentLabel, label, 'scopeVoltage') * scopeVoltageUnitScale;
+  }
   drawScope();
   closeScopeVoltageUnitMenu();
 }
@@ -428,10 +440,19 @@ function closeScopePositionUnitMenu() {
   $('scopePositionUnitBtn').setAttribute('aria-expanded', 'false');
 }
 function selectScopePositionUnit(scale, label) {
+  const currentLabel = $('scopePositionUnitBtn').textContent,
+    currentValue = Number($('scopeVerticalPosition').value);
   scopePositionUnitScale = scale;
   $('scopePositionUnitBtn').textContent = label;
-  const value = Number($('scopeVerticalPosition').value);
-  if (Number.isFinite(value)) scopeState.verticalPosition = value * scopePositionUnitScale;
+  if (Number.isFinite(currentValue)) {
+    $('scopeVerticalPosition').value = ARBDRAW_FIELDS.convert(
+      currentValue,
+      currentLabel,
+      label,
+      'scopePosition',
+    );
+    scopeState.verticalPosition = Number($('scopeVerticalPosition').value) * scopePositionUnitScale;
+  }
   drawScope();
   closeScopePositionUnitMenu();
 }
@@ -468,11 +489,14 @@ function closeScopeTimeUnitMenu() {
   $('scopeTimeUnitBtn').setAttribute('aria-expanded', 'false');
 }
 function selectScopeTimeUnit(scale, label) {
+  const currentLabel = $('scopeTimeUnitBtn').textContent,
+    currentValue = Number($('scopeTimeDiv').value);
   scopeTimeUnitScaleMs = scale;
   $('scopeTimeUnitBtn').textContent = label;
-  const value = Number($('scopeTimeDiv').value);
-  if (Number.isFinite(value) && value > 0)
-    scopeState.timePerDivMs = Math.min(1000, value * scopeTimeUnitScaleMs);
+  if (Number.isFinite(currentValue) && currentValue > 0) {
+    $('scopeTimeDiv').value = ARBDRAW_FIELDS.convert(currentValue, currentLabel, label, 'scopeTime');
+    scopeState.timePerDivMs = Math.min(1000, Number($('scopeTimeDiv').value) * scopeTimeUnitScaleMs);
+  }
   drawScope();
   closeScopeTimeUnitMenu();
 }
