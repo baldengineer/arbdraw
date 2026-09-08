@@ -194,7 +194,7 @@ $('frequencyUnitBtn').textContent = DEFAULT_VALUES.frequencyUnit;
 $('periodUnitBtn').textContent = DEFAULT_VALUES.periodUnit;
 $('sampleRateUnitBtn').textContent =
   sampleRateDisplayUnits.find((unit) => unit.scale === sampleRateUnitScale)?.label || 'Mpts/s';
-  $('sampleCountUnitBtn').textContent = DEFAULT_VALUES.sampleCountUnit;
+$('sampleCountUnitBtn').textContent = DEFAULT_VALUES.sampleCountUnit;
 $('tsResolutionUnitBtn').textContent = DEFAULT_VALUES.tsResolutionUnit;
 document.querySelector('.transition-time-unit-button[data-input="riseTimeInput"]').textContent =
   DEFAULT_VALUES.riseTimeUnit;
