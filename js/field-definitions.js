@@ -7,39 +7,43 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     highInput: {
       kind: 'number',
       label: 'High level',
-      title: 'Used by some AWGs to configure output.',
+      title: 'Used by some AWGs to configure output',
       constraints: {},
     },
     lowInput: {
       kind: 'number',
       label: 'Low level',
+      title: 'Used by some AWGs to configure output',
       constraints: {},
     },
     amplitudeInput: {
       kind: 'number',
       label: 'Amplitude',
+      title: 'Used by some AWGs to configure output',
       constraints: { min: 0 },
     },
     offsetInput: {
       kind: 'number',
       label: 'Offset',
+      title: 'Sets the waveform\'s DC level',
       constraints: {},
     },
     cyclesInput: {
       kind: 'number',
       label: 'N Cycles',
+      title: 'Repeats within the period setting',
       constraints: { min: 1, integer: true },
     },
     frequencyInput: {
       kind: 'number',
       label: 'Frequency',
-      title: 'Set this Frequency or Period on the Arb.',
+      title: 'Set this frequency or period on the Arb',
       constraints: { min: 1e-6 },
     },
     periodInput: {
       kind: 'number',
       label: 'Period',
-      title: 'Set this Frequency or Period on the Arb.',
+      title: 'Set this frequency or period on the Arb',
       constraints: { min: 1e-12 },
     },
     phaseInput: {
@@ -50,17 +54,19 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     symmetryInput: {
       kind: 'number',
       label: 'Triangle symmetry',
-      title: 'Percentage of each cycle spent rising: 0% falling ramp, 50% triangle, 100% rising ramp.',
+      title: '0% falling ramp,\n50% triangle,\n100% rising ramp.',
       constraints: { min: 0, max: 100 },
     },
     riseTimeInput: {
       kind: 'number',
       label: 'Rise time',
+      title: '0 for fastest',
       constraints: { min: 0 },
     },
     fallTimeInput: {
       kind: 'number',
       label: 'Fall time',
+      title: '0 for fastest',
       constraints: { min: 0 },
     },
   },
@@ -76,28 +82,28 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     rateEdit: {
       kind: 'number',
       label: 'Sample rate',
-      title: 'Sample rate controls waveform timing with the sample count.',
+      title: 'Determines sample point resolution',
     },
     samplesEdit: {
       kind: 'number',
       label: 'Samples',
-      title: 'Number of waveform samples.',
+      title: 'Waveform sample buffer size',
     },
     tsResolutionEdit: {
       kind: 'number',
       label: 'TS resolution',
-      title: 'TS means timestamps. Some AWGs ignore this value.',
+      title: 'Inverse of sample rate.\nTS means timestamps.\nSome AWGs ignore this value.',
     },
     awgFrequencyEdit: {
       kind: 'text',
       label: 'AWG frequency',
-      title: 'Set the AWG frequency to this value.',
+      title: 'Set AWG frequency to this value',
       readonly: true,
     },
     awgPeriodEdit: {
       kind: 'text',
       label: 'AWG period',
-      title: 'Set the AWG period to this value.',
+      title: 'Set AWG period to this value',
       readonly: true,
     },
   },
@@ -106,17 +112,17 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     scopeVoltsDiv: {
       kind: 'number',
       label: 'Vertical scale',
-      title: 'Vertical scale in volts per division.',
+      title: 'Vertical scale in volts per division',
     },
     scopeVerticalPosition: {
       kind: 'number',
       label: 'Vertical position',
-      title: 'Vertical position of the waveform.',
+      title: 'Vertical position of the waveform',
     },
     scopeTimeDiv: {
       kind: 'number',
       label: 'Time per division',
-      title: 'Time per horizontal division.',
+      title: 'Time per horizontal division',
     },
   },
 
@@ -124,7 +130,7 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     projectName: {
       kind: 'text',
       label: 'Project name',
-      title: 'Click to rename project.',
+      title: 'Click to rename project',
       readonly: true,
     },
   },
@@ -133,7 +139,7 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     serialProtocol: {
       kind: 'select',
       label: 'Protocol',
-      title: 'Select the serial protocol. I2C is not implemented.',
+      title: 'Select the serial protocol.\nI2C is not implemented.',
       behavior: 'commitOnChange',
     },
     serialBaud: {
@@ -157,7 +163,7 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     serialPayload: {
       kind: 'text',
       label: 'Payload',
-      title: 'Enter a hexadecimal payload such as 0xAA or a text string. The period automatically resizes to fit the complete payload.',
+      title: 'Enter a hexadecimal payload such as 0xAA or a text string.\nThe period resizes to fit the complete payload.',
       behavior: 'commitOnExit',
     },
     serialBinaryPattern: {
