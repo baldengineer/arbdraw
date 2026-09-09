@@ -27,7 +27,7 @@ document.addEventListener('pointerdown', (event) => {
   )
     closeVoltageUnitMenu();
   if (
-    !event.target.closest?.('#frequencyUnitMenu,#periodUnitMenu,#tsResolutionUnitMenu,#sampleRateUnitMenu,#sampleCountUnitMenu,#frequencyUnitBtn,#periodUnitBtn,#tsResolutionUnitBtn,#sampleRateUnitBtn,#sampleCountUnitBtn')
+    !event.target.closest?.('#frequencyUnitMenu,#periodUnitMenu,#transitionTimeUnitMenu,#tsResolutionUnitMenu,#sampleRateUnitMenu,#sampleCountUnitMenu,#frequencyUnitBtn,#periodUnitBtn,.transition-time-unit-button,#tsResolutionUnitBtn,#sampleRateUnitBtn,#sampleCountUnitBtn')
   )
     closeTimingUnitMenus();
   if (!event.target.closest?.('#scopeVoltageUnitMenu,#scopeVoltageUnitBtn'))
