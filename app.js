@@ -7,16 +7,27 @@ new ResizeObserver(() => {
 }).observe(scopeCanvas);
 
 function updateAudioPlaybackButton() {
-  const button = $('playWaveformBtn'), playing = ARBDRAW_AUDIO_PLAYBACK.playing;
+  const button = $('playWaveformBtn'),
+    playing = ARBDRAW_AUDIO_PLAYBACK.playing,
+    audioProfileSelected = $('awgProfileSelect')?.value === 'audio';
   button.textContent = playing ? '■ Stop' : '▶ Play';
   button.classList.toggle('playing', playing);
-  button.title = playing ? 'Stop browser audio playback' : 'Play waveform through browser audio';
+  button.disabled = !playing && !audioProfileSelected;
+  button.title = playing
+    ? 'Stop browser audio playback'
+    : audioProfileSelected
+      ? 'Play waveform through browser audio'
+      : 'Select the Audio AWG profile to enable playback';
   button.setAttribute('aria-pressed', String(playing));
 }
 
 $('playWaveformBtn').onclick = async () => {
   if (ARBDRAW_AUDIO_PLAYBACK.playing) {
     ARBDRAW_AUDIO_PLAYBACK.stop();
+    updateAudioPlaybackButton();
+    return;
+  }
+  if ($('awgProfileSelect')?.value !== 'audio') {
     updateAudioPlaybackButton();
     return;
   }
