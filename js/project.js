@@ -370,23 +370,56 @@ for (const [inputId, buttonId] of [
 }
 const fileButton = $('fileBtn');
 const fileMenu = $('fileMenu');
+const editButton = document.createElement('button');
+editButton.id = 'editBtn';
+editButton.className = 'ghost file-button';
+editButton.type = 'button';
+editButton.setAttribute('aria-haspopup', 'menu');
+editButton.setAttribute('aria-expanded', 'false');
+editButton.textContent = 'Edit ▾';
+const editMenu = document.createElement('div');
+editMenu.id = 'editMenu';
+editMenu.className = 'context-menu file-menu edit-menu';
+editMenu.setAttribute('role', 'menu');
+editMenu.setAttribute('aria-label', 'Edit');
+const editMenuAnchor = document.createElement('span');
+editMenuAnchor.className = 'edit-menu-anchor';
+editMenuAnchor.append(editButton, editMenu);
+fileMenu.after(editMenuAnchor);
+editMenu.append($('undoBtn'), $('redoBtn'));
+function closeEditMenu() {
+  editMenu.classList.remove('open');
+  editButton.setAttribute('aria-expanded', 'false');
+}
 function closeFileMenu() {
   fileMenu.classList.remove('open');
   fileButton.setAttribute('aria-expanded', 'false');
 }
 fileButton.onclick = (event) => {
   event.stopPropagation();
+  closeEditMenu();
   const isOpen = fileMenu.classList.toggle('open');
   fileButton.setAttribute('aria-expanded', String(isOpen));
 };
+editButton.onclick = (event) => {
+  event.stopPropagation();
+  closeFileMenu();
+  closeExportMenu();
+  const isOpen = editMenu.classList.toggle('open');
+  editButton.setAttribute('aria-expanded', String(isOpen));
+};
+$('undoBtn').addEventListener('click', closeEditMenu);
+$('redoBtn').addEventListener('click', closeEditMenu);
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#exportMenu,#exportBtn')) closeExportMenu();
   if (!event.target.closest?.('#fileMenu,#fileBtn')) closeFileMenu();
+  if (!event.target.closest?.('#editMenu,#editBtn')) closeEditMenu();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     closeExportMenu();
     closeFileMenu();
+    closeEditMenu();
   }
 });
 $('openBtn').onclick = () => {
