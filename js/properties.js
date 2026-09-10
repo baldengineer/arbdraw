@@ -35,7 +35,17 @@ const awgProfiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
 let selectedAwgProfile = null;
 
 function profileById(id) {
-  return awgProfiles.find((profile) => profile.id === id) || awgProfiles[0] || null;
+  return awgProfiles.find((profile) => profile.id === id) || null;
+}
+
+function defaultAwgProfile() {
+  return (
+    profileById(DEFAULT_VALUES.awgProfileId) ||
+    awgProfiles.find((profile) => profile.id === 'audio' || profile.name === 'Audio') ||
+    awgProfiles.find((profile) => profile.id === 'other' || profile.name === 'Other') ||
+    awgProfiles[0] ||
+    null
+  );
 }
 
 function renderAwgProfiles() {
@@ -43,8 +53,7 @@ function renderAwgProfiles() {
   awgProfileSelect.replaceChildren(
     ...awgProfiles.map((profile) => new Option(profile.name, profile.id)),
   );
-  awgProfileSelect.value =
-    globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || awgProfiles[0]?.id || '';
+  awgProfileSelect.value = defaultAwgProfile()?.id || '';
   selectedAwgProfile = profileById(awgProfileSelect.value);
   if (Number.isFinite(selectedAwgProfile?.sampleDepth?.max)) {
     $('samplesEdit').max = selectedAwgProfile.sampleDepth.max;
@@ -156,6 +165,7 @@ function persistCurrentSettings() {
       typeof scopeState !== 'undefined'
         ? scopeState.verticalDivisions
         : DEFAULT_VALUES.waveformVerticalDivisions,
+    awgProfileId: selectedAwgProfile?.id || defaultAwgProfile()?.id || 'other',
   });
 }
 function displayAmplitude(volts) {

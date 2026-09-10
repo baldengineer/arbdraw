@@ -61,4 +61,4 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
   }),
 });
 
-globalThis.ARBDRAW_DEFAULT_AWG_PROFILE = 'owon-xdg3000';
+globalThis.ARBDRAW_DEFAULT_AWG_PROFILE = 'audio';

@@ -13,6 +13,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   // precision.
   inputDecimalPlaces: 4,
   bridgeUrl: 'http://127.0.0.1:8876',
+  awgProfileId: 'audio',
   highLevelV: 500,
   highLevelUnit: 'mV',
   lowLevelV: -500,

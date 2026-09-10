@@ -167,6 +167,10 @@ function normalizeDefaults(source = {}) {
       2,
       Math.round(finite('waveformVerticalDivisions', 10)),
     ),
+    awgProfileId:
+      typeof source.awgProfileId === 'string' && source.awgProfileId.trim()
+        ? source.awgProfileId.trim()
+        : globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || 'other',
   });
 }
 
@@ -198,6 +202,14 @@ function resetStoredSettings() {
   } catch {
     // Storage may be unavailable for restricted file or private browsing contexts.
   }
+}
+
+function resolveDefaultAwgProfileId(preferred = DEFAULT_VALUES?.awgProfileId) {
+  const profiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {}),
+    requested = profiles.find((profile) => profile.id === preferred),
+    audio = profiles.find((profile) => profile.id === 'audio' || profile.name === 'Audio'),
+    other = profiles.find((profile) => profile.id === 'other' || profile.name === 'Other');
+  return requested?.id || audio?.id || other?.id || 'other';
 }
 
 function readUrlSettings() {
@@ -291,7 +303,7 @@ function createDefaultDocument() {
     version: 1,
     name: 'Waveform 01',
     AWG: {
-      profileId: globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || 'other',
+      profileId: resolveDefaultAwgProfileId(),
       sampleRateType: 'Fixed',
       sampleRateMSa: DEFAULT_VALUES.sampleRateMSa,
       sampleCount: DEFAULT_VALUES.sampleCount,
