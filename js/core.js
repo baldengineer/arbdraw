@@ -71,7 +71,7 @@ function normalizeDefaults(source = {}) {
   const fallTimeUnit = unit('fallTimeUnit', transitionTimeUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
-  const waveformTypes = ['sine', 'square', 'triangle', 'pulse', 'dc', 'noise', 'custom', 'serial'];
+  const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'custom', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -125,6 +125,7 @@ function normalizeDefaults(source = {}) {
     ),
     phaseDegrees: finite('phaseDegrees', 0),
     symmetryPercent: source.waveformType === 'ramp' ? 100 : Math.min(100, Math.max(0, finite('symmetryPercent', 50))),
+    rcTau: Math.max(0.000001, finite('rcTau', 5)),
     dutyCyclePercent: Math.min(99, Math.max(1, finite('dutyCyclePercent', 50))),
     riseTimeSeconds: Math.max(0, finite('riseTimeSeconds', 0)),
     fallTimeSeconds: Math.max(0, finite('fallTimeSeconds', 0)),
@@ -211,6 +212,7 @@ function readUrlSettings() {
       type: 'waveformType',
       frequency: 'frequencyHz',
       period: 'periodSeconds',
+      tau: 'rcTau',
     };
   const knownKeys = new Set(Object.keys(globalThis.ARBDRAW_DEFAULTS || {}));
 
@@ -222,7 +224,7 @@ function readUrlSettings() {
   const numberKeys = new Set([
     'highLevelV', 'lowLevelV', 'offsetV', 'amplitudeVpp', 'sampleRateMSa', 'sampleCount',
     'nCycles', 'frequencyHz', 'periodSeconds', 'phaseDegrees', 'dutyCyclePercent',
-    'symmetryPercent', 'riseTimeSeconds', 'fallTimeSeconds', 'noisePercent',
+    'symmetryPercent', 'rcTau', 'riseTimeSeconds', 'fallTimeSeconds', 'noisePercent',
     'serialBaud', 'serialWordSize', 'serialPreIdleBits', 'serialPostIdleBits', 'serialStopBits',
     'waveformVerticalDivisions',
   ]);
@@ -308,6 +310,7 @@ function createDefaultDocument() {
       phaseDegrees: DEFAULT_VALUES.phaseDegrees,
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
       symmetryPercent: DEFAULT_VALUES.symmetryPercent,
+      rcTau: DEFAULT_VALUES.rcTau,
       riseTimeSeconds: DEFAULT_VALUES.riseTimeSeconds,
       fallTimeSeconds: DEFAULT_VALUES.fallTimeSeconds,
       noiseColor: DEFAULT_VALUES.noiseColor,
@@ -367,6 +370,7 @@ const documentFields = {
   phase: 'phaseDegrees',
   duty: 'dutyCyclePercent',
   symmetry: 'symmetryPercent',
+  rcTau: 'rcTau',
   riseTime: 'riseTimeSeconds',
   fallTime: 'fallTimeSeconds',
   noiseColor: 'noiseColor',
@@ -388,6 +392,7 @@ const titles = {
   sine: 'Sine wave',
   square: 'Square wave',
   triangle: 'Triangle wave',
+  rc: 'RC charging curve',
   pulse: 'Pulse wave',
   dc: 'DC level',
   noise: 'Noise',

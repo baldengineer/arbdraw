@@ -21,7 +21,7 @@ Download the `.whl` file from the [current Python bridge release](https://github
 
 ## Features
 
-- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), white/pink noise, custom, and serial (UART) waveform types
+- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, custom, and serial (UART) waveform types
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Generator profiles, including Audio at 48 kHz with 1,000 default points and a 100,000-point maximum
 - CSV export with optional waveform metadata headers
@@ -44,6 +44,8 @@ The editor keeps a versioned `arbdraw.waveform` document in memory as its source
 The initial waveform can be selected and configured from the URL. URL parameters override saved browser settings. For example:
 
 `?waveshape=triangle&frequencyHz=1000&nCycles=2&symmetryPercent=25`
+
+For an RC charging curve, `rcTau` sets the number of time constants shown in each cycle (default 5); `tau` is accepted as a URL alias. Since `τ = R × C`, five time constants charge the capacitor from the low level to about 99.3% of the high level.
 
 Parameters use the same names as the editable defaults in `js/defaults.js`. `wave`, `waveshape`, `waveform`, and `type` are aliases for `waveformType`; `frequency` and `period` are aliases for `frequencyHz` and `periodSeconds`. If both frequency and period are supplied, frequency takes precedence so the linked controls remain synchronized.
 

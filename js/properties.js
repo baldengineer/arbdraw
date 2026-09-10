@@ -123,6 +123,7 @@ function persistCurrentSettings() {
     phaseDegrees: state.phase,
     dutyCyclePercent: state.duty,
     symmetryPercent: state.symmetry,
+    rcTau: state.rcTau,
     riseTimeSeconds: state.riseTime,
     riseTimeUnit: document.querySelector(
       '.transition-time-unit-button[data-input="riseTimeInput"]',
@@ -271,6 +272,7 @@ function syncInputs() {
   state.phase = +$('phaseInput').value;
   state.duty = +$('dutyInput').value;
   state.symmetry = +$('symmetryInput').value;
+  state.rcTau = Math.max(0.000001, +$('rcTauInput').value);
   state.riseTime = Math.max(0, inputTransitionTime('riseTimeInput'));
   state.fallTime = Math.max(0, inputTransitionTime('fallTimeInput'));
   $('highInput').value = displayVoltage('highInput', state.high);
@@ -427,6 +429,7 @@ function propertiesDiffer() {
       +$('phaseInput').value,
       +$('dutyInput').value,
       +$('symmetryInput').value,
+      +$('rcTauInput').value,
       inputTransitionTime('riseTimeInput'),
       inputTransitionTime('fallTimeInput'),
     ],
@@ -438,6 +441,7 @@ function propertiesDiffer() {
       state.phase,
       state.duty,
       state.symmetry,
+      state.rcTau,
       state.riseTime,
       state.fallTime,
     ];
@@ -457,6 +461,7 @@ function propertiesValid() {
       $('phaseInput'),
       $('dutyInput'),
       $('symmetryInput'),
+      $('rcTauInput'),
       $('riseTimeInput'),
       $('fallTimeInput'),
     ].every(
@@ -467,6 +472,7 @@ function propertiesValid() {
     inputFrequency() > 0 &&
     +$('symmetryInput').value >= 0 &&
     +$('symmetryInput').value <= 100 &&
+    +$('rcTauInput').value > 0 &&
     inputTransitionTime('riseTimeInput') >= 0 &&
     inputTransitionTime('fallTimeInput') >= 0
   );
@@ -494,7 +500,8 @@ function applyProperties({ preview = false } = {}) {
     valueChanged(+$('cyclesInput').value, state.cycles) ||
     valueChanged(+$('phaseInput').value, state.phase) ||
     valueChanged(+$('dutyInput').value, state.duty) ||
-    valueChanged(+$('symmetryInput').value, state.symmetry);
+    valueChanged(+$('symmetryInput').value, state.symmetry) ||
+    valueChanged(+$('rcTauInput').value, state.rcTau);
   syncInputs();
   if (waveformChanged) {
     generate(state.type, !preview && !waveformPreviewTransaction, !preview && !waveformPreviewTransaction);
@@ -599,6 +606,7 @@ const propertyDefaultMap = {
   phaseInput: 'phaseDegrees',
   dutyInput: 'dutyCyclePercent',
   symmetryInput: 'symmetryPercent',
+  rcTauInput: 'rcTau',
   riseTimeInput: 'riseTimeSeconds',
   fallTimeInput: 'fallTimeSeconds',
 };

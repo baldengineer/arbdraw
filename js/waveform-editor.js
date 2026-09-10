@@ -54,6 +54,13 @@ function generate(type = state.type, recordHistory = true, persist = true) {
           low: state.low,
           symmetryPercent: state.symmetry,
         });
+      case 'rc':
+        return ARBDRAW_WAVEFORM_SHAPES.rcVoltage({
+          phase: p,
+          high: state.high,
+          low: state.low,
+          tau: state.rcTau,
+        });
       case 'pulse':
         return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
           phase: p,
@@ -283,6 +290,7 @@ const dutyDisabledTypes = new Set([
   'custom',
   'sine',
   'triangle',
+  'rc',
   'dc',
   'noise',
   'serial',
@@ -320,6 +328,9 @@ function updateSymmetryVisibility(type) {
   $('symmetryProperty').hidden = type !== 'triangle';
   $('symmetryPresets').hidden = type !== 'triangle';
 }
+function updateRcVisibility(type) {
+  $('rcProperty').hidden = type !== 'rc';
+}
 function updateNoisePropertiesVisibility(type) {
   $('noiseColorProperty').hidden = type !== 'noise';
 }
@@ -337,6 +348,7 @@ function selectPreset(type) {
   updateTransitionPropertiesVisibility(type);
   updateNoisePropertiesVisibility(type);
   updateSymmetryVisibility(type);
+  updateRcVisibility(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }
@@ -425,6 +437,7 @@ function drawMini(c, type) {
     if (type === 'sine') y = 0.5 - 0.34 * Math.sin(t * Math.PI * 4);
     if (type === 'square' || type === 'pulse') y = p < 0.5 ? 0.2 : 0.8;
     if (type === 'triangle') y = 0.8 - 0.6 * ARBDRAW_WAVEFORM_SHAPES.triangleVoltage({ phase: p, low: 0, high: 1, symmetryPercent: state.symmetry });
+    if (type === 'rc') y = 0.8 - 0.6 * ARBDRAW_WAVEFORM_SHAPES.rcVoltage({ phase: p, low: 0, high: 1, tau: state.rcTau });
 
     if (type === 'dc') y = 0.5;
     if (type === 'noise') y = 0.2 + Math.random() * 0.6;
@@ -434,7 +447,7 @@ function drawMini(c, type) {
   x.stroke();
 }
 function updateFunctionSelect(type) {
-  const label = type.charAt(0).toUpperCase() + type.slice(1),
+  const label = type === 'rc' ? 'RC' : type.charAt(0).toUpperCase() + type.slice(1),
     button = $('functionSelectBtn');
   button.querySelector('span').textContent = label;
   drawMini(button.querySelector('canvas'), type);

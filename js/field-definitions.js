@@ -59,6 +59,12 @@ const ARBDRAW_FIELD_DEFINITIONS = {
       title: '0% falling ramp,\n50% triangle,\n100% rising ramp.',
       constraints: { min: 0, max: 100 },
     },
+    rcTauInput: {
+      kind: 'number',
+      label: 'RC time constants per cycle',
+      title: 'Number of RC time constants in one cycle. τ = R × C.',
+      constraints: { min: 1e-6 },
+    },
     riseTimeInput: {
       kind: 'number',
       label: 'Rise time',

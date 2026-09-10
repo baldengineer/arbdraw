@@ -67,6 +67,14 @@
     return low + (high - low) * level;
   }
 
+  // RC capacitor charging response. `tau` is the number of time constants
+  // represented by one waveform cycle (5 tau reaches about 99.3% of high).
+  function rcVoltage({ phase, high, low, tau = 5 }) {
+    const p = ((phase % 1) + 1) % 1,
+      timeConstants = Math.max(0.000001, Number(tau) || 5);
+    return high - (high - low) * Math.exp(-p * timeConstants);
+  }
+
   function generateNoiseSamples({ count, high, low, color = 'white', random = Math.random }) {
     const sampleCount = Math.max(0, Math.floor(count)),
       midpoint = (high + low) / 2,
@@ -118,5 +126,5 @@
     return result;
   }
 
-  return Object.freeze({ generateNoiseSamples, smoothSamples, squarePulseVoltage, triangleVoltage, createSerialVoltage });
+  return Object.freeze({ generateNoiseSamples, smoothSamples, squarePulseVoltage, triangleVoltage, rcVoltage, createSerialVoltage });
 });

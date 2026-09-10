@@ -34,6 +34,7 @@
     "cycles": 1,
     "phaseDegrees": 0,
     "dutyCyclePercent": 50,
+    "rcTau": 5,
     "sampleCount": 8,
     "values": [0, 0.7818314825, 0.9749279122, 0.4338837391,
       -0.4338837391, -0.9749279122, -0.7818314825, 0]
@@ -44,10 +45,11 @@
   <table>
     <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
     <tbody>
-      <tr><td><code>type</code></td><td>—</td><td><code>custom</code>, <code>sine</code>, <code>square</code>, <code>triangle</code>, <code>ramp</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, or <code>serial</code>.</td></tr>
+      <tr><td><code>type</code></td><td>—</td><td><code>custom</code>, <code>sine</code>, <code>square</code>, <code>triangle</code>, <code>ramp</code>, <code>rc</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, or <code>serial</code>.</td></tr>
       <tr><td><code>highVoltage</code>, <code>lowVoltage</code></td><td>V</td><td>Nominal waveform levels.</td></tr>
       <tr><td><code>sampleRateMSa</code></td><td>MSa/s</td><td>Samples per second in millions. <code>1</code> means 1,000,000 samples/second.</td></tr>
       <tr><td><code>frequencyHz</code></td><td>Hz</td><td>Nominal waveform frequency metadata.</td></tr>
+      <tr><td><code>rcTau</code></td><td>τ/cycle</td><td>RC time constants per cycle. Default: 5; τ = R × C.</td></tr>
       <tr><td><code>cycles</code></td><td>cycles</td><td>Number of waveform cycles represented by the samples.</td></tr>
       <tr><td><code>phaseDegrees</code></td><td>degrees</td><td>Nominal phase offset.</td></tr>
       <tr><td><code>dutyCyclePercent</code></td><td>%</td><td>High-state percentage for square and pulse waveforms, from 1 through 99.</td></tr>

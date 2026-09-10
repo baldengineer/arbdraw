@@ -14,6 +14,7 @@ function renderDocument() {
   $('phaseInput').value = state.phase;
   $('dutyInput').value = state.duty;
   $('symmetryInput').value = state.symmetry;
+  $('rcTauInput').value = state.rcTau;
   $('dutyValue').textContent = state.duty + '%';
   $('noiseColorSelect').value = state.noiseColor;
   renderTransitionTimes();
@@ -26,6 +27,7 @@ function renderDocument() {
   updateTransitionPropertiesVisibility(state.type);
   updateNoisePropertiesVisibility(state.type);
   updateSymmetryVisibility(state.type);
+  updateRcVisibility(state.type);
   renderSerialProperties();
   renderFilterMenu();
   updateFunctionSelect(state.type);
@@ -92,6 +94,7 @@ function parseProject(raw) {
         Math.max(1, number('dutyCyclePercent', defaults.dutyCyclePercent)),
       ),
       symmetryPercent: source.type === 'ramp' ? 100 : Math.min(100, Math.max(0, number('symmetryPercent', 50))),
+      rcTau: Math.max(0.000001, number('rcTau', defaults.rcTau)),
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
