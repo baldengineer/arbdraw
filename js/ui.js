@@ -38,6 +38,7 @@ document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#scopeDivisionMenu,#scopeVerticalControl')) closeScopeDivisionMenu();
   if (!event.target.closest?.('#scopeZoomMenu')) closeScopeZoomMenu();
   if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn')) closeFunctionSelectMenu();
+  if (!event.target.closest?.('#audioVolumeControl')) globalThis.closeAudioVolumeControl?.();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
@@ -51,6 +52,7 @@ document.addEventListener('keydown', (event) => {
     closeScopeDivisionMenu();
     closeScopeZoomMenu();
     closeFunctionSelectMenu();
+    globalThis.closeAudioVolumeControl?.();
   }
 });
 window.addEventListener('blur', () => {

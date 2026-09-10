@@ -10,6 +10,7 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
     if (!elements.has(id)) {
       elements.set(id, {
         value: id === 'awgProfileSelect' ? profileId : '',
+        hidden: id === 'audioVolumePanel',
         disabled: false,
         textContent: '',
         title: '',
@@ -21,6 +22,7 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
         setAttribute(name, value) {
           this.attributes[name] = value;
         },
+        focus() {},
       });
     }
     return elements.get(id);
@@ -103,4 +105,17 @@ test('the volume control maps its percentage to browser audio volume', () => {
 
   assert.equal(playback.volume, 0.35);
   assert.equal(element('audioVolumeValue').textContent, '35%');
+});
+
+test('the volume button expands and collapses the slider', () => {
+  const { context, element } = createHarness();
+
+  element('audioVolumeBtn').onclick();
+  assert.equal(element('audioVolumePanel').hidden, false);
+  assert.equal(element('audioVolumeBtn').attributes['aria-expanded'], 'true');
+
+  element('audioVolumeBtn').onclick();
+  assert.equal(element('audioVolumePanel').hidden, true);
+  assert.equal(element('audioVolumeBtn').attributes['aria-expanded'], 'false');
+  assert.equal(typeof context.closeAudioVolumeControl, 'function');
 });

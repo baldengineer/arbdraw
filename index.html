@@ -90,7 +90,10 @@
             <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
           </div>
           <div class="timing-actions">
-            <label class="audio-volume-control" for="audioVolumeInput"><span>VOLUME</span><input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100" aria-label="Browser audio volume"><output id="audioVolumeValue" for="audioVolumeInput">100%</output></label>
+            <div id="audioVolumeControl" class="audio-volume-control">
+              <button id="audioVolumeBtn" class="audio-volume-button" type="button" aria-expanded="false" aria-controls="audioVolumePanel" aria-label="Adjust browser audio volume" title="Adjust browser audio volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg></button>
+              <div id="audioVolumePanel" class="audio-volume-panel" hidden><label for="audioVolumeInput">VOLUME</label><input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100" aria-label="Browser audio volume"><output id="audioVolumeValue" for="audioVolumeInput">100%</output></div>
+            </div>
             <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
             <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
           </div>

@@ -23,10 +23,22 @@ function updateAudioPlaybackButton() {
 
 function updateAudioVolume(value) {
   const volume = ARBDRAW_AUDIO_PLAYBACK.setVolume(Number(value) / 100);
-  $('audioVolumeValue').value = `${Math.round(volume * 100)}%`;
   $('audioVolumeValue').textContent = `${Math.round(volume * 100)}%`;
 }
 
+function closeAudioVolumeControl() {
+  const panel = $('audioVolumePanel'), button = $('audioVolumeBtn');
+  panel.hidden = true;
+  button.setAttribute('aria-expanded', 'false');
+  if (globalThis.document?.activeElement === $('audioVolumeInput')) button.focus();
+}
+
+$('audioVolumeBtn').onclick = () => {
+  const panel = $('audioVolumePanel'), button = $('audioVolumeBtn'), open = panel.hidden;
+  panel.hidden = !open;
+  button.setAttribute('aria-expanded', String(open));
+  if (open) $('audioVolumeInput').focus();
+};
 $('audioVolumeInput').oninput = (event) => updateAudioVolume(event.target.value);
 
 $('playWaveformBtn').onclick = async () => {

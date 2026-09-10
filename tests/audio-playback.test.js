@@ -72,10 +72,11 @@ test('configures browser playback to loop until stopped', async () => {
     }
   }
   const playback = require('../js/audio-playback.js').create({ AudioContext: FakeAudioContext });
+  assert.equal(playback.setVolume(0.6), 0.6);
   await playback.play([0, 1], { sampleRateHz: 48_000, durationSeconds: 0.0001 });
   assert.equal(sources[0].loop, true);
   assert.equal(sources[0].playbackRate.value, 200);
-  assert.equal(gains[0].gain.value, 1);
+  assert.equal(gains[0].gain.value, 0.6);
   assert.equal(playback.setVolume(0.35), 0.35);
   assert.equal(gains[0].gain.value, 0.35);
   assert.equal(playback.setVolume(2), 1);
