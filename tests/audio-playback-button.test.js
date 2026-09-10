@@ -28,8 +28,13 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
   const calls = { play: 0, stop: 0 };
   const playback = {
     playing,
+    volume: 1,
     async play() {
       calls.play++;
+    },
+    setVolume(value) {
+      this.volume = value;
+      return value;
     },
     stop() {
       calls.stop++;
@@ -89,4 +94,13 @@ test('the click handler refuses playback outside the Audio profile', async () =>
   await button.onclick();
   assert.equal(calls.play, 0);
   assert.equal(button.disabled, true);
+});
+
+test('the volume control maps its percentage to browser audio volume', () => {
+  const { context, element, playback } = createHarness();
+
+  context.updateAudioVolume(35);
+
+  assert.equal(playback.volume, 0.35);
+  assert.equal(element('audioVolumeValue').textContent, '35%');
 });

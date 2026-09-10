@@ -8,6 +8,7 @@
 })(globalThis, function createAudioPlayback() {
   const MAX_PLAYBACK_SECONDS = 30;
   const MIN_BUFFER_DURATION_SECONDS = 0.02;
+  const DEFAULT_VOLUME = 1;
 
   function finiteSamples(values) {
     if (!values || !values.length || !Array.from(values).every(Number.isFinite))
@@ -46,7 +47,15 @@
   function create({ AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext } = {}) {
     let context = null,
       source = null,
-      gain = null;
+      gain = null,
+      volume = DEFAULT_VOLUME;
+
+    function setVolume(value) {
+      const numericValue = Number(value);
+      volume = Number.isFinite(numericValue) ? Math.max(0, Math.min(1, numericValue)) : DEFAULT_VOLUME;
+      if (gain?.gain) gain.gain.value = volume;
+      return volume;
+    }
 
     function disconnectNodes(sourceNode, gainNode) {
       sourceNode?.disconnect();
@@ -98,7 +107,7 @@
       source.loop = true;
       if (bufferDurationSeconds) source.playbackRate.value = buffer.duration / desiredDurationSeconds;
       gain = context.createGain();
-      gain.gain.value = 1;
+      gain.gain.value = volume;
       source.connect(gain);
       gain.connect(context.destination);
       source.onended = () => {
@@ -111,7 +120,7 @@
       source.start();
     }
 
-    return { play, stop, get playing() { return source !== null; } };
+    return { play, stop, setVolume, get volume() { return volume; }, get playing() { return source !== null; } };
   }
 
   const defaultPlayback = create();
@@ -119,8 +128,10 @@
     MAX_PLAYBACK_SECONDS,
     prepareAudioSamples,
     create,
+    setVolume: defaultPlayback.setVolume,
     play: defaultPlayback.play,
     stop: defaultPlayback.stop,
+    get volume() { return defaultPlayback.volume; },
     get playing() { return defaultPlayback.playing; },
   };
 });

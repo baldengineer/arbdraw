@@ -21,6 +21,14 @@ function updateAudioPlaybackButton() {
   button.setAttribute('aria-pressed', String(playing));
 }
 
+function updateAudioVolume(value) {
+  const volume = ARBDRAW_AUDIO_PLAYBACK.setVolume(Number(value) / 100);
+  $('audioVolumeValue').value = `${Math.round(volume * 100)}%`;
+  $('audioVolumeValue').textContent = `${Math.round(volume * 100)}%`;
+}
+
+$('audioVolumeInput').oninput = (event) => updateAudioVolume(event.target.value);
+
 $('playWaveformBtn').onclick = async () => {
   if (ARBDRAW_AUDIO_PLAYBACK.playing) {
     ARBDRAW_AUDIO_PLAYBACK.stop();

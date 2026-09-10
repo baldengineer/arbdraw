@@ -34,6 +34,7 @@ test('keeps silence silent and rejects invalid playback inputs', () => {
 
 test('configures browser playback to loop until stopped', async () => {
   const sources = [];
+  const gains = [];
   class FakeAudioContext {
     state = 'running';
     currentTime = 0;
@@ -56,7 +57,7 @@ test('configures browser playback to loop until stopped', async () => {
       return source;
     }
     createGain() {
-      return {
+      const gain = {
         gain: {
           value: 1,
           cancelScheduledValues() {},
@@ -66,12 +67,21 @@ test('configures browser playback to loop until stopped', async () => {
         connect() {},
         disconnect() {},
       };
+      gains.push(gain);
+      return gain;
     }
   }
   const playback = require('../js/audio-playback.js').create({ AudioContext: FakeAudioContext });
   await playback.play([0, 1], { sampleRateHz: 48_000, durationSeconds: 0.0001 });
   assert.equal(sources[0].loop, true);
   assert.equal(sources[0].playbackRate.value, 200);
+  assert.equal(gains[0].gain.value, 1);
+  assert.equal(playback.setVolume(0.35), 0.35);
+  assert.equal(gains[0].gain.value, 0.35);
+  assert.equal(playback.setVolume(2), 1);
+  assert.equal(gains[0].gain.value, 1);
+  assert.equal(playback.setVolume(-1), 0);
+  assert.equal(gains[0].gain.value, 0);
   playback.stop();
   assert.equal(playback.playing, false);
 });
