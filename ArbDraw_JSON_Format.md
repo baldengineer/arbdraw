@@ -90,7 +90,7 @@ Unknown top-level fields are ignored.
 | `frequencyHz` | number | Hz | Nominal waveform frequency. |
 | `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
 | `symmetryPercent` | number | % | Triangle rise time as a percentage of the cycle, from 0 to 100. Default: 50. 0 produces a falling ramp; 100 produces a rising ramp. |
-| `rcTau` | number | τ/cycle | Number of RC time constants represented by one cycle. Default: 5. The charging curve uses `τ = R × C`. |
+| `rcTau` | number | — | Unitless RC curve parameter. Default: 5. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
 | `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |

@@ -61,8 +61,8 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     },
     rcTauInput: {
       kind: 'number',
-      label: 'RC time constants per cycle',
-      title: 'Number of RC time constants in one cycle. τ = R × C.',
+      label: 'RC tau',
+      title: 'Unitless RC curve parameter. Default: 5.',
       constraints: { min: 1e-6 },
     },
     riseTimeInput: {
