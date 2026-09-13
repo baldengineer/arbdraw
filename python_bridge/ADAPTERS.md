@@ -226,7 +226,9 @@ The current `send_waveform(request)` entry point can instantiate this class and 
 
 ## Instrument selection and capabilities
 
-The current bridge runs one explicitly configured adapter, so it does not automatically choose among instrument families. When a registry is added, selection should follow this order:
+The current bridge discovers installed adapters by entry point and lets the user
+choose one in ArbDraw. It does not yet match an instrument to an adapter
+automatically. Future automatic selection should follow this order:
 
 1. Discover the selected VISA resource.
 2. Query and cache its `*IDN?` response for a short period.
@@ -248,13 +250,17 @@ Capabilities should eventually tell ArbDraw which controls are meaningful for th
 - Output-control support.
 - Estimated or configured upload timeout.
 
-Possible future endpoints are `GET /api/v1/adapters` and `GET /api/v1/instruments`. They do not exist yet and an adapter must not depend on them until the bridge implements them.
+`GET /api/v1/adapters` lists the installed adapters. An instrument capability
+endpoint does not exist yet; adapters must not depend on one.
 
 ## VISA ownership, concurrency, and cleanup
 
 All VISA access belongs in the Python process. ArbDraw must never communicate directly with an instrument.
 
-Only one operation may modify a given VISA resource at a time. The bridge's generic query backend currently has its own lock, but a separately imported adapter may open its own resource manager. Until the bridge provides shared per-resource locks, the adapter must protect its multi-command upload from concurrent calls. A future registry should centralize per-resource locking for queries and adapters.
+Only one instrument-facing operation runs at a time in the bridge, including
+generic queries and adapter transfers. An adapter may also be invoked outside
+the bridge, so it should protect a multi-command upload when its own API permits
+concurrent calls.
 
 Use context managers or `try`/`finally` so instruments and resource managers always close. If the adapter locks the front panel, disables output, changes edit memory, or enters another temporary state, its failure path must restore the safest practical state.
 
@@ -324,7 +330,9 @@ For that instrument family, the adapter must enforce the verified transport limi
 
 ## Packaging and installation
 
-The bridge should remain small and should not directly depend on every vendor package. Package native adapters separately when practical. A package may expose both its CLI and adapter entry point:
+The bridge wheel remains small and adapters are built as separate wheels in the
+same release ZIP. The ZIP installer installs them into the same Python
+environment. A vendor package may expose both its CLI and adapter entry point:
 
 ```text
 owon_xdg3000/
@@ -336,21 +344,23 @@ owon_xdg3000/
     cli.py
 ```
 
-During development, installing the adapter in the bridge's virtual environment is sufficient:
+During development, install the adapter in the bridge's virtual environment:
 
 ```powershell
 python -m pip install -e C:\path\to\owon-loader
-python -m python_bridge --serve-app . --waveform-handler owon_xdg3000.bridge:send_waveform
+python -m python_bridge --serve-app .
 ```
 
-Longer term, Python entry points can provide adapter discovery without hard-coded imports:
+Register the adapter callable through a Python entry point:
 
 ```toml
 [project.entry-points."arbdraw.instrument_adapters"]
-owon-xdg3000 = "owon_xdg3000.bridge:OwonAdapter"
+owon-xdg3000 = "arbdraw_bridge_adapter:send_waveform"
 ```
 
-Entry-point discovery is a future bridge feature; the current bridge still requires `--waveform-handler`.
+The release build adds this entry point to the pinned OWON source until its
+upstream package includes it. `--waveform-handler` remains a compatibility
+override for an unregistered local adapter.
 
 Pin or constrain dependencies when a vendor utility requires versions incompatible with the bridge environment. Do not dynamically install packages in response to a browser request.
 
@@ -390,7 +400,7 @@ An adapter is ready when:
 - It returns a useful JSON-safe result.
 - Unit tests cover validation, encoding, options, command order, and cleanup without hardware.
 - At least one opt-in hardware test successfully uploads and selects a waveform.
-- Its installation and `--waveform-handler` startup command are documented.
+- Its entry point and installation in the bridge's Python environment are documented.
 
 ## Instructions for an AI coding agent
 
