@@ -39,13 +39,50 @@ function renderJson() {
   $('jsonOutput').textContent = text;
   $('jsonStats').textContent = `${lines.toLocaleString()} lines · ${bytes.toLocaleString()} bytes`;
 }
+const viewPicker = document.querySelector('.view-tabs');
+const viewLabels = { editor: 'Editor', waveform: 'Viewer', samples: 'Samples', json: 'JSON' };
+const viewTabButtons = Object.fromEntries(
+  ['editor', 'waveform', 'samples', 'json'].map((name) => [name, $(name + 'Tab')]),
+);
+viewPicker.className = 'view-picker';
+viewPicker.setAttribute('role', 'group');
+viewPicker.setAttribute('aria-label', 'Project view');
+const viewPickerButton = document.createElement('button');
+viewPickerButton.id = 'viewPickerBtn';
+viewPickerButton.className = 'view-picker-button';
+viewPickerButton.type = 'button';
+viewPickerButton.setAttribute('aria-haspopup', 'menu');
+viewPickerButton.setAttribute('aria-expanded', 'false');
+const viewPickerLabel = document.createElement('span');
+viewPickerLabel.className = 'view-picker-label';
+const viewPickerChevron = document.createElement('span');
+viewPickerChevron.setAttribute('aria-hidden', 'true');
+viewPickerChevron.textContent = '▾';
+viewPickerButton.append(viewPickerLabel, viewPickerChevron);
+const viewPickerMenu = document.createElement('div');
+viewPickerMenu.id = 'viewPickerMenu';
+viewPickerMenu.className = 'context-menu view-picker-menu';
+viewPickerMenu.setAttribute('role', 'menu');
+viewPickerMenu.setAttribute('aria-label', 'Project view');
+viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
+viewPickerLabel.textContent = 'Editor';
+function closeViewPicker() {
+  viewPickerMenu.classList.remove('open');
+  viewPickerButton.setAttribute('aria-expanded', 'false');
+}
+viewPickerButton.onclick = (event) => {
+  event.stopPropagation();
+  const isOpen = viewPickerMenu.classList.toggle('open');
+  viewPickerButton.setAttribute('aria-expanded', String(isOpen));
+};
 function setEditorTab(tab) {
   for (const name of ['editor', 'waveform', 'samples', 'json']) {
     const active = name === tab;
     $(name + 'Tab').classList.toggle('active', active);
-    $(name + 'Tab').setAttribute('aria-selected', String(active));
+    $(name + 'Tab').setAttribute('aria-checked', String(active));
     $(name + 'View').classList.toggle('hidden', !active);
   }
+  viewPickerLabel.textContent = viewLabels[tab];
   $('editorControls').classList.toggle('hidden', tab !== 'editor');
   $('viewerControls').classList.toggle('hidden', tab !== 'waveform');
   if (tab === 'samples') requestAnimationFrame(renderSamples);
@@ -59,10 +96,24 @@ function setEditorTab(tab) {
   if (tab === 'json') renderJson();
 }
 $('viewerControls').append(document.querySelector('.scope-controls'));
-$('editorTab').onclick = () => setEditorTab('editor');
-$('waveformTab').onclick = () => setEditorTab('waveform');
-$('samplesTab').onclick = () => setEditorTab('samples');
-$('jsonTab').onclick = () => setEditorTab('json');
+for (const name of ['editor', 'waveform', 'samples', 'json']) {
+  const tab = viewTabButtons[name];
+  if (!tab) continue;
+  tab.setAttribute('role', 'menuitemradio');
+  tab.removeAttribute('aria-selected');
+  tab.setAttribute('aria-checked', String(name === 'editor'));
+  viewPickerMenu.append(tab);
+  tab.onclick = () => {
+    setEditorTab(name);
+    closeViewPicker();
+  };
+}
+document.addEventListener('pointerdown', (event) => {
+  if (!event.target.closest?.('#viewPickerMenu,#viewPickerBtn')) closeViewPicker();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeViewPicker();
+});
 $('copyJsonBtn').onclick = async () => {
   const text = JSON.stringify(projectDocument, null, 2);
   try {
