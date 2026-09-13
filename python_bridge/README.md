@@ -4,22 +4,38 @@ The bridge is the only process that talks to VISA or vendor utilities. ArbDraw t
 
 ## Download and install
 
-Open the [current Python bridge release](https://github.com/baldengineer/arbdraw/releases/latest)
-and download the asset whose name ends in `.whl`. A wheel is a ready-to-install
-Python package. The `py3-none-any` part of the filename means this wheel contains
-platform-independent Python 3 code, so the same file works on Windows, macOS,
-and Linux. Python 3.10 or newer is required.
-
-Install the downloaded wheel in the Python environment that can see your VISA
-implementation, then start the bridge:
+Open the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases)
+and download `arbdraw-bridge-with-adapters.zip` from the newest bridge release.
+Extract it and use Python 3.11 or newer to install the bridge and both supported
+adapters into one Python environment:
 
 ```powershell
-python -m pip install .\arbdraw_python_bridge-0.1.0-py3-none-any.whl
-arbdraw-bridge
+python .\install.py
+python -m python_bridge
 ```
 
-The `.tar.gz` asset is a source distribution intended mainly for developers and
-packaging tools. Most users should download the `.whl` file.
+On Windows, pip also creates `arbdraw-bridge.exe` in that Python environment's
+`Scripts` directory. It is a launcher for the same bridge, not a standalone
+installer. If you use a virtual environment, use its `python` executable for
+both installation and startup.
+
+To install only one instrument family, use `python .\install.py --adapter
+owon-xdg3000` or `python .\install.py --adapter rigol-dg1022`. The release also
+contains individual `.whl` assets. For an existing bridge installation, install
+the desired adapter wheel with **the same interpreter** that installed the
+bridge, for example:
+
+```powershell
+python -m pip install .\owon_multicomp_awg_python_waveform_importer-0.1.0-py3-none-any.whl
+python -m python_bridge
+```
+
+Use the actual downloaded wheel filename. If `arbdraw-bridge.exe` is on your
+PATH but its Python environment is unclear, locate it with `Get-Command
+arbdraw-bridge` and use the `python.exe` beside or above its `Scripts` directory.
+The bridge alone still supports health checks, VISA discovery, and `*IDN?`, but
+waveform sending needs an installed adapter. The `.tar.gz` assets are source
+distributions intended mainly for developers and packaging tools.
 
 ## Install from source
 
@@ -45,11 +61,18 @@ Keep the default loopback host unless you deliberately want to expose instrument
 
 See [ADAPTERS.md](ADAPTERS.md) for the complete adapter-authoring guide, including validation, safety, packaging, testing, registry direction, and an OWON XDG3000 / Multicomp MP750290 example.
 
-Adapters are optional Python packages. ArbDraw's HTML/JavaScript editor works without them, and installing an adapter affects only the local Python virtual environment used to run the bridge.
+The release ZIP contains separate adapter wheels for OWON XDG3000 / Multicomp
+MP750290 and Rigol DG1022. The ZIP installer installs them alongside the bridge
+wheel and verifies that both appear in the adapter registry. ArbDraw's
+HTML/JavaScript editor works without them. Installing an adapter affects only
+the Python environment used to run the bridge.
 
-### Keep local adapter source
+### Keep local adapter source for development
 
-The repository ignores the root-level `local_adapters` directory so development clones do not become part of ArbDraw's Git history. For example, clone the OWON adapter from the ArbDraw repository root:
+The following steps are for developing an adapter from source; release users can
+use the ZIP flow above. The repository ignores the root-level `local_adapters`
+directory so development clones do not become part of ArbDraw's Git history.
+For example, clone the OWON adapter from the ArbDraw repository root:
 
 ```powershell
 git clone --branch arbdraw_integration `

@@ -3,16 +3,15 @@
   <h1>Python bridge</h1>
   <p>The ArbDraw Python bridge is a small local server that connects the browser-based editor to VISA instruments and installed waveform adapters. It runs on your computer and listens only on <code>127.0.0.1</code> by default.</p>
 
-  <h2>Download</h2>
-  <p>Open the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">current Python bridge release</a> and download the asset whose name ends in <code>.whl</code>.</p>
-  <p>A wheel is a ready-to-install Python package. The <code>py3-none-any</code> part of the filename means the bridge contains platform-independent Python 3 code and works on Windows, macOS, and Linux. Python 3.10 or newer is required.</p>
-  <p>The <code>.tar.gz</code> asset is the source distribution intended mainly for developers and packaging tools. Most users should choose the <code>.whl</code> file.</p>
+  <h2>Download and install</h2>
+  <p>Open the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">latest ArbDraw bridge release</a> and download <code>arbdraw-bridge-with-adapters.zip</code>. It contains the bridge and the OWON XDG3000 / Multicomp MP750290 and Rigol DG1022 adapter wheels. Python 3.11 or newer is required.</p>
+  <p>Extract the ZIP and open a terminal in the extracted folder. Install and start the bridge with the same Python interpreter:</p>
+  <pre><code>python install.py
+python -m python_bridge</code></pre>
+  <p>The installer downloads Python dependencies and verifies that both adapters load. To install only one, use <code>python install.py --adapter owon-xdg3000</code> or <code>python install.py --adapter rigol-dg1022</code>.</p>
+  <p>On Windows, pip creates <code>arbdraw-bridge.exe</code> in that Python environment's <code>Scripts</code> folder. The executable starts the bridge; it does not install adapters. If you already installed an older bridge wheel, run the ZIP installer using that same Python environment to upgrade the bridge and add adapters.</p>
 
-  <h2>Install and start</h2>
-  <p>Open a terminal in the folder containing the downloaded wheel, then run:</p>
-  <pre><code>python -m pip install ./arbdraw_python_bridge-0.1.0-py3-none-any.whl
-arbdraw-bridge</code></pre>
-  <p>On Windows, <code>py -m pip</code> can be used instead of <code>python -m pip</code>. Leave the terminal open while using an instrument. Press <code>Ctrl+C</code> in that terminal to stop the bridge.</p>
+  <p>Individual <code>.whl</code> assets are also available for manual installation. Install a chosen adapter wheel with the same interpreter that runs the bridge. The <code>.tar.gz</code> assets are source distributions for developers and packaging tools. Leave the bridge terminal open while using an instrument; press <code>Ctrl+C</code> to stop it.</p>
 
   <h2>Connect from ArbDraw</h2>
   <ol>
@@ -24,18 +23,17 @@ arbdraw-bridge</code></pre>
   </ol>
 
   <h2>VISA backend</h2>
-  <p>The bridge installs PyVISA, but instrument access also requires a VISA implementation. A vendor installation such as NI-VISA normally works without another option. To use the pure-Python backend, install <code>pyvisa-py</code> and select it when starting the bridge:</p>
-  <pre><code>python -m pip install pyvisa-py
-arbdraw-bridge --visa-library @py</code></pre>
+  <p>The bridge installs PyVISA, but instrument access also requires a VISA implementation. A vendor installation such as NI-VISA normally works without another option. The Rigol adapter installs <code>pyvisa-py</code>; if you installed only the OWON adapter, install it with <code>python -m pip install pyvisa-py</code> before selecting the pure-Python backend:</p>
+  <pre><code>python -m python_bridge --visa-library @py</code></pre>
 
   <h2>Instrument adapters</h2>
-  <p>Adapters add model-specific waveform transfer support and are installed separately in the same Python environment as the bridge. Without an adapter, the bridge can still perform health checks, discover VISA resources, and issue identification or SCPI queries, but it cannot send a waveform.</p>
+  <p>Adapters add model-specific waveform transfer support. The ZIP installs their separate wheels into the bridge's Python environment. Once the bridge is running, <a href="http://127.0.0.1:8876/api/v1/adapters" target="_blank" rel="noopener noreferrer">view the installed adapter list</a> to confirm they loaded. Without an adapter, the bridge can still discover VISA resources and identify instruments, but it cannot send a waveform.</p>
 
   <h2>Troubleshooting</h2>
   <ul>
     <li><strong>Bridge offline:</strong> Confirm the terminal is still running and the URL is <code>http://127.0.0.1:8876</code>.</li>
     <li><strong>No VISA resources:</strong> Confirm your vendor VISA software or <code>pyvisa-py</code> is installed and can see the instrument.</li>
-    <li><strong>No waveform adapter:</strong> Install a compatible adapter in the same Python environment, then restart the bridge.</li>
+    <li><strong>No waveform adapter:</strong> Run <code>install.py</code> from the release ZIP with the same Python interpreter used to start the bridge, then restart it.</li>
     <li><strong>Command not found:</strong> Try <code>python -m python_bridge</code>, or ensure your Python scripts directory is on <code>PATH</code>.</li>
   </ul>
 

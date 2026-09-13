@@ -19,6 +19,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check out OWON adapter
+        uses: actions/checkout@v7
+        with:
+          repository: baldengineer/owon-multicomp-awg-python-waveform-importer
+          ref: 2bb28827554365947058c6800e92a170ce86e149
+          path: adapter-sources/owon
+
+      - name: Check out Rigol adapter
+        uses: actions/checkout@v7
+        with:
+          repository: baldengineer/rigol-awg-python-importer
+          ref: 68d325745537cd3ba000b5684d8440a43e8cd420
+          path: adapter-sources/rigol
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -45,18 +59,24 @@ jobs:
       - name: Test bridge
         run: python -m unittest discover -s tests -p "test_python_bridge.py"
 
-      - name: Build wheel and source distribution
-        run: python -m build
+      - name: Build bridge and adapter distributions
+        run: >-
+          python packaging/build_release.py
+          --owon-source adapter-sources/owon
+          --rigol-source adapter-sources/rigol
 
       - name: Check distributions
         run: |
           python -m pip install --upgrade twine
-          python -m twine check dist/*
+          python -m twine check dist/*.whl dist/*.tar.gz
+
+      - name: Verify clean installation and adapter discovery
+        run: python packaging/check_release.py dist
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          name: arbdraw-python-bridge
+          name: arbdraw-python-bridge-with-adapters
           path: dist/*
 
       - name: Publish GitHub release
@@ -66,4 +86,4 @@ jobs:
         run: >-
           gh release create "$GITHUB_REF_NAME" dist/*
           --title "ArbDraw Python bridge v${GITHUB_REF_NAME#python-bridge-v}"
-          --generate-notes
+          --notes-file packaging/RELEASE_NOTES.md
