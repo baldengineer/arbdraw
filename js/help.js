@@ -7,6 +7,7 @@ const helpItems = [
   { title: 'Python bridge', source: 'docs/help/python-bridge.html' },
   { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
+  { title: 'Known Issues', href: 'https://github.com/baldengineer/arbdraw/issues' },
 ];
 const keyboardShortcuts = [
   { keys: ['?'], description: 'Show keyboard shortcuts' },
@@ -102,11 +103,17 @@ function openHelp(item) {
 }
 
 helpItems.forEach((item) => {
-  const option = document.createElement('button');
-  option.type = 'button';
+  const option = document.createElement(item.href ? 'a' : 'button');
   option.setAttribute('role', 'menuitem');
   option.textContent = item.title;
-  option.onclick = () => openHelp(item);
+  if (item.href) {
+    option.href = item.href;
+    option.target = '_blank';
+    option.rel = 'noopener noreferrer';
+  } else {
+    option.type = 'button';
+    option.onclick = () => openHelp(item);
+  }
   helpMenu.append(option);
 });
 

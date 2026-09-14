@@ -150,3 +150,4 @@ button { color:inherit; }
 .audio-play-button{background:#3db879}.audio-play-button:hover{background:#2f9d65}.audio-play-button.playing{background:#d9534f}.audio-play-button.playing:hover{background:#bb3f3b}
 
 #exportDialog [hidden]{display:none}.save-filename-label select{display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:7px;font:inherit}.save-filename-label select:focus{outline:2px solid var(--focus)}
+.file-menu a{display:block;width:100%;padding:8px 10px;box-sizing:border-box;color:var(--ink);text-align:left;text-decoration:none}.file-menu a:hover{background:var(--soft)}
