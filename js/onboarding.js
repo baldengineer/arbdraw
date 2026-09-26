@@ -50,6 +50,8 @@
       },
     },
   ];
+
+  // Instruments Dialog Guide
   const instrumentSteps = [
     {
       element: '.bridge-connection-row',
