@@ -203,24 +203,30 @@
     <form method="dialog">
       <div class="dialog-heading"><div><div class="bridge-heading-row"><span class="eyebrow">PYTHON BRIDGE</span><a class="bridge-download-link" href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">Download Bridge ↗</a></div><h2>Instruments</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
       <p>Connect ArbDraw to the local Python service that owns VISA and instrument-specific waveform transfers.</p>
-      <div class="bridge-connection-row">
-        <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off"></label>
-        <button id="bridgeConnectBtn" type="button" class="primary">Connect</button>
-      </div>
-      <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
-      <label class="bridge-adapter-field" for="instrumentAdapter">Waveform backend<select id="instrumentAdapter" disabled><option value="">No adapter installed</option></select></label>
-      <div class="bridge-resource-heading"><label for="visaResourceSelect">VISA resource</label><button id="refreshResourcesBtn" type="button" class="ghost">Refresh</button></div>
-      <div class="bridge-resource-control"><input id="visaResourceInput" class="bridge-resource-select" aria-label="VISA resource" placeholder="Paste a VISA resource or enter an IP address" spellcheck="false" autocomplete="off"><button id="clearVisaResourceBtn" class="bridge-resource-clear" type="button" aria-label="Clear VISA resource" title="Clear VISA resource">×</button><button id="visaResourceDropdownBtn" class="bridge-resource-dropdown-button" type="button" aria-label="Show VISA resources" aria-haspopup="listbox" aria-expanded="false">▾</button><div id="visaResourceMenu" class="bridge-resource-menu" role="listbox" aria-label="VISA resources"><input id="visaResourceFilter" class="bridge-resource-filter" type="search" placeholder="Filter devices…" aria-label="Filter VISA resources" autocomplete="off" spellcheck="false"><div class="menu-divider" role="separator"></div><div id="visaResourceList" class="bridge-resource-list"></div></div></div>
-      <div class="bridge-send-options">
-        <label for="instrumentChannel">Channel<select id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
-        <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
-      </div>
-      <div class="bridge-actions">
-        <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
-        <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
-      </div>
-      <pre id="bridgeResult" class="bridge-result" aria-live="polite"></pre>
-      <p id="bridgeErrorHelp" class="bridge-error-help" hidden>Need help? <a href="docs/help/python-bridge.html" target="_blank" rel="noopener noreferrer">Open the Python bridge guide ↗</a></p>
+      <fieldset class="bridge-control-group bridge-connection-group">
+        <legend>Bridge connection</legend>
+        <div class="bridge-connection-row">
+          <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off"></label>
+          <button id="bridgeConnectBtn" type="button" class="primary">Connect</button>
+        </div>
+        <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
+      </fieldset>
+      <fieldset id="bridgeInstrumentControls" class="bridge-control-group bridge-instrument-group" disabled>
+        <legend>Instrument &amp; waveform</legend>
+        <label class="bridge-adapter-field" for="instrumentAdapter">Waveform backend<select id="instrumentAdapter" disabled><option value="">No adapter installed</option></select></label>
+        <div class="bridge-resource-heading"><label for="visaResourceSelect">VISA resource</label><button id="refreshResourcesBtn" type="button" class="ghost">Refresh</button></div>
+        <div class="bridge-resource-control"><input id="visaResourceInput" class="bridge-resource-select" aria-label="VISA resource" placeholder="Paste a VISA resource or enter an IP address" spellcheck="false" autocomplete="off"><button id="clearVisaResourceBtn" class="bridge-resource-clear" type="button" aria-label="Clear VISA resource" title="Clear VISA resource">×</button><button id="visaResourceDropdownBtn" class="bridge-resource-dropdown-button" type="button" aria-label="Show VISA resources" aria-haspopup="listbox" aria-expanded="false">▾</button><div id="visaResourceMenu" class="bridge-resource-menu" role="listbox" aria-label="VISA resources"><input id="visaResourceFilter" class="bridge-resource-filter" type="search" placeholder="Filter devices…" aria-label="Filter VISA resources" autocomplete="off" spellcheck="false"><div class="menu-divider" role="separator"></div><div id="visaResourceList" class="bridge-resource-list"></div></div></div>
+        <div class="bridge-send-options">
+          <label for="instrumentChannel">Channel<select id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
+          <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
+        </div>
+        <div class="bridge-actions">
+          <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
+          <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>
+        </div>
+        <pre id="bridgeResult" class="bridge-result" aria-live="polite"></pre>
+        <p id="bridgeErrorHelp" class="bridge-error-help" hidden>Need help? <a href="docs/help/python-bridge.html" target="_blank" rel="noopener noreferrer">Open the Python bridge guide ↗</a></p>
+      </fieldset>
       <div class="dialog-actions"><button id="instrumentGuideBtn" type="button" class="ghost guide-button">Guide</button><button value="cancel" class="ghost">Close</button></div>
     </form>
   </dialog>

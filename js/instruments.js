@@ -13,6 +13,7 @@
   const resourceMenu = $('visaResourceMenu');
   const resourceFilter = $('visaResourceFilter');
   const resourceList = $('visaResourceList');
+  const instrumentControls = $('bridgeInstrumentControls');
   const adapterSelect = $('instrumentAdapter');
   const connectButton = $('bridgeConnectBtn');
   const refreshButton = $('refreshResourcesBtn');
@@ -102,6 +103,7 @@
 
   function updateActions() {
     const hasResource = Boolean(selectedResource());
+    instrumentControls.disabled = !bridgeOnline;
     connectButton.disabled = busy;
     refreshButton.disabled = busy || !bridgeOnline;
     identifyButton.disabled = busy || !bridgeOnline || !hasResource;
@@ -155,7 +157,9 @@
     try {
       candidate = new ArbDrawBridge.BridgeClient(bridgeUrlInput.value);
     } catch (error) {
+      bridgeOnline = false;
       setStatus('offline', 'Not connected');
+      updateActions();
       throw error;
     }
     bridgeClient = candidate;

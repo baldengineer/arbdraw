@@ -5,15 +5,6 @@
   const storageKey = 'arbdraw-onboarding-driverjs-v1';
   const steps = [
     {
-      element: '#editorView',
-      popover: {
-        title: 'Waveform area',
-        description: 'Draw directly on the canvas to shape the signal, or use the editor tools to select, edit, and delete points.',
-        side: 'bottom',
-        align: 'center',
-      },
-    },
-    {
       element: '#toolrail',
       popover: {
         title: 'Editor tools',
@@ -46,6 +37,15 @@
         title: 'Configure the generator',
         description: 'Select an AWG profile and review the sample rate, sample count, timing resolution, frequency, and period before exporting or sending the waveform.',
         side: 'top',
+        align: 'center',
+      },
+    },
+    {
+      element: '#editorView',
+      popover: {
+        title: 'Waveform area',
+        description: 'Draw directly on the canvas to shape the signal, or use the editor tools to select, edit, and delete points.',
+        side: 'bottom',
         align: 'center',
       },
     },

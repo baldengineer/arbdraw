@@ -98,13 +98,21 @@ test('Driver.js loader selects CDN, fallback, and forced-local paths correctly',
 
 test('onboarding defines the starter tour through Driver.js', () => {
   const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
+  const starterTourSource = source.slice(
+    source.indexOf('const steps = ['),
+    source.indexOf('// Instruments Dialog Guide'),
+  );
+  const starterTourTargets = [...starterTourSource.matchAll(/element: '([^']+)'/g)]
+    .map((match) => match[1]);
 
   assert.match(source, /globalThis\.ARBDRAW_DRIVER_READY/);
-  assert.match(source, /element: '#editorView'/);
-  assert.match(source, /element: '#toolrail'/);
-  assert.match(source, /element: '\.function-section'/);
-  assert.match(source, /element: '\.inspector'/);
-  assert.match(source, /element: '#editorControls'/);
+  assert.deepEqual(starterTourTargets, [
+    '#toolrail',
+    '.function-section',
+    '.inspector',
+    '#editorControls',
+    '#editorView',
+  ]);
   assert.match(source, /showProgress: true/);
   assert.match(source, /localStorage\.setItem\(storageKey, 'complete'\)/);
   assert.match(source, /get\('onboard'\)/);
@@ -123,8 +131,14 @@ test('Help menu provides a permanent way to restart onboarding', () => {
 test('Instruments dialog provides a Driver.js guide', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
+  const instruments = fs.readFileSync(path.join(root, 'js/instruments.js'), 'utf8');
 
   assert.match(html, /id="instrumentGuideBtn"[^>]*>Guide<\/button>/);
+  assert.match(html, /class="bridge-control-group bridge-connection-group"/);
+  assert.match(html, /<legend>Bridge connection<\/legend>/);
+  assert.match(html, /id="bridgeInstrumentControls" class="bridge-control-group bridge-instrument-group" disabled/);
+  assert.match(html, /<legend>Instrument &amp; waveform<\/legend>/);
+  assert.match(instruments, /instrumentControls\.disabled = !bridgeOnline/);
   assert.match(source, /element: '\.bridge-connection-row'/);
   assert.match(source, /element: '\.bridge-adapter-field'/);
   assert.match(source, /element: '\.bridge-resource-control'/);
@@ -133,4 +147,32 @@ test('Instruments dialog provides a Driver.js guide', () => {
   assert.match(source, /bridgeDialog\.show\(\)/);
   assert.match(source, /bridgeDialog\.showModal\(\)/);
   assert.match(source, /instrumentGuideBtn'\)\?\.addEventListener\('click', startInstrumentGuide\)/);
+});
+
+test('Instrument controls follow the bridge connection state', () => {
+  const source = fs.readFileSync(path.join(root, 'js/instruments.js'), 'utf8');
+  const updateActionsSource = source.match(/  function updateActions\(\) \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(updateActionsSource);
+
+  const instrumentControls = { disabled: false };
+  const context = vm.createContext({
+    bridgeOnline: false,
+    busy: false,
+    connectButton: {},
+    refreshButton: {},
+    identifyButton: {},
+    instrumentControls,
+    selectedResource: () => 'USB0::INSTR',
+    sendButton: {},
+  });
+  vm.runInContext(`${updateActionsSource}\nupdateActions();`, context);
+  assert.equal(instrumentControls.disabled, true);
+
+  context.bridgeOnline = true;
+  vm.runInContext('updateActions();', context);
+  assert.equal(instrumentControls.disabled, false);
+
+  context.bridgeOnline = false;
+  vm.runInContext('updateActions();', context);
+  assert.equal(instrumentControls.disabled, true);
 });
