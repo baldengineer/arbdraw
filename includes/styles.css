@@ -151,3 +151,13 @@ button { color:inherit; }
 
 #exportDialog [hidden]{display:none}.save-filename-label select{display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:7px;font:inherit}.save-filename-label select:focus{outline:2px solid var(--focus)}
 .file-menu a{display:block;width:100%;padding:8px 10px;box-sizing:border-box;color:var(--ink);text-align:left;text-decoration:none}.file-menu a:hover{background:var(--soft)}
+
+/* Driver.js onboarding theme. The framework itself is vendored under vendor/driver.js/. */
+.driver-popover.arbdraw-tour-popover{color:var(--ink);background:var(--panel-raised);border:1px solid var(--line);border-radius:9px;box-shadow:0 18px 60px #0009;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.arbdraw-tour-popover .driver-popover-title{padding-right:25px;color:var(--ink);font-size:16px;line-height:1.3}
+.arbdraw-tour-popover .driver-popover-description{color:var(--muted);font-size:12px;line-height:1.55}
+.arbdraw-tour-popover .driver-popover-progress-text{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.arbdraw-tour-popover .driver-popover-close-btn{color:var(--muted);border-radius:5px}.arbdraw-tour-popover .driver-popover-close-btn:hover,.arbdraw-tour-popover .driver-popover-close-btn:focus{color:var(--ink);background:var(--soft)}
+.arbdraw-tour-popover .driver-popover-footer-btn{padding:6px 10px;color:var(--ink);background:var(--field);border-color:var(--line);border-radius:6px;font-weight:700}.arbdraw-tour-popover .driver-popover-footer-btn:hover,.arbdraw-tour-popover .driver-popover-footer-btn:focus{color:var(--ink);background:var(--soft);border-color:var(--blue)}
+.arbdraw-tour-popover .driver-popover-next-btn{color:white;background:var(--orange);border-color:var(--orange)}.arbdraw-tour-popover .driver-popover-next-btn:hover,.arbdraw-tour-popover .driver-popover-next-btn:focus{color:white;background:var(--orange);border-color:var(--orange);filter:brightness(.92)}
+.arbdraw-tour-popover .driver-popover-arrow{border-color:var(--panel-raised)}.arbdraw-tour-popover .driver-popover-arrow-side-left{border-top-color:transparent;border-bottom-color:transparent;border-right-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-right{border-top-color:transparent;border-bottom-color:transparent;border-left-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-top{border-right-color:transparent;border-bottom-color:transparent;border-left-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-bottom{border-top-color:transparent;border-right-color:transparent;border-left-color:transparent}
