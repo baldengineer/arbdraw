@@ -11,9 +11,11 @@ import importlib
 import importlib.util
 import importlib.metadata
 import json
+import math
 import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from ipaddress import AddressValueError, IPv4Address
 from typing import Any, Callable, Protocol
 from urllib.parse import urlsplit
 
@@ -32,7 +34,13 @@ class BridgeError(Exception):
 class VisaBackend(Protocol):
     def list_resources(self) -> list[str]: ...
 
-    def query(self, resource: str, command: str, timeout_ms: int) -> str: ...
+    def query(
+        self,
+        resource: str,
+        command: str,
+        timeout_ms: int,
+        pyvisa_options: dict[str, Any] | None = None,
+    ) -> str: ...
 
 
 class PyVisaBackend:
@@ -88,7 +96,13 @@ class PyVisaBackend:
             finally:
                 self._close_manager(manager)
 
-    def query(self, resource: str, command: str, timeout_ms: int) -> str:
+    def query(
+        self,
+        resource: str,
+        command: str,
+        timeout_ms: int,
+        pyvisa_options: dict[str, Any] | None = None,
+    ) -> str:
         with self._lock:
             manager = self._manager()
             try:
@@ -97,8 +111,13 @@ class PyVisaBackend:
                     # SCPI instruments commonly require LF to terminate a
                     # command and use LF to terminate the response. Do this
                     # explicitly instead of relying on backend defaults.
-                    instrument.write_termination = "\n"
-                    instrument.read_termination = "\n"
+                    options = pyvisa_options or {}
+                    instrument.write_termination = options.get("write_termination", "\n")
+                    instrument.read_termination = options.get("read_termination", "\n")
+                    if "query_delay" in options:
+                        instrument.query_delay = options["query_delay"]
+                    if "send_end" in options:
+                        instrument.send_end = options["send_end"]
                     return str(instrument.query(command)).strip()
             except BridgeError:
                 raise
@@ -154,21 +173,33 @@ class BridgeService:
             request = self._object(payload)
             resource = self._text(request, "resource")
             timeout_ms = self._timeout(request)
+            pyvisa_options = self._pyvisa_options(request)
             with self._visa_operation_lock:
                 return HTTPStatus.OK, {
                     "resource": resource,
-                    "identity": self.visa.query(resource, "*IDN?", timeout_ms),
+                    "identity": self.visa.query(
+                        resource,
+                        "*IDN?",
+                        timeout_ms,
+                        pyvisa_options,
+                    ),
                 }
         if method == "POST" and path == "/api/v1/visa/query":
             request = self._object(payload)
             resource = self._text(request, "resource")
             command = self._text(request, "command")
             timeout_ms = self._timeout(request)
+            pyvisa_options = self._pyvisa_options(request)
             with self._visa_operation_lock:
                 return HTTPStatus.OK, {
                     "resource": resource,
                     "command": command,
-                    "response": self.visa.query(resource, command, timeout_ms),
+                    "response": self.visa.query(
+                        resource,
+                        command,
+                        timeout_ms,
+                        pyvisa_options,
+                    ),
                 }
         if method == "POST" and path == "/api/v1/waveforms/send":
             request = self._object(payload)
@@ -181,6 +212,7 @@ class BridgeService:
                     "waveform must be an ArbDraw waveform document.",
                 )
             adapter_id = request.get("adapter", "default")
+            self._pyvisa_options(request)
             if not isinstance(adapter_id, str) or not adapter_id.strip():
                 raise BridgeError(HTTPStatus.BAD_REQUEST, "invalid_adapter", "adapter must be a non-empty string.")
             handler = self.adapters.get(adapter_id)
@@ -216,6 +248,57 @@ class BridgeService:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise BridgeError(HTTPStatus.BAD_REQUEST, "invalid_request", "timeout_ms must be numeric.")
         return max(1, min(120_000, int(value)))
+
+    @staticmethod
+    def _pyvisa_options(payload: dict[str, Any]) -> dict[str, Any]:
+        options = payload.get("pyvisa_options", {})
+        if not isinstance(options, dict):
+            raise BridgeError(
+                HTTPStatus.BAD_REQUEST,
+                "invalid_pyvisa_options",
+                "pyvisa_options must be an object.",
+            )
+        allowed = {
+            "read_termination",
+            "write_termination",
+            "query_delay",
+            "send_end",
+        }
+        unknown = sorted(set(options) - allowed)
+        if unknown:
+            raise BridgeError(
+                HTTPStatus.BAD_REQUEST,
+                "invalid_pyvisa_options",
+                f"Unknown PyVISA option: {unknown[0]}.",
+            )
+        for name in ("read_termination", "write_termination"):
+            value = options.get(name)
+            if name in options and value is not None and not isinstance(value, str):
+                raise BridgeError(
+                    HTTPStatus.BAD_REQUEST,
+                    "invalid_pyvisa_options",
+                    f"pyvisa_options.{name} must be a string or null.",
+                )
+        if "query_delay" in options:
+            delay = options["query_delay"]
+            if (
+                isinstance(delay, bool)
+                or not isinstance(delay, (int, float))
+                or not math.isfinite(delay)
+                or delay < 0
+            ):
+                raise BridgeError(
+                    HTTPStatus.BAD_REQUEST,
+                    "invalid_pyvisa_options",
+                    "pyvisa_options.query_delay must be a non-negative finite number.",
+                )
+        if "send_end" in options and not isinstance(options["send_end"], bool):
+            raise BridgeError(
+                HTTPStatus.BAD_REQUEST,
+                "invalid_pyvisa_options",
+                "pyvisa_options.send_end must be boolean.",
+            )
+        return dict(options)
 
 
 class BridgeRequestHandler(SimpleHTTPRequestHandler):
@@ -340,11 +423,91 @@ def discover_adapters() -> dict[str, WaveformHandler]:
     return adapters
 
 
+def normalize_visa_resource(resource: str) -> str:
+    """Wrap IPv4 shorthand while leaving complete VISA resource strings intact."""
+    value = resource.strip()
+    if not value:
+        raise ValueError("VISA resource cannot be empty.")
+    try:
+        address = IPv4Address(value)
+    except AddressValueError:
+        address = None
+    if address is not None:
+        return f"TCPIP0::{address}::INSTR"
+
+    for separator in (":", "/"):
+        if value.count(separator) != 1:
+            continue
+        host, port_text = value.rsplit(separator, 1)
+        try:
+            address = IPv4Address(host)
+        except AddressValueError:
+            continue
+        if not port_text.isdecimal():
+            raise ValueError(f"Invalid TCP port in resource: {resource}")
+        port = int(port_text)
+        if not 1 <= port <= 65535:
+            raise ValueError(f"TCP port must be between 1 and 65535: {port}")
+        return f"TCPIP0::{address}::{port}::SOCKET"
+
+    return value
+
+
+def run_visa_cli_actions(
+    visa_backend: VisaBackend,
+    list_resources: bool,
+    idn_resources: list[str],
+) -> bool:
+    """Run requested one-shot VISA commands and report whether one was requested."""
+    if not list_resources and not idn_resources:
+        return False
+    if list_resources:
+        resources = visa_backend.list_resources()
+        if resources:
+            print(f"Available VISA resources ({len(resources)}):")
+            for resource in resources:
+                print(f"  - {resource}")
+        else:
+            print("Available VISA resources: none")
+    for resource in idn_resources:
+        normalized = normalize_visa_resource(resource)
+        identity = visa_backend.query(normalized, "*IDN?", 5000)
+        print(f"{normalized}: {identity}")
+    return True
+
+
+def startup_messages(adapters: dict[str, WaveformHandler], host: str, port: int) -> list[str]:
+    """Describe the ready bridge, keeping the listening URL as the final line."""
+    adapter_names = sorted(adapters, key=str.casefold)
+    if adapter_names:
+        messages = [f"Available waveform adapters ({len(adapter_names)}):"]
+        messages.extend(f"  - {name}" for name in adapter_names)
+    else:
+        messages = ["Available waveform adapters: none"]
+    messages.append(f"ArbDraw Python bridge listening on http://{host}:{port}")
+    return messages
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local ArbDraw Python bridge.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8876)
     parser.add_argument("--visa-library", default=None, help="Optional PyVISA backend/library selector.")
+    parser.add_argument(
+        "--list-resources",
+        action="store_true",
+        help="List VISA resources and exit without starting the bridge.",
+    )
+    parser.add_argument(
+        "--idn",
+        action="append",
+        default=[],
+        metavar="RESOURCE",
+        help=(
+            "Query *IDN? for a VISA resource, IPv4 address, or IPv4:port and exit; "
+            "repeat to query multiple resources."
+        ),
+    )
     parser.add_argument(
         "--serve-app",
         metavar="DIRECTORY",
@@ -363,12 +526,25 @@ def main() -> None:
         help="Additional browser origin allowed to call the bridge (repeatable).",
     )
     arguments = parser.parse_args()
+    visa_backend = PyVisaBackend(arguments.visa_library)
+    try:
+        if run_visa_cli_actions(
+            visa_backend,
+            arguments.list_resources,
+            arguments.idn,
+        ):
+            return
+    except BridgeError as error:
+        parser.exit(1, f"arbdraw-bridge: error: {error.message}\n")
+    except ValueError as error:
+        parser.error(str(error))
+
     adapters = discover_adapters()
     configured_handler = load_waveform_handler(arguments.waveform_handler)
     if configured_handler is not None:
         adapters["default"] = configured_handler
     service = BridgeService(
-        visa_backend=PyVisaBackend(arguments.visa_library),
+        visa_backend=visa_backend,
         adapters=adapters,
     )
     allowed_origins = ("https://baldengineer.github.io", *arguments.allow_origin)
@@ -379,7 +555,8 @@ def main() -> None:
         arguments.serve_app,
         allowed_origins,
     )
-    print(f"ArbDraw Python bridge listening on http://{arguments.host}:{arguments.port}")
+    for message in startup_messages(adapters, arguments.host, server.server_port):
+        print(message, flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

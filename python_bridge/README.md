@@ -48,6 +48,25 @@ python -m python_bridge
 
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
 
+## One-shot VISA commands
+
+The bridge CLI can list resources or query instrument identity without starting
+the HTTP server:
+
+```powershell
+python -m python_bridge --list-resources
+python -m python_bridge --idn "USB0::0x1234::0x5678::SN1::INSTR"
+python -m python_bridge --idn 192.168.1.50
+python -m python_bridge --idn 192.168.1.50:5025
+```
+
+`--list-resources` and `--idn` can be used together. `--idn` is repeatable when
+you want to query more than one instrument. A bare IPv4 address becomes
+`TCPIP0::<address>::INSTR`; an IPv4 address with a port becomes
+`TCPIP0::<address>::<port>::SOCKET`. When either one-shot option is present, the
+command performs the requested VISA operations and exits without starting the
+bridge server.
+
 ## Connect ArbDraw
 
 Open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Instruments**.

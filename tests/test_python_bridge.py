@@ -5,10 +5,19 @@ import time
 from types import SimpleNamespace
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from python_bridge.server import BridgeService, PyVisaBackend, create_server
+from python_bridge.server import (
+    BridgeError,
+    BridgeService,
+    PyVisaBackend,
+    create_server,
+    main,
+    normalize_visa_resource,
+    startup_messages,
+)
 
 
 class FakeVisa:
@@ -18,8 +27,8 @@ class FakeVisa:
     def list_resources(self):
         return ["USB0::0x1234::0x5678::SN1::INSTR"]
 
-    def query(self, resource, command, timeout_ms):
-        self.queries.append((resource, command, timeout_ms))
+    def query(self, resource, command, timeout_ms, pyvisa_options=None):
+        self.queries.append((resource, command, timeout_ms, pyvisa_options or {}))
         return "ArbDraw,FakeScope,SN1,1.0"
 
 
@@ -84,7 +93,7 @@ class PythonBridgeTests(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertEqual(body["identity"], "ArbDraw,FakeScope,SN1,1.0")
-        self.assertEqual(self.visa.queries[-1], (resource, "*IDN?", 2500))
+        self.assertEqual(self.visa.queries[-1], (resource, "*IDN?", 2500, {}))
 
     def test_send_waveform_uses_adapter(self):
         payload = {
@@ -142,8 +151,16 @@ class PythonBridgeTests(unittest.TestCase):
 
     def test_pyvisa_backend_does_not_reuse_manager_after_adapter_cleanup(self):
         managers = []
+        instruments = []
 
         class Instrument:
+            def __init__(self):
+                self.query_delay = None
+                self.read_termination = None
+                self.send_end = None
+                self.write_termination = None
+                instruments.append(self)
+
             def __enter__(self):
                 return self
 
@@ -173,7 +190,20 @@ class PythonBridgeTests(unittest.TestCase):
         try:
             backend = PyVisaBackend()
             self.assertEqual(backend.list_resources(), ["USB0::INSTR"])
-            self.assertEqual(backend.query("USB0::INSTR", "*IDN?", 1000), "response:*IDN?")
+            self.assertEqual(
+                backend.query(
+                    "USB0::INSTR",
+                    "*IDN?",
+                    1000,
+                    {
+                        "read_termination": "\r",
+                        "write_termination": "\r\n",
+                        "query_delay": 5,
+                        "send_end": False,
+                    },
+                ),
+                "response:*IDN?",
+            )
         finally:
             if original is None:
                 sys.modules.pop("pyvisa", None)
@@ -182,6 +212,134 @@ class PythonBridgeTests(unittest.TestCase):
 
         self.assertEqual(len(managers), 2)
         self.assertTrue(all(manager.closed for manager in managers))
+        instrument = instruments[-1]
+        self.assertEqual(instrument.read_termination, "\r")
+        self.assertEqual(instrument.write_termination, "\r\n")
+        self.assertEqual(instrument.query_delay, 5)
+        self.assertFalse(instrument.send_end)
+
+    def test_startup_lists_adapters_before_the_listening_message(self):
+        adapters = {
+            "rigol-dg1022": lambda request: None,
+            "owon-xdg3000": lambda request: None,
+        }
+
+        messages = startup_messages(adapters, "127.0.0.1", 8876)
+
+        self.assertEqual(
+            messages,
+            [
+                "Available waveform adapters (2):",
+                "  - owon-xdg3000",
+                "  - rigol-dg1022",
+                "ArbDraw Python bridge listening on http://127.0.0.1:8876",
+            ],
+        )
+
+    def test_startup_reports_when_no_adapters_are_installed(self):
+        messages = startup_messages({}, "127.0.0.1", 8876)
+
+        self.assertEqual(
+            messages,
+            [
+                "Available waveform adapters: none",
+                "ArbDraw Python bridge listening on http://127.0.0.1:8876",
+            ],
+        )
+
+    def test_cli_normalizes_ip_resources(self):
+        self.assertEqual(
+            normalize_visa_resource("192.168.1.50"),
+            "TCPIP0::192.168.1.50::INSTR",
+        )
+        self.assertEqual(
+            normalize_visa_resource("192.168.1.50:5025"),
+            "TCPIP0::192.168.1.50::5025::SOCKET",
+        )
+        self.assertEqual(
+            normalize_visa_resource("192.168.1.50/5025"),
+            "TCPIP0::192.168.1.50::5025::SOCKET",
+        )
+        self.assertEqual(
+            normalize_visa_resource("USB0::0x1234::0x5678::SN1::INSTR"),
+            "USB0::0x1234::0x5678::SN1::INSTR",
+        )
+
+    def test_cli_actions_can_list_and_identify_without_starting_server(self):
+        visa = FakeVisa()
+        arguments = [
+            "arbdraw-bridge",
+            "--list-resources",
+            "--idn",
+            "192.168.1.50:5025",
+        ]
+
+        with (
+            patch.object(sys, "argv", arguments),
+            patch("python_bridge.server.PyVisaBackend", return_value=visa),
+            patch("python_bridge.server.create_server") as create_server_mock,
+            patch("python_bridge.server.discover_adapters") as discover_adapters_mock,
+            patch("builtins.print") as print_mock,
+        ):
+            main()
+
+        create_server_mock.assert_not_called()
+        discover_adapters_mock.assert_not_called()
+        self.assertEqual(
+            visa.queries,
+            [("TCPIP0::192.168.1.50::5025::SOCKET", "*IDN?", 5000, {})],
+        )
+        self.assertEqual(
+            [call.args[0] for call in print_mock.call_args_list],
+            [
+                "Available VISA resources (1):",
+                "  - USB0::0x1234::0x5678::SN1::INSTR",
+                "TCPIP0::192.168.1.50::5025::SOCKET: ArbDraw,FakeScope,SN1,1.0",
+            ],
+        )
+
+    def test_idn_applies_and_validates_pyvisa_options(self):
+        payload = {
+            "resource": "USB0::INSTR",
+            "pyvisa_options": {
+                "read_termination": "\r",
+                "write_termination": "\r\n",
+                "query_delay": 5,
+                "send_end": False,
+            },
+        }
+
+        status, body = BridgeService(self.visa).dispatch(
+            "POST", "/api/v1/visa/idn", payload
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(body["identity"], "ArbDraw,FakeScope,SN1,1.0")
+        self.assertEqual(self.visa.queries[-1][3], payload["pyvisa_options"])
+        with self.assertRaisesRegex(BridgeError, "query_delay"):
+            BridgeService(self.visa).dispatch(
+                "POST",
+                "/api/v1/visa/idn",
+                {"resource": "USB0::INSTR", "pyvisa_options": {"query_delay": -1}},
+            )
+
+    def test_waveform_request_forwards_validated_pyvisa_options_to_adapter(self):
+        requests = []
+        service = BridgeService(
+            self.visa,
+            adapters={"test": lambda request: requests.append(request) or {"status": "sent"}},
+        )
+        payload = {
+            "resource": "USB0::INSTR",
+            "adapter": "test",
+            "waveform": {"schema": "arbdraw.waveform", "version": 1},
+            "pyvisa_options": {"query_delay": 5, "send_end": True},
+        }
+
+        status, _ = service.dispatch("POST", "/api/v1/waveforms/send", payload)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(requests[0]["pyvisa_options"], payload["pyvisa_options"])
 
 
 if __name__ == "__main__":

@@ -39,6 +39,11 @@
     return ArbDrawBridge.normalizeVisaResource(resourceInput.value);
   }
 
+  function selectedPyVisaOptions() {
+    const options = selectedAwgProfile?.pyvisaOptions;
+    return options && typeof options === 'object' ? { ...options } : {};
+  }
+
   function setStatus(kind, message) {
     statusElement.dataset.status = kind;
     statusElement.textContent = message;
@@ -237,7 +242,9 @@
   identifyButton.addEventListener('click', () =>
     runBridgeAction(async () => {
       setResult(`Querying ${selectedResource()}…`);
-      const response = await bridgeClient.identify(selectedResource());
+      const response = await bridgeClient.identify(selectedResource(), {
+        pyvisaOptions: selectedPyVisaOptions(),
+      });
       setResult(response.identity || response.response || 'The instrument returned an empty response.', false, true);
     }),
   );
@@ -251,6 +258,7 @@
         JSON.parse(JSON.stringify(projectDocument)),
         {
           adapter: adapterSelect.value || 'default',
+          pyvisaOptions: selectedPyVisaOptions(),
           options: {
             channel: Number(channelSelect.value),
             enable_output: enableOutputCheckbox.checked,

@@ -35,6 +35,32 @@ test('sends IDN through the dedicated endpoint', async () => {
   });
 });
 
+test('passes profile PyVISA options to IDN and waveform requests', async () => {
+  const bodies = [];
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
+    fetchImpl: async (url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return response(url.endsWith('/visa/idn') ? { identity: 'Rigol' } : { status: 'sent' });
+    },
+  });
+  const pyvisaOptions = {
+    read_termination: '\n',
+    write_termination: '\r\n',
+    query_delay: 5,
+    send_end: true,
+  };
+
+  await client.identify('USB0::INSTR', { pyvisaOptions });
+  await client.sendWaveform(
+    'USB0::INSTR',
+    { schema: 'arbdraw.waveform', version: 1 },
+    { adapter: 'rigol-dg1022', pyvisaOptions },
+  );
+
+  assert.deepEqual(bodies[0].pyvisa_options, pyvisaOptions);
+  assert.deepEqual(bodies[1].pyvisa_options, pyvisaOptions);
+});
+
 test('wraps IPv4 addresses as TCPIP VISA resources', async () => {
   assert.equal(
     ArbDrawBridge.normalizeVisaResource('192.168.1.50'),

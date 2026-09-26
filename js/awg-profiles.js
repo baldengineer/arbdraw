@@ -15,6 +15,7 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
     preferredBackend: 'owon-xdg3000',
   }),
+  // 0x1AB1 0x0588
   rigolDg1022: Object.freeze({
     id: 'rigol-dg1022',
     name: 'RIGOL DG1022',
@@ -25,6 +26,12 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
     sampleDepth: Object.freeze({ default: 1000, max: 4096 }),
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
     preferredBackend: 'rigol-dg1022',
+    pyvisaOptions: Object.freeze({
+      // read_termination: '\n',
+      // write_termination: '\n',
+      query_delay: 5,
+      // send_end: true,
+    }),
   }),
   tekscopeFiles: Object.freeze({
     id: 'tekscope-files',

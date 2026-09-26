@@ -66,6 +66,12 @@ The configured callable receives one dictionary with this shape:
     "channel": 1,
     "persist": false,
     "enable_output": false
+  },
+  "pyvisa_options": {
+    "read_termination": "\\n",
+    "write_termination": "\\n",
+    "query_delay": 0,
+    "send_end": true
   }
 }
 ```
@@ -121,6 +127,17 @@ Typical AWG options include:
 Use `null` for an omitted override; do not confuse an omitted value with zero. Physical output should default to off. Persistent storage should be an explicit option because it can be slower and has different lifetime and wear implications than volatile memory.
 
 Do not accept arbitrary SCPI commands, Python import names, executable paths, or command-line fragments through `options`.
+
+### `pyvisa_options`
+
+ArbDraw AWG profiles may attach optional PyVISA session settings to identity
+queries and waveform transfers. The bridge validates and forwards only
+`read_termination`, `write_termination`, `query_delay`, and `send_end`.
+Terminations must be strings or `null`, `query_delay` is a non-negative finite
+number of seconds, and `send_end` is boolean. Adapters that open their own VISA
+session should apply these settings to that session; adapters that do not use
+PyVISA may ignore the object. Keep instrument-specific values in
+`js/awg-profiles.js`, not as adapter defaults.
 
 ## Return value
 

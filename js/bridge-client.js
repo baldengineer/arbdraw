@@ -11,6 +11,18 @@
     return isIpv4 ? `TCPIP0::${value}::INSTR` : value;
   }
 
+  function addPyVisaOptions(payload, pyvisaOptions) {
+    if (pyvisaOptions && typeof pyvisaOptions === 'object' && Object.keys(pyvisaOptions).length) {
+      payload.pyvisa_options = { ...pyvisaOptions };
+    }
+    return payload;
+  }
+
+  function queryDelayMilliseconds(pyvisaOptions) {
+    const delay = Number(pyvisaOptions?.query_delay);
+    return Number.isFinite(delay) && delay > 0 ? delay * 1000 : 0;
+  }
+
   class BridgeRequestError extends Error {
     constructor(message, { status = 0, code = 'bridge_request_failed', cause } = {}) {
       super(message, { cause });
@@ -116,26 +128,39 @@
       return payload.adapters;
     }
 
-    identify(resource, { timeoutMs = 5000 } = {}) {
+    identify(resource, { timeoutMs = 5000, pyvisaOptions = {} } = {}) {
       return this.request('/api/v1/visa/idn', {
         method: 'POST',
-        body: { resource: normalizeVisaResource(resource), timeout_ms: timeoutMs },
-        timeoutMs: timeoutMs + 1000,
+        body: addPyVisaOptions(
+          { resource: normalizeVisaResource(resource), timeout_ms: timeoutMs },
+          pyvisaOptions,
+        ),
+        timeoutMs: timeoutMs + queryDelayMilliseconds(pyvisaOptions) + 1000,
       });
     }
 
-    query(resource, command, { timeoutMs = 5000 } = {}) {
+    query(resource, command, { timeoutMs = 5000, pyvisaOptions = {} } = {}) {
       return this.request('/api/v1/visa/query', {
         method: 'POST',
-        body: { resource: normalizeVisaResource(resource), command, timeout_ms: timeoutMs },
-        timeoutMs: timeoutMs + 1000,
+        body: addPyVisaOptions(
+          { resource: normalizeVisaResource(resource), command, timeout_ms: timeoutMs },
+          pyvisaOptions,
+        ),
+        timeoutMs: timeoutMs + queryDelayMilliseconds(pyvisaOptions) + 1000,
       });
     }
 
-    sendWaveform(resource, waveformDocument, { adapter = 'default', options = {}, timeoutMs = 60000 } = {}) {
+    sendWaveform(
+      resource,
+      waveformDocument,
+      { adapter = 'default', options = {}, pyvisaOptions = {}, timeoutMs = 180000 } = {},
+    ) {
       return this.request('/api/v1/waveforms/send', {
         method: 'POST',
-        body: { resource: normalizeVisaResource(resource), waveform: waveformDocument, adapter, options },
+        body: addPyVisaOptions(
+          { resource: normalizeVisaResource(resource), waveform: waveformDocument, adapter, options },
+          pyvisaOptions,
+        ),
         timeoutMs,
       });
     }
