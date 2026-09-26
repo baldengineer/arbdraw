@@ -108,6 +108,8 @@ test('onboarding defines the starter tour through Driver.js', () => {
   assert.match(source, /showProgress: true/);
   assert.match(source, /localStorage\.setItem\(storageKey, 'complete'\)/);
   assert.match(source, /get\('onboard'\)/);
+  assert.match(source, /matchMedia\?\.\('\(max-width: 900px\)'\)\.matches/);
+  assert.match(source, /urlOverride !== false && !compactViewport/);
 });
 
 test('Help menu provides a permanent way to restart onboarding', () => {

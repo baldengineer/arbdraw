@@ -69,3 +69,12 @@ test('pointer down on a transition-time unit button does not dismiss its menu', 
 
   assert.equal(calls.closeTimingUnitMenus, 0);
 });
+
+test('view picker menu is positioned against its trigger', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+
+  assert.match(
+    source,
+    /\.view-picker \.view-picker-menu\{position:absolute;top:calc\(100% \+ 8px\)/,
+  );
+});
