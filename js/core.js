@@ -167,6 +167,7 @@ function normalizeDefaults(source = {}) {
       2,
       Math.round(finite('waveformVerticalDivisions', 10)),
     ),
+    includeCsvTimestamps: source.includeCsvTimestamps !== false,
     awgProfileId:
       typeof source.awgProfileId === 'string' && source.awgProfileId.trim()
         ? source.awgProfileId.trim()

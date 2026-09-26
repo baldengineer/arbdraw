@@ -66,7 +66,7 @@ See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field refe
 
 Choose **Export Waveform**, select **CSV**, **SVG**, or **WAV**, and enter a filename.
 
-- **CSV** exports time and voltage samples, with optional metadata headers.
+- **CSV** exports voltage samples with an optional metadata header and a timestamp column that is included by default but can be omitted. The timestamp choice is remembered until you create a new project or reset all settings.
 - **SVG** exports black waveform lines on a transparent background, with optional axes and grid.
 - **WAV** exports the current samples as mono, 16-bit PCM audio. Sample values are normalized so the largest absolute value reaches full scale; silence remains silent.
 
