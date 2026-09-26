@@ -567,6 +567,15 @@ function moveEditorViewport(direction) {
   setEditorViewportCenter(view.center + direction * step);
 }
 
+function zoomEditorViewport(direction) {
+  const view = currentEditorViewport();
+  setEditorPointsPerScreen(
+    direction < 0
+      ? Math.max(2, Math.floor(view.pointsPerScreen / 2))
+      : Math.min(view.total, view.pointsPerScreen * 2),
+  );
+}
+
 function handleEditorNavigationKey(event) {
   if ((event.key !== 'Home' && event.key !== 'End') || event.ctrlKey || event.metaKey || event.altKey)
     return false;
@@ -579,12 +588,10 @@ function handleEditorNavigationKey(event) {
 }
 
 $('editorPointsDecrease').addEventListener('click', () => {
-  const view = currentEditorViewport();
-  setEditorPointsPerScreen(Math.max(2, Math.floor(view.pointsPerScreen / 2)));
+  zoomEditorViewport(-1);
 });
 $('editorPointsIncrease').addEventListener('click', () => {
-  const view = currentEditorViewport();
-  setEditorPointsPerScreen(Math.min(view.total, view.pointsPerScreen * 2));
+  zoomEditorViewport(1);
 });
 $('editorPointsPerScreen').addEventListener('change', (event) => {
   setEditorPointsPerScreen(event.target.value);
@@ -603,6 +610,17 @@ $('editorPositionDecrease').addEventListener('click', () => moveEditorViewport(-
 $('editorFullRecord').addEventListener('click', () => {
   setEditorViewport({ start: 0, pointsPerScreen: editorRecordLength() });
 });
+canvas.addEventListener('wheel', (event) => {
+  if (!event.deltaY) return;
+  event.preventDefault();
+  const direction = event.deltaY < 0 ? 1 : -1;
+  if (event.altKey) zoomEditorViewport(direction > 0 ? -1 : 1);
+  else if (event.shiftKey) moveEditorViewport(direction);
+  else {
+    const view = currentEditorViewport();
+    setEditorViewportCenter(view.center + direction);
+  }
+}, { passive: false });
 
 const editorOverview = $('editorRecordOverview');
 const editorViewportWindow = $('editorViewportWindow');

@@ -122,10 +122,19 @@ test('onboarding defines the starter tour through Driver.js', () => {
 
 test('Help menu provides a permanent way to restart onboarding', () => {
   const source = fs.readFileSync(path.join(root, 'js/help.js'), 'utf8');
+  const editorNavigationHelp = fs.readFileSync(
+    path.join(root, 'docs/help/editor-navigation.html'),
+    'utf8',
+  );
 
   assert.match(source, /title: 'Getting started'/);
   assert.match(source, /ARBDRAW_ONBOARDING\?\.start\(\)/);
   assert.match(source, /if \(item\.action\)/);
+  assert.match(source, /title: 'Editor navigation', source: 'docs\/help\/editor-navigation\.html'/);
+  assert.match(editorNavigationHelp, /Scrolling and zooming in the Editor/);
+  assert.match(editorNavigationHelp, /Shift<\/code> \+ wheel/);
+  assert.match(editorNavigationHelp, /Alt<\/code> \+ wheel up/);
+  assert.match(editorNavigationHelp, /Full Record/);
 });
 
 test('Instruments dialog provides a Driver.js guide', () => {

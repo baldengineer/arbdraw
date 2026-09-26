@@ -24,7 +24,10 @@ test('editor horizontal scale uses point indices', () => {
   assert.match(html, /id="editorRecordOverview"/);
   assert.match(html, /id="editorPointsPerScreen"/);
   assert.match(html, /id="editorPosition"/);
+  assert.match(html, /id="editorPosition"[^>]*title="Shift\+wheel accelerates position changes"/);
   assert.match(html, /id="editorFullRecord"[^>]*>Full Record<\/button>/);
+  assert.ok(html.indexOf('id="waveCanvas"') < html.indexOf('id="editorRecordOverview"'));
+  assert.ok(html.indexOf('id="editorRecordOverview"') < html.indexOf('class="editor-navigation"'));
   assert.match(draw, /pointTicks = editorPointTicks\(view\.start, view\.end\)/);
   assert.match(draw, /for \(const pointIndex of pointTicks\)/);
   assert.match(draw, /\(pw \* \(pointIndex - view\.start\)\) \/ visiblePointSpan/);
@@ -95,6 +98,11 @@ test('editor navigation supports record keyboard shortcuts and accelerated wheel
   assert.match(source, /editorPosition'\)\.addEventListener\('wheel'/);
   assert.match(source, /if \(!event\.shiftKey\) return/);
   assert.match(source, /Math\.round\(view\.pointsPerScreen \/ 10\)/);
+  assert.match(source, /canvas\.addEventListener\('wheel'/);
+  assert.match(source, /if \(event\.altKey\) zoomEditorViewport/);
+  assert.match(source, /else if \(event\.shiftKey\) moveEditorViewport/);
+  assert.match(source, /setEditorViewportCenter\(view\.center \+ direction\)/);
+  assert.match(source, /function zoomEditorViewport\(direction\)/);
 });
 
 test('viewer horizontal scale remains time-based', () => {

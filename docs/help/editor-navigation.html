@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="help.css">
+<article>
+  <h1>Scrolling and zooming in the Editor</h1>
+  <p>The Editor can show the entire waveform record or a smaller range of samples. Panning and zooming change only which points are visible—they do not remove or resample waveform data. Point numbers and cursor readouts always refer to positions in the complete memory record.</p>
+
+  <h2>Full-record navigator</h2>
+  <p>The narrow waveform below the main editor represents the complete memory record. Its highlighted window shows the portion currently visible in the editor.</p>
+  <ul>
+    <li>Drag the highlighted window to pan through the record.</li>
+    <li>Click elsewhere in the navigator to center the visible window at that point.</li>
+    <li>When the highlighted window fills the navigator, the editor is showing the full record.</li>
+  </ul>
+
+  <h2>Points and Position controls</h2>
+  <ul>
+    <li><strong>Points / Screen</strong> is the number of waveform samples visible at once. The minus button halves the value to zoom in. The plus button doubles it to zoom out. You can also enter an exact value.</li>
+    <li><strong>Position</strong> is the sample index at the center of the editor. Its arrow buttons move by approximately 10% of the visible points.</li>
+    <li><strong>Full Record</strong> zooms out to show every sample.</li>
+  </ul>
+
+  <h2>Mouse wheel</h2>
+  <table>
+    <thead><tr><th>Pointer location</th><th>Action</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Waveform or Position field</td><td>Wheel</td><td>Pan one point per wheel step.</td></tr>
+      <tr><td>Waveform or Position field</td><td><code>Shift</code> + wheel</td><td>Pan by approximately 10% of Points / Screen. For example, 512 visible points move 51 points per step.</td></tr>
+      <tr><td>Waveform</td><td><code>Alt</code> + wheel up</td><td>Halve Points / Screen and zoom in.</td></tr>
+      <tr><td>Waveform</td><td><code>Alt</code> + wheel down</td><td>Double Points / Screen and zoom out.</td></tr>
+    </tbody>
+  </table>
+  <p>Wheel up moves toward later points; wheel down moves toward earlier points. Zooming keeps the current Position centered whenever the record boundaries allow it.</p>
+
+  <h2>Keyboard shortcuts</h2>
+  <table>
+    <thead><tr><th>Shortcut</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>Home</code></td><td>Pan to the beginning of the record.</td></tr>
+      <tr><td><code>End</code></td><td>Pan to the end of the record.</td></tr>
+      <tr><td><code>Shift</code> + <code>Home</code></td><td>Center the visible window on the record midpoint.</td></tr>
+      <tr><td><code>Shift</code> + <code>End</code></td><td>Center the visible window on the record midpoint.</td></tr>
+    </tbody>
+  </table>
+  <p>When the highlighted navigator window has keyboard focus, the arrow keys pan by one point. Hold <code>Shift</code> with an arrow key to pan by half of the visible points.</p>
+</article>

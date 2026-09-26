@@ -5,6 +5,7 @@ const helpItems = [
   { title: 'Getting started', action: () => globalThis.ARBDRAW_ONBOARDING?.start() },
   { title: 'About', source: 'docs/help/about.html' },
   { title: 'How to use', source: 'docs/help/how-to-use.html' },
+  { title: 'Editor navigation', source: 'docs/help/editor-navigation.html' },
   { title: 'Python bridge', source: 'docs/help/python-bridge.html' },
   { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
