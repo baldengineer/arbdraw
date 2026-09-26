@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// First-run product tour powered by the vendored Driver.js browser build.
+// First-run product tour powered by Driver.js after the asset loader is ready.
 (function createOnboardingTour() {
-  const driverFactory = globalThis.driver?.js?.driver;
-  if (typeof driverFactory !== 'function') {
-    console.error('Unable to initialize onboarding: Driver.js is unavailable.');
-    return;
-  }
-
   const storageKey = 'arbdraw-onboarding-driverjs-v1';
   const steps = [
     {
@@ -58,6 +52,7 @@
   ];
 
   let activeTour = null;
+  let startPromise = null;
 
   function storageValue() {
     try {
@@ -89,38 +84,56 @@
   }
 
   function startTour() {
-    if (activeTour?.isActive()) return false;
-    globalThis.closeFunctionSelectMenu?.();
-    const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    activeTour = driverFactory({
-      animate: !reduceMotion,
-      allowClose: true,
-      allowKeyboardControl: true,
-      allowScroll: true,
-      disableActiveInteraction: true,
-      doneBtnText: 'Done',
-      nextBtnText: 'Next',
-      overlayClickBehavior: 'close',
-      overlayColor: '#050809',
-      overlayOpacity: 0.78,
-      popoverClass: 'arbdraw-tour-popover',
-      prevBtnText: 'Back',
-      progressText: 'Step {{current}} of {{total}}',
-      showProgress: true,
-      skipMissingElement: true,
-      smoothScroll: true,
-      stagePadding: 7,
-      stageRadius: 8,
-      steps,
-      onCloseClick: finishTour,
-      onDoneClick: finishTour,
-      onDestroyed: () => {
+    if (activeTour?.isActive()) return Promise.resolve(false);
+    if (startPromise) return startPromise;
+    const ready = globalThis.ARBDRAW_DRIVER_READY
+      || Promise.resolve(globalThis.driver?.js?.driver);
+    startPromise = ready
+      .then((driverFactory) => {
+        if (typeof driverFactory !== 'function') {
+          throw new Error('Driver.js is unavailable.');
+        }
+        if (activeTour?.isActive()) return false;
         globalThis.closeFunctionSelectMenu?.();
-        activeTour = null;
-      },
-    });
-    activeTour.drive();
-    return true;
+        const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        activeTour = driverFactory({
+          animate: !reduceMotion,
+          allowClose: true,
+          allowKeyboardControl: true,
+          allowScroll: true,
+          disableActiveInteraction: true,
+          doneBtnText: 'Done',
+          nextBtnText: 'Next',
+          overlayClickBehavior: 'close',
+          overlayColor: '#050809',
+          overlayOpacity: 0.78,
+          popoverClass: 'arbdraw-tour-popover',
+          prevBtnText: 'Back',
+          progressText: 'Step {{current}} of {{total}}',
+          showProgress: true,
+          skipMissingElement: true,
+          smoothScroll: true,
+          stagePadding: 7,
+          stageRadius: 8,
+          steps,
+          onCloseClick: finishTour,
+          onDoneClick: finishTour,
+          onDestroyed: () => {
+            globalThis.closeFunctionSelectMenu?.();
+            activeTour = null;
+          },
+        });
+        activeTour.drive();
+        return true;
+      })
+      .catch((error) => {
+        console.error('Unable to initialize onboarding.', error);
+        return false;
+      })
+      .finally(() => {
+        startPromise = null;
+      });
+    return startPromise;
   }
 
   function closeTour() {
@@ -143,5 +156,5 @@
   const onboardArgument = new URLSearchParams(globalThis.location?.search || '').get('onboard');
   const urlOverride = onboardArgument === '1' ? true : onboardArgument === '0' ? false : null;
   const shouldAutoStart = urlOverride === true || (urlOverride !== false && storageValue() !== 'complete');
-  if (shouldAutoStart) setTimeout(startTour, 0);
+  if (shouldAutoStart) setTimeout(() => startTour(), 0);
 })();
