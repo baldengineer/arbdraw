@@ -6,6 +6,7 @@ const ctx = canvas.getContext('2d');
 const editorOverviewCanvas = document.querySelector('#editorOverviewCanvas');
 const editorOverviewContext = editorOverviewCanvas.getContext('2d');
 const editorViewport = { start: 0, pointsPerScreen: null, total: null };
+const editorSelection = { left: null, right: null, origin: null, dragging: null };
 
 function normalizeEditorViewport(viewport, totalPoints) {
   const total = Math.max(1, Math.trunc(Number(totalPoints)) || 1),
@@ -29,6 +30,41 @@ function normalizeEditorViewport(viewport, totalPoints) {
     center: Math.round((start + end) / 2),
     maximumStart,
   };
+}
+
+function normalizeEditorSelection(selection, totalPoints) {
+  if (selection?.left == null || selection?.right == null) return null;
+  const total = Math.max(1, Math.trunc(Number(totalPoints)) || 1),
+    maximumIndex = total - 1,
+    requestedLeft = Number(selection?.left),
+    requestedRight = Number(selection?.right);
+  if (!Number.isFinite(requestedLeft) || !Number.isFinite(requestedRight)) return null;
+  const first = Math.max(0, Math.min(maximumIndex, Math.round(requestedLeft))),
+    second = Math.max(0, Math.min(maximumIndex, Math.round(requestedRight)));
+  return { left: Math.min(first, second), right: Math.max(first, second) };
+}
+
+function currentEditorSelection() {
+  const normalized = normalizeEditorSelection(editorSelection, editorRecordLength());
+  editorSelection.left = normalized?.left ?? null;
+  editorSelection.right = normalized?.right ?? null;
+  return normalized;
+}
+
+function updateEditorSelectionReadout(selection = currentEditorSelection()) {
+  const readout = $('editorSelectionReadout');
+  readout.hidden = !selection;
+  if (!selection) return;
+  $('editorSelectionLeft').textContent = `${selection.left.toLocaleString()} pts`;
+  $('editorSelectionRight').textContent = `${selection.right.toLocaleString()} pts`;
+}
+
+function clearEditorSelection(render = true) {
+  editorSelection.left = null;
+  editorSelection.right = null;
+  editorSelection.origin = null;
+  editorSelection.dragging = null;
+  if (render) draw();
 }
 
 function editorRecordLength() {
@@ -199,6 +235,51 @@ function editorPointTicks(startIndex, endIndex, divisionCount = 10) {
   return ticks;
 }
 
+function editorPointCanvasX(pointIndex, view, pad, plotWidth) {
+  return pad.l + (plotWidth * (pointIndex - view.start)) / Math.max(1, view.end - view.start);
+}
+
+function drawEditorSelection(view, pad, plotWidth, plotHeight, pixelRatio) {
+  const selection = currentEditorSelection();
+  if (!selection || selection.right < view.start || selection.left > view.end) return;
+  const visibleLeft = Math.max(selection.left, view.start),
+    visibleRight = Math.min(selection.right, view.end),
+    leftX = editorPointCanvasX(visibleLeft, view, pad, plotWidth),
+    rightX = editorPointCanvasX(visibleRight, view, pad, plotWidth),
+    markerColor =
+      getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#69b0e0';
+  ctx.save();
+  ctx.fillStyle = 'rgba(105, 176, 224, 0.18)';
+  ctx.fillRect(leftX, pad.t, Math.max(2 * pixelRatio, rightX - leftX), plotHeight);
+  ctx.strokeStyle = markerColor;
+  ctx.fillStyle = markerColor;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 1.5 * pixelRatio;
+  ctx.setLineDash([4 * pixelRatio, 3 * pixelRatio]);
+  for (const markerIndex of new Set([selection.left, selection.right])) {
+    if (markerIndex < view.start || markerIndex > view.end) continue;
+    const markerX = editorPointCanvasX(markerIndex, view, pad, plotWidth),
+      crosshairY = pad.t + plotHeight / 2,
+      arm = 6 * pixelRatio;
+    ctx.beginPath();
+    ctx.moveTo(markerX, pad.t);
+    ctx.lineTo(markerX, pad.t + plotHeight);
+    ctx.moveTo(markerX - arm, crosshairY);
+    ctx.lineTo(markerX + arm, crosshairY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(markerX - 5 * pixelRatio, pad.t);
+    ctx.lineTo(markerX + 5 * pixelRatio, pad.t);
+    ctx.lineTo(markerX, pad.t + 7 * pixelRatio);
+    ctx.closePath();
+    ctx.fill();
+    ctx.setLineDash([4 * pixelRatio, 3 * pixelRatio]);
+  }
+  ctx.restore();
+}
+
 function updateEditorNavigation(view = currentEditorViewport()) {
   const fullRecord = view.pointsPerScreen >= view.total,
     viewportWindow = $('editorViewportWindow');
@@ -268,6 +349,7 @@ function draw() {
     d = devicePixelRatio || 1,
     view = currentEditorViewport();
   drawEditorOverview();
+  updateEditorSelectionReadout();
   if (!w || !h) return;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#090d0f';
@@ -343,6 +425,7 @@ function draw() {
     if ((view.end - view.start) % sampleStep !== 0) drawVisiblePoint(view.end, firstVisiblePoint);
     ctx.stroke();
   }
+  drawEditorSelection(view, pad, pw, ph, d);
   ctx.restore();
   drawCustomPreview();
   if (!$('waveformView').classList.contains('hidden')) drawScope();
@@ -501,8 +584,56 @@ function markCustom() {
     selectPreset('custom');
   }
 }
+function beginEditorSelection(event) {
+  const point = canvasPoint(event),
+    selection = currentEditorSelection(),
+    view = currentEditorViewport(),
+    canvasBounds = canvas.getBoundingClientRect(),
+    markerTolerance = Math.max(
+      1,
+      Math.round((view.pointsPerScreen * 9) / Math.max(1, canvasBounds.width - 76)),
+    );
+  const leftDistance = selection ? Math.abs(point.i - selection.left) : Infinity,
+    rightDistance = selection ? Math.abs(point.i - selection.right) : Infinity;
+  if (selection?.left === selection?.right && leftDistance <= markerTolerance) {
+    editorSelection.origin = selection.left;
+    editorSelection.dragging = 'range';
+  } else if (Math.min(leftDistance, rightDistance) <= markerTolerance) {
+    editorSelection.dragging = leftDistance <= rightDistance ? 'left' : 'right';
+  } else {
+    editorSelection.left = point.i;
+    editorSelection.right = point.i;
+    editorSelection.origin = point.i;
+    editorSelection.dragging = 'range';
+  }
+  canvas.setPointerCapture(event.pointerId);
+  draw();
+}
+
+function moveEditorSelection(event) {
+  if (!editorSelection.dragging) return;
+  const pointIndex = canvasPoint(event).i;
+  if (editorSelection.dragging === 'left') {
+    editorSelection.left = Math.min(pointIndex, editorSelection.right);
+  } else if (editorSelection.dragging === 'right') {
+    editorSelection.right = Math.max(pointIndex, editorSelection.left);
+  } else {
+    editorSelection.left = Math.min(editorSelection.origin, pointIndex);
+    editorSelection.right = Math.max(editorSelection.origin, pointIndex);
+  }
+  draw();
+}
+
+function finishEditorSelection() {
+  editorSelection.dragging = null;
+  editorSelection.origin = null;
+}
 canvas.addEventListener('pointerdown', (e) => {
   if (state.tool === 'pointer') return;
+  if (state.tool === 'selection') {
+    beginEditorSelection(e);
+    return;
+  }
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   markCustom();
@@ -527,22 +658,30 @@ canvas.addEventListener('pointermove', (e) => {
   const voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
   canvas.classList.toggle(
     'waveform-hover',
-    state.tool !== 'pointer' && pointerIsNearWaveform(e),
+    (state.tool === 'pencil' || state.tool === 'erase') && pointerIsNearWaveform(e),
   );
   $('cursorReadout').style.display = 'block';
   $('cursorReadout').innerHTML =
     `${p.i} pts &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
-  if (state.drawing) {
+  if (editorSelection.dragging) {
+    moveEditorSelection(e);
+  } else if (state.drawing) {
     editAt(p, state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null);
     state.lastPoint = p;
   }
 });
 canvas.addEventListener('pointerup', (e) => {
+  if (editorSelection.dragging) {
+    moveEditorSelection(e);
+    finishEditorSelection();
+    return;
+  }
   if (state.drawing && state.tool === 'line') editAt(canvasPoint(e));
   if (state.drawing) pushHistory();
   state.drawing = false;
   state.lineStart = null;
 });
+canvas.addEventListener('pointercancel', finishEditorSelection);
 canvas.addEventListener('pointerleave', () => {
   canvas.classList.remove('waveform-hover');
   $('cursorReadout').style.display = 'none';
@@ -610,6 +749,7 @@ $('editorPositionDecrease').addEventListener('click', () => moveEditorViewport(-
 $('editorFullRecord').addEventListener('click', () => {
   setEditorViewport({ start: 0, pointsPerScreen: editorRecordLength() });
 });
+$('editorSelectionClear').addEventListener('click', clearEditorSelection);
 canvas.addEventListener('wheel', (event) => {
   if (!event.deltaY) return;
   event.preventDefault();

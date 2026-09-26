@@ -158,7 +158,7 @@ function normalizeDefaults(source = {}) {
       ? String(source.serialBinaryPattern)
       : '',
     serial_debug: source.serial_debug === true,
-    editor_tool: ['Pointer', 'Edit', 'Delete'].includes(source.editor_tool)
+    editor_tool: ['Pointer', 'Select', 'Edit', 'Delete'].includes(source.editor_tool)
       ? source.editor_tool
       : 'Edit',
     editorColor: color('editorColor', '#7bffb2'),
@@ -361,6 +361,7 @@ let projectDocument = createDefaultDocument();
 const state = {
   tool: {
     Pointer: 'pointer',
+    Select: 'selection',
     Edit: 'pencil',
     Delete: 'erase',
   }[DEFAULT_VALUES.editor_tool],

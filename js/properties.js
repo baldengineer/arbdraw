@@ -108,7 +108,7 @@ awgProfileSelect?.addEventListener('keydown', (event) => {
 });
 
 function persistCurrentSettings() {
-  const toolNames = { pointer: 'Pointer', pencil: 'Edit', erase: 'Delete' },
+  const toolNames = { pointer: 'Pointer', selection: 'Select', pencil: 'Edit', erase: 'Delete' },
     serial = typeof serialSettings === 'function' ? serialSettings() : {};
   persistSettings({
     highLevelV: state.high / voltageUnitScales.highInput,

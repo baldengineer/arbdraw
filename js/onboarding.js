@@ -8,7 +8,7 @@
       element: '#toolrail',
       popover: {
         title: 'Editor tools',
-        description: 'Choose Pointer, Edit, or Delete, then use the zoom controls to adjust your view of the waveform.',
+        description: 'Choose Pointer, Select, Edit, or Delete, then use the zoom controls to adjust your view of the waveform.',
         side: 'right',
         align: 'start',
       },

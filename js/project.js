@@ -114,6 +114,7 @@ function parseProject(raw) {
 }
 function loadProject(raw) {
   projectDocument = parseProject(raw);
+  clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
   state.redo = [];
@@ -162,6 +163,7 @@ $('confirmNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   projectDocument = createDefaultDocument();
+  clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
   state.redo = [];
