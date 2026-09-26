@@ -221,7 +221,7 @@
       </div>
       <pre id="bridgeResult" class="bridge-result" aria-live="polite"></pre>
       <p id="bridgeErrorHelp" class="bridge-error-help" hidden>Need help? <a href="docs/help/python-bridge.html" target="_blank" rel="noopener noreferrer">Open the Python bridge guide ↗</a></p>
-      <div class="dialog-actions"><button value="cancel" class="ghost">Close</button></div>
+      <div class="dialog-actions"><button id="instrumentGuideBtn" type="button" class="ghost guide-button">Guide</button><button value="cancel" class="ghost">Close</button></div>
     </form>
   </dialog>
   <div id="propertyContextMenu" class="context-menu" role="menu"><button id="setFieldDefaultBtn" role="menuitem">Set to Default</button></div>
@@ -251,6 +251,7 @@
   </div>
   <datalist id="serialBaudRates"><option value="300"></option><option value="1200"></option><option value="2400"></option><option value="4800"></option><option value="9600"></option><option value="19200"></option><option value="38400"></option><option value="57600"></option><option value="115200"></option><option value="230400"></option><option value="460800"></option><option value="921600"></option></datalist>
   <div id="toast" class="toast">Waveform exported as CSV</div>
+  <script src="js/driver-loader.js"></script>
   <script src="js/awg-profiles.js"></script>
   <script src="js/defaults.js"></script>
   <script src="js/fields.js"></script>
@@ -272,5 +273,6 @@
   <script src="js/ui.js"></script>
   <script src="js/instruments.js"></script>
   <script src="app.js"></script>
+  <script src="js/onboarding.js"></script>
 </body>
 </html>

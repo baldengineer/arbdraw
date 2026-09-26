@@ -2,6 +2,7 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Help menu and in-app help window.
 const helpItems = [
+  { title: 'Getting started', action: () => globalThis.ARBDRAW_ONBOARDING?.start() },
   { title: 'About', source: 'docs/help/about.html' },
   { title: 'How to use', source: 'docs/help/how-to-use.html' },
   { title: 'Python bridge', source: 'docs/help/python-bridge.html' },
@@ -112,7 +113,14 @@ helpItems.forEach((item) => {
     option.rel = 'noopener noreferrer';
   } else {
     option.type = 'button';
-    option.onclick = () => openHelp(item);
+    option.onclick = () => {
+      if (item.action) {
+        closeHelpMenu();
+        item.action();
+      } else {
+        openHelp(item);
+      }
+    };
   }
   helpMenu.append(option);
 });

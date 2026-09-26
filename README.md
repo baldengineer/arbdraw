@@ -10,7 +10,9 @@ Access the GitHub-hosted version at [baldengineer.github.io/arbdraw](https://bal
 
 ## Run
 
-No build step or third-party dependencies are required.
+No build step or dependency installation is required.
+
+ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from jsDelivr for its first-run product tour. If the CDN is unavailable, it automatically falls back to the vendored copy, so the tour also works when `index.html` is opened directly from disk. The upstream license is retained in [`vendor/driver.js/1.8.0/LICENSE`](vendor/driver.js/1.8.0/LICENSE).
 
 ## Python instrument bridge
 
@@ -48,6 +50,10 @@ The initial waveform can be selected and configured from the URL. URL parameters
 For an RC charging curve, `rcTau` sets the number of time constants shown in each cycle (default 5); `tau` is accepted as a URL alias. Since `τ = R × C`, five time constants charge the capacitor from the low level to about 99.3% of the high level.
 
 Parameters use the same names as the editable defaults in `js/defaults.js`. `wave`, `waveshape`, `waveform`, and `type` are aliases for `waveformType`; `frequency` and `period` are aliases for `frequencyHz` and `periodSeconds`. If both frequency and period are supplied, frequency takes precedence so the linked controls remain synchronized.
+
+Use `?onboard=1` to force the getting-started tour to open or `?onboard=0` to suppress its automatic first-run launch. The tour can always be started again from **Help → Getting started**.
+
+Driver.js uses the CDN by default. Add `?driver=local` to use the vendored JavaScript and CSS without attempting a network request.
 
 - Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values.
 - Use **Open** to restore a project from a JSON file or pasted JSON text.
