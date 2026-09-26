@@ -111,8 +111,10 @@ test('onboarding defines the starter tour through Driver.js', () => {
     '.function-section',
     '.inspector',
     '#editorControls',
-    '#editorView',
+    '#editorRecordOverview',
   ]);
+  assert.match(source, /title: 'Navigate the memory record'/);
+  assert.match(source, /Use Points \/ Screen, Position, or Full Record/);
   assert.match(source, /showProgress: true/);
   assert.match(source, /localStorage\.setItem\(storageKey, 'complete'\)/);
   assert.match(source, /get\('onboard'\)/);

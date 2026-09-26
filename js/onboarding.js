@@ -41,11 +41,11 @@
       },
     },
     {
-      element: '#editorView',
+      element: '#editorRecordOverview',
       popover: {
-        title: 'Waveform area',
-        description: 'Draw directly on the canvas to shape the signal, or use the editor tools to select, edit, and delete points.',
-        side: 'bottom',
+        title: 'Navigate the memory record',
+        description: 'Drag the highlighted window to pan through the full record. Use Points / Screen, Position, or Full Record below it to control the visible range.',
+        side: 'top',
         align: 'center',
       },
     },
