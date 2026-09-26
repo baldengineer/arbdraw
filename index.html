@@ -29,8 +29,33 @@
             <button class="tool" id="zoomOut" title="Zoom out">−</button>
           </div>
           <div class="canvas-area">
+            <div id="editorRecordOverview" class="editor-record-overview" aria-label="Full memory record overview">
+              <canvas id="editorOverviewCanvas" aria-hidden="true"></canvas>
+              <div id="editorViewportWindow" class="editor-viewport-window" role="slider" tabindex="0" aria-label="Visible portion of memory record" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="Full record"></div>
+            </div>
             <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
-            <div id="editorVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="editorPointAxisLabel" class="axis-label x-label">POINTS</div>
+            <div class="editor-navigation" role="group" aria-label="Memory record navigation">
+              <div class="editor-navigation-control">
+                <span>Points / Screen</span>
+                <div class="editor-navigation-stepper">
+                  <button id="editorPointsDecrease" type="button" aria-label="Show fewer points per screen" title="Zoom in">−</button>
+                  <input id="editorPointsPerScreen" type="number" min="2" step="1" aria-label="Points per screen">
+                  <button id="editorPointsIncrease" type="button" aria-label="Show more points per screen" title="Zoom out">+</button>
+                </div>
+              </div>
+              <div class="editor-navigation-control">
+                <span>Position</span>
+                <div class="editor-position-stepper">
+                  <input id="editorPosition" type="number" min="0" step="1" aria-label="Center point position">
+                  <span class="editor-position-buttons">
+                    <button id="editorPositionIncrease" type="button" aria-label="Move toward later points" title="Move forward">▲</button>
+                    <button id="editorPositionDecrease" type="button" aria-label="Move toward earlier points" title="Move backward">▼</button>
+                  </span>
+                </div>
+              </div>
+              <button id="editorFullRecord" class="editor-full-record" type="button">Full Record</button>
+            </div>
+            <div id="editorVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="editorPointAxisLabel" class="axis-label x-label editor-point-label">POINTS</div>
           </div>
         </div>
 

@@ -3,6 +3,64 @@
 // Waveform generation, editable canvas rendering, presets, and history.
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');
+const editorOverviewCanvas = document.querySelector('#editorOverviewCanvas');
+const editorOverviewContext = editorOverviewCanvas.getContext('2d');
+const editorViewport = { start: 0, pointsPerScreen: null, total: null };
+
+function normalizeEditorViewport(viewport, totalPoints) {
+  const total = Math.max(1, Math.trunc(Number(totalPoints)) || 1),
+    minimumPoints = Math.min(2, total),
+    requestedPoints = viewport?.pointsPerScreen == null ? Number.NaN : Number(viewport.pointsPerScreen),
+    pointsPerScreen = Number.isFinite(requestedPoints)
+      ? Math.max(minimumPoints, Math.min(total, Math.round(requestedPoints)))
+      : total,
+    maximumStart = Math.max(0, total - pointsPerScreen),
+    requestedStart = Number(viewport?.start),
+    start = Math.max(
+      0,
+      Math.min(maximumStart, Number.isFinite(requestedStart) ? Math.round(requestedStart) : 0),
+    ),
+    end = start + pointsPerScreen - 1;
+  return {
+    total,
+    start,
+    end,
+    pointsPerScreen,
+    center: Math.round((start + end) / 2),
+    maximumStart,
+  };
+}
+
+function editorRecordLength() {
+  return Math.max(1, state.data.length || state.samples || 1);
+}
+
+function currentEditorViewport() {
+  const followsFullRecord =
+      editorViewport.pointsPerScreen == null ||
+      (editorViewport.total != null && editorViewport.pointsPerScreen >= editorViewport.total),
+    requestedViewport = followsFullRecord
+      ? { start: 0, pointsPerScreen: null }
+      : editorViewport,
+    normalized = normalizeEditorViewport(requestedViewport, editorRecordLength());
+  editorViewport.start = normalized.start;
+  editorViewport.pointsPerScreen = normalized.pointsPerScreen;
+  editorViewport.total = normalized.total;
+  return normalized;
+}
+
+function setEditorViewport(nextViewport) {
+  Object.assign(editorViewport, nextViewport);
+  currentEditorViewport();
+  draw();
+}
+
+function setEditorViewportCenter(center) {
+  const view = currentEditorViewport(),
+    requestedCenter = Number(center),
+    nextCenter = Number.isFinite(requestedCenter) ? Math.round(requestedCenter) : view.center;
+  setEditorViewport({ start: nextCenter - Math.round((view.pointsPerScreen - 1) / 2) });
+}
 function generate(type = state.type, recordHistory = true, persist = true) {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
@@ -121,6 +179,7 @@ function resizeCanvas(target, render) {
 }
 function resize() {
   resizeCanvas(canvas, draw);
+  resizeCanvas(editorOverviewCanvas, drawEditorOverview);
   if (!$('waveformView').classList.contains('hidden')) resizeCanvas(scopeCanvas, drawScope);
 }
 function voltageBounds() {
@@ -128,20 +187,87 @@ function voltageBounds() {
   const span = Math.max(5, Math.abs(state.high));
   return { high: state.high + span, low: state.low - span };
 }
-function editorPointTicks(pointCount, divisionCount = 10) {
-  const lastPointIndex = Math.max(0, Math.trunc(pointCount) - 1);
-  if (!lastPointIndex) return [0];
-  const pointStep = Math.max(1, Math.ceil(lastPointIndex / divisionCount));
+function editorPointTicks(startIndex, endIndex, divisionCount = 10) {
+  const firstPointIndex = Math.max(0, Math.trunc(startIndex)),
+    lastPointIndex = Math.max(firstPointIndex, Math.trunc(endIndex));
+  if (firstPointIndex === lastPointIndex) return [firstPointIndex];
+  const pointStep = Math.max(1, Math.ceil((lastPointIndex - firstPointIndex) / divisionCount));
   const ticks = [];
-  for (let pointIndex = 0; pointIndex <= lastPointIndex; pointIndex += pointStep)
+  for (let pointIndex = firstPointIndex; pointIndex <= lastPointIndex; pointIndex += pointStep)
     ticks.push(pointIndex);
   if (ticks.at(-1) !== lastPointIndex) ticks.push(lastPointIndex);
   return ticks;
 }
+
+function updateEditorNavigation(view = currentEditorViewport()) {
+  const fullRecord = view.pointsPerScreen >= view.total,
+    viewportWindow = $('editorViewportWindow');
+  $('editorPointsPerScreen').value = view.pointsPerScreen;
+  $('editorPointsPerScreen').max = view.total;
+  $('editorPointsDecrease').disabled = view.pointsPerScreen <= Math.min(2, view.total);
+  $('editorPointsIncrease').disabled = fullRecord;
+  $('editorPosition').value = view.center;
+  $('editorPosition').min = Math.round((view.pointsPerScreen - 1) / 2);
+  $('editorPosition').max = Math.round(view.maximumStart + (view.pointsPerScreen - 1) / 2);
+  $('editorPosition').step = 1;
+  $('editorPosition').disabled = fullRecord;
+  $('editorPositionDecrease').disabled = view.start <= 0;
+  $('editorPositionIncrease').disabled = view.start >= view.maximumStart;
+  $('editorFullRecord').disabled = fullRecord;
+  const recordWidthPercent = (view.pointsPerScreen / view.total) * 100,
+    minimumWidthPercent = editorOverview.clientWidth ? (8 / editorOverview.clientWidth) * 100 : 0,
+    windowWidthPercent = Math.min(100, Math.max(recordWidthPercent, minimumWidthPercent)),
+    windowLeftPercent = view.maximumStart
+      ? (view.start / view.maximumStart) * (100 - windowWidthPercent)
+      : 0;
+  viewportWindow.style.left = `${windowLeftPercent}%`;
+  viewportWindow.style.width = `${windowWidthPercent}%`;
+  viewportWindow.setAttribute('aria-valuemax', String(view.total - 1));
+  viewportWindow.setAttribute('aria-valuenow', String(view.center));
+  viewportWindow.setAttribute('aria-disabled', String(fullRecord));
+  viewportWindow.setAttribute(
+    'aria-valuetext',
+    fullRecord ? 'Full record' : `Points ${view.start} through ${view.end}`,
+  );
+}
+
+function drawEditorOverview() {
+  const view = currentEditorViewport(),
+    w = editorOverviewCanvas.width,
+    h = editorOverviewCanvas.height,
+    d = devicePixelRatio || 1;
+  updateEditorNavigation(view);
+  if (!w || !h) return;
+  editorOverviewContext.clearRect(0, 0, w, h);
+  editorOverviewContext.fillStyle = '#090d0f';
+  editorOverviewContext.fillRect(0, 0, w, h);
+  if (!state.data.length) return;
+  const bounds = voltageBounds(),
+    pad = 4 * d,
+    drawWidth = Math.max(1, w - pad * 2),
+    drawHeight = Math.max(1, h - pad * 2),
+    sampleStep = Math.max(1, Math.floor(state.data.length / Math.max(1, w))),
+    lastIndex = state.data.length - 1;
+  editorOverviewContext.beginPath();
+  const drawPoint = (index) => {
+    const x = pad + (drawWidth * index) / Math.max(1, lastIndex),
+      y = pad + ((bounds.high - state.data[index]) / (bounds.high - bounds.low)) * drawHeight;
+    index ? editorOverviewContext.lineTo(x, y) : editorOverviewContext.moveTo(x, y);
+  };
+  for (let index = 0; index <= lastIndex; index += sampleStep) drawPoint(index);
+  if (lastIndex % sampleStep !== 0) drawPoint(lastIndex);
+  editorOverviewContext.strokeStyle = DEFAULT_VALUES.editorColor;
+  editorOverviewContext.globalAlpha = 0.8;
+  editorOverviewContext.lineWidth = 1.25 * d;
+  editorOverviewContext.stroke();
+  editorOverviewContext.globalAlpha = 1;
+}
 function draw() {
   const w = canvas.width,
     h = canvas.height,
-    d = devicePixelRatio || 1;
+    d = devicePixelRatio || 1,
+    view = currentEditorViewport();
+  drawEditorOverview();
   if (!w || !h) return;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#090d0f';
@@ -150,8 +276,8 @@ function draw() {
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
     bounds = voltageBounds(),
-    pointTicks = editorPointTicks(state.samples),
-    lastPointIndex = pointTicks.at(-1),
+    pointTicks = editorPointTicks(view.start, view.end),
+    visiblePointSpan = Math.max(1, view.end - view.start),
     voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
   $('editorPointAxisLabel').textContent = 'POINTS';
   $('editorVoltageAxisLabel').textContent = `VOLTAGE (${voltageUnit.label})`;
@@ -173,8 +299,8 @@ function draw() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (const pointIndex of pointTicks) {
-    const px = pad.l + (pw * pointIndex) / (lastPointIndex || 1);
-    ctx.strokeStyle = pointIndex === 0 ? '#405053' : '#1e2c2f';
+    const px = pad.l + (pw * (pointIndex - view.start)) / visiblePointSpan;
+    ctx.strokeStyle = pointIndex === view.start ? '#405053' : '#1e2c2f';
     ctx.beginPath();
     ctx.moveTo(px, pad.t);
     ctx.lineTo(px, h - pad.b);
@@ -191,22 +317,30 @@ function draw() {
   ctx.shadowColor = DEFAULT_VALUES.editorColor;
   ctx.shadowBlur = 5 * d;
   ctx.lineWidth = 1.5 * d;
-  if (state.waveformRenderMode === 'dots') {
-    ctx.fillStyle = DEFAULT_VALUES.editorColor;
-    state.data.forEach((v, i) => {
-      const x = pad.l + (pw * i) / (state.data.length - 1),
-        y = pad.t + ((bounds.high - v) / (bounds.high - bounds.low)) * ph;
+  const sampleStep = Math.max(1, Math.floor(view.pointsPerScreen / Math.max(1, (pw / d) * 2)));
+  const drawVisiblePoint = (index, move = false) => {
+    const x = pad.l + (pw * (index - view.start)) / visiblePointSpan,
+      y = pad.t + ((bounds.high - state.data[index]) / (bounds.high - bounds.low)) * ph;
+    if (state.waveformRenderMode === 'dots') {
       ctx.beginPath();
       ctx.arc(x, y, 2 * d, 0, Math.PI * 2);
       ctx.fill();
-    });
+    } else if (move) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  };
+  if (state.waveformRenderMode === 'dots') {
+    ctx.fillStyle = DEFAULT_VALUES.editorColor;
+    for (let index = view.start; index <= view.end; index += sampleStep)
+      drawVisiblePoint(index);
+    if ((view.end - view.start) % sampleStep !== 0) drawVisiblePoint(view.end);
   } else {
     ctx.beginPath();
-    state.data.forEach((v, i) => {
-      const x = pad.l + (pw * i) / (state.data.length - 1),
-        y = pad.t + ((bounds.high - v) / (bounds.high - bounds.low)) * ph;
-      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-    });
+    let firstVisiblePoint = true;
+    for (let index = view.start; index <= view.end; index += sampleStep) {
+      drawVisiblePoint(index, firstVisiblePoint);
+      firstVisiblePoint = false;
+    }
+    if ((view.end - view.start) % sampleStep !== 0) drawVisiblePoint(view.end, firstVisiblePoint);
     ctx.stroke();
   }
   ctx.restore();
@@ -239,9 +373,11 @@ function canvasPoint(e) {
     y = (e.clientY - r.top) * d,
     pw = canvas.width - p.l - p.r,
     ph = canvas.height - p.t - p.b,
-    bounds = voltageBounds();
+    bounds = voltageBounds(),
+    view = currentEditorViewport(),
+    pointRatio = Math.max(0, Math.min(1, (x - p.l) / pw));
   return {
-    i: Math.max(0, Math.min(state.samples - 1, Math.round(((x - p.l) / pw) * (state.samples - 1)))),
+    i: Math.max(view.start, Math.min(view.end, Math.round(view.start + pointRatio * (view.end - view.start)))),
     v: Math.max(
       bounds.low,
       Math.min(bounds.high, bounds.high - ((y - p.t) / ph) * (bounds.high - bounds.low)),
@@ -262,9 +398,10 @@ function pointerIsNearWaveform(e) {
     return false;
   }
 
-  const samplePosition = ((x - pad.l) / plotWidth) * (state.data.length - 1);
+  const view = currentEditorViewport();
+  const samplePosition = view.start + ((x - pad.l) / plotWidth) * (view.end - view.start);
   const leftIndex = Math.floor(samplePosition);
-  const rightIndex = Math.min(state.data.length - 1, leftIndex + 1);
+  const rightIndex = Math.min(view.end, leftIndex + 1);
   const interpolation = samplePosition - leftIndex;
   const voltage =
     state.data[leftIndex] + (state.data[rightIndex] - state.data[leftIndex]) * interpolation;
@@ -409,6 +546,126 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointerleave', () => {
   canvas.classList.remove('waveform-hover');
   $('cursorReadout').style.display = 'none';
+});
+
+function setEditorPointsPerScreen(value) {
+  const view = currentEditorViewport(),
+    requestedPoints = Number(value),
+    normalized = normalizeEditorViewport(
+      { pointsPerScreen: Number.isFinite(requestedPoints) ? requestedPoints : view.pointsPerScreen },
+      view.total,
+    );
+  setEditorViewport({
+    pointsPerScreen: normalized.pointsPerScreen,
+    start: view.center - Math.round((normalized.pointsPerScreen - 1) / 2),
+  });
+}
+
+function moveEditorViewport(direction) {
+  const view = currentEditorViewport(),
+    step = Math.max(1, Math.round(view.pointsPerScreen / 10));
+  setEditorViewportCenter(view.center + direction * step);
+}
+
+function handleEditorNavigationKey(event) {
+  if ((event.key !== 'Home' && event.key !== 'End') || event.ctrlKey || event.metaKey || event.altKey)
+    return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const view = currentEditorViewport();
+  if (event.shiftKey) setEditorViewportCenter(Math.round((view.total - 1) / 2));
+  else setEditorViewport({ start: event.key === 'Home' ? 0 : view.maximumStart });
+  return true;
+}
+
+$('editorPointsDecrease').addEventListener('click', () => {
+  const view = currentEditorViewport();
+  setEditorPointsPerScreen(Math.max(2, Math.floor(view.pointsPerScreen / 2)));
+});
+$('editorPointsIncrease').addEventListener('click', () => {
+  const view = currentEditorViewport();
+  setEditorPointsPerScreen(Math.min(view.total, view.pointsPerScreen * 2));
+});
+$('editorPointsPerScreen').addEventListener('change', (event) => {
+  setEditorPointsPerScreen(event.target.value);
+});
+$('editorPosition').addEventListener('input', (event) => {
+  setEditorViewportCenter(event.target.value);
+});
+$('editorPosition').addEventListener('wheel', (event) => {
+  if (!event.shiftKey) return;
+  event.preventDefault();
+  moveEditorViewport(event.deltaY < 0 ? 1 : -1);
+}, { passive: false });
+$('editorPosition').addEventListener('keydown', handleEditorNavigationKey);
+$('editorPositionIncrease').addEventListener('click', () => moveEditorViewport(1));
+$('editorPositionDecrease').addEventListener('click', () => moveEditorViewport(-1));
+$('editorFullRecord').addEventListener('click', () => {
+  setEditorViewport({ start: 0, pointsPerScreen: editorRecordLength() });
+});
+
+const editorOverview = $('editorRecordOverview');
+const editorViewportWindow = $('editorViewportWindow');
+let editorViewportDragOffset = 0;
+
+function dragEditorViewport(clientX) {
+  const view = currentEditorViewport(),
+    overviewBounds = editorOverview.getBoundingClientRect(),
+    windowBounds = editorViewportWindow.getBoundingClientRect(),
+    availablePixels = Math.max(0, overviewBounds.width - windowBounds.width),
+    viewportLeft = Math.max(
+      0,
+      Math.min(availablePixels, clientX - overviewBounds.left - editorViewportDragOffset),
+    ),
+    start = availablePixels
+      ? Math.round((viewportLeft / availablePixels) * view.maximumStart)
+      : 0;
+  editorViewport.start = start;
+  draw();
+}
+
+editorViewportWindow.addEventListener('pointerdown', (event) => {
+  const view = currentEditorViewport();
+  if (!view.maximumStart) return;
+  event.preventDefault();
+  event.stopPropagation();
+  editorViewportDragOffset = event.clientX - editorViewportWindow.getBoundingClientRect().left;
+  editorViewportWindow.setPointerCapture(event.pointerId);
+});
+editorViewportWindow.addEventListener('pointermove', (event) => {
+  if (editorViewportWindow.hasPointerCapture(event.pointerId)) dragEditorViewport(event.clientX);
+});
+editorViewportWindow.addEventListener('pointerup', (event) => {
+  if (editorViewportWindow.hasPointerCapture(event.pointerId))
+    editorViewportWindow.releasePointerCapture(event.pointerId);
+});
+editorViewportWindow.addEventListener('pointercancel', (event) => {
+  if (editorViewportWindow.hasPointerCapture(event.pointerId))
+    editorViewportWindow.releasePointerCapture(event.pointerId);
+});
+editorViewportWindow.addEventListener('keydown', (event) => {
+  if (handleEditorNavigationKey(event)) return;
+  const view = currentEditorViewport(),
+    step = event.shiftKey ? Math.max(1, Math.round(view.pointsPerScreen / 2)) : 1;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    setEditorViewport({ start: view.start - step });
+  } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    setEditorViewport({ start: view.start + step });
+  }
+});
+document.addEventListener('keydown', (event) => {
+  if ($('editorView').classList.contains('hidden')) return;
+  if (event.target.matches?.('input, textarea, select, [contenteditable="true"]')) return;
+  handleEditorNavigationKey(event);
+});
+editorOverview.addEventListener('pointerdown', (event) => {
+  if (event.target === editorViewportWindow) return;
+  const bounds = editorOverview.getBoundingClientRect(),
+    ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
+    view = currentEditorViewport();
+  setEditorViewportCenter(Math.round(ratio * (view.total - 1)));
 });
 
 function drawMini(c, type) {
