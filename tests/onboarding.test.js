@@ -117,3 +117,18 @@ test('Help menu provides a permanent way to restart onboarding', () => {
   assert.match(source, /ARBDRAW_ONBOARDING\?\.start\(\)/);
   assert.match(source, /if \(item\.action\)/);
 });
+
+test('Instruments dialog provides a Driver.js guide', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
+
+  assert.match(html, /id="instrumentGuideBtn"[^>]*>Guide<\/button>/);
+  assert.match(source, /element: '\.bridge-connection-row'/);
+  assert.match(source, /element: '\.bridge-adapter-field'/);
+  assert.match(source, /element: '\.bridge-resource-control'/);
+  assert.match(source, /element: '\.bridge-send-options'/);
+  assert.match(source, /element: '\.bridge-actions'/);
+  assert.match(source, /bridgeDialog\.show\(\)/);
+  assert.match(source, /bridgeDialog\.showModal\(\)/);
+  assert.match(source, /instrumentGuideBtn'\)\?\.addEventListener\('click', startInstrumentGuide\)/);
+});
