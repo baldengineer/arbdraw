@@ -71,7 +71,7 @@ function normalizeDefaults(source = {}) {
   const fallTimeUnit = unit('fallTimeUnit', transitionTimeUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
-  const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'custom', 'serial'];
+  const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -410,7 +410,6 @@ const titles = {
   pulse: 'Pulse wave',
   dc: 'DC level',
   noise: 'Noise',
-  custom: 'Custom waveform',
   serial: 'Serial data',
 };
 

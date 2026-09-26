@@ -53,7 +53,7 @@ The configured callable receives one dictionary with this shape:
     "version": 1,
     "name": "Waveform 01",
     "waveform": {
-      "type": "custom",
+      "type": "sine",
       "highVoltage": 1.0,
       "lowVoltage": -1.0,
       "sampleRateMSa": 1.0,

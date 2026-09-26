@@ -316,7 +316,7 @@ Use schema **version 2** for the new explicit timing contract. Proposed fields b
     "render": { "algorithmVersion": 1, "bandwidthPolicy": "limited" }
   },
   "waveform": {
-    "type": "custom",
+    "type": "sine",
     "sampleCount": 4800,
     "values": []
   }
@@ -331,7 +331,7 @@ Add mode-specific objects: `fm.deviationHz`, `pm.deviationDegrees`, `pwm.dutyDev
 
 Preserve version 1 loading and behavior until the user explicitly converts to timed synthesis. Conversion must ask which legacy time interpretation to adopt: existing buffer samples at saved `Fs`, or the intended AWG period `cycles/frequency`. Preserve voltages in either choice; conversion of endpoint-inclusive samples needs a documented resampling choice. Do not regenerate a legacy edited buffer automatically.
 
-An old adapter must reject version 2. Add a validated conversion layer or update adapters to consume timed records. A conversion to version 1 may be allowed only after verifying which frequency fields that adapter actually uses, its voltage scaling, and the resulting playback period. In a compatible flattened document the buffer is custom, its cycle count is 1, and its nominal frequency is the **record repetition rate**, not the carrier. Do not assume those assignments alone make every adapter compatible.
+An old adapter must reject version 2. Add a validated conversion layer or update adapters to consume timed records. A conversion to version 1 may be allowed only after verifying which frequency fields that adapter actually uses, its voltage scaling, and the resulting playback period. In a compatible flattened document the saved values remain authoritative, its cycle count is 1, and its nominal frequency is the **record repetition rate**, not the carrier. The compatibility waveshape should match the source carrier where possible. Do not assume those assignments alone make every adapter compatible.
 
 Native hardware synthesis is a separate command contract that must not pretend to be a baked sample transfer. Hardware generators can have distinct function-generator, arbitrary-waveform, and modulation blocks; this is documented for Keysight's M320xA family and is not evidence that ArbDraw's supported models have equivalent capabilities. [Keysight architecture reference](https://helpfiles.keysight.com/csg/m31xx_m33xxa_awg/Content/M3201A_M3202A_PXIe_AWG_Users_Guide/10%20Overview%20of%20M3201A%20M3202A%20PXIe%20AWGs%20and%20Theory.html)
 

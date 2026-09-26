@@ -166,7 +166,6 @@ timing interpretation required by the destination instrument.
 
 Version 1 recognizes:
 
-- `custom`
 - `sine`
 - `square`
 - `triangle`
@@ -184,7 +183,7 @@ Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values in olde
 
 The `rc` waveform is a capacitor charging curve, `V(t) = Vhigh - (Vhigh - Vlow)e^(-t/τ)`. `waveform.rcTau` sets how many time constants are represented in each cycle; it defaults to 5, which reaches about 99.3% of the high level before the next cycle begins. Here, `τ = R × C`.
 
-The legacy value `free` is imported as `custom`. Unknown values are also imported as `custom`.
+The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved and remains the waveform's authoritative sample data.
 
 ## Serial settings
 
@@ -288,7 +287,7 @@ def load_arbdraw(path):
 
     return {
         "name": project.get("name", "Imported waveform"),
-        "type": waveform.get("type", "custom"),
+        "type": waveform.get("type", "sine"),
         "sample_rate_sa": sample_rate_sa,
         "sample_interval_s": sample_interval_s,
         "values_v": values,

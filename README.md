@@ -23,7 +23,7 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 
 ## Features
 
-- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, custom, and serial (UART) waveform types
+- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and serial (UART) waveform types
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Generator profiles, including Audio at 48 kHz with 1,000 default points and a 100,000-point maximum
 - CSV export with optional waveform metadata headers

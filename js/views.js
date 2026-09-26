@@ -146,7 +146,6 @@ function updateSampleVoltage(input, recordHistory = false) {
   $('lowInput').value = displayVoltage('lowInput', state.low);
   $('amplitudeInput').value = displayAmplitude(state.high - state.low);
   $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
-  markCustom();
   if (recordHistory) pushHistory();
   draw();
 }

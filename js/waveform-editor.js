@@ -458,7 +458,6 @@ function draw() {
   }
   drawEditorSelection(view, pad, pw, ph, d);
   ctx.restore();
-  drawCustomPreview();
   if (!$('waveformView').classList.contains('hidden')) drawScope();
 }
 function updateWaveformModeButton() {
@@ -544,7 +543,6 @@ function editAt(pt, last) {
   draw();
 }
 const dutyDisabledTypes = new Set([
-  'custom',
   'sine',
   'triangle',
   'rc',
@@ -556,13 +554,6 @@ function updateDutyAvailability(type) {
   const disabled = dutyDisabledTypes.has(type);
   $('dutyInput').disabled = disabled;
   $('dutyInput').closest('.range-label').classList.toggle('disabled', disabled);
-}
-function updateCyclesAvailability(type) {
-  const disabled = type === 'custom',
-    input = $('cyclesInput'),
-    label = input.closest('label');
-  input.disabled = disabled;
-  label.classList.toggle('disabled', disabled);
 }
 function updateDcPropertyAvailability(type) {
   const disabled = type === 'dc';
@@ -600,7 +591,6 @@ function selectPreset(type) {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
   updateDutyAvailability(type);
-  updateCyclesAvailability(type);
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
   updateNoisePropertiesVisibility(type);
@@ -608,12 +598,6 @@ function selectPreset(type) {
   updateRcVisibility(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
-}
-function markCustom() {
-  if (state.type !== 'custom') {
-    state.type = 'custom';
-    selectPreset('custom');
-  }
 }
 function beginEditorSelection(event) {
   const point = canvasPoint(event),
@@ -667,7 +651,6 @@ canvas.addEventListener('pointerdown', (e) => {
   }
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
-  markCustom();
   state.drawing = true;
   canvas.setPointerCapture(e.pointerId);
   const p = canvasPoint(e);
@@ -892,7 +875,6 @@ function drawMini(c, type) {
 
     if (type === 'dc') y = 0.5;
     if (type === 'noise') y = 0.2 + Math.random() * 0.6;
-    if (type === 'custom') y = 0.5;
     i ? x.lineTo(i, y * h) : x.moveTo(i, y * h);
   }
   x.stroke();
@@ -927,47 +909,11 @@ $('functionSelectMenu')
     option.onclick = () => {
       const type = option.dataset.wave;
       selectPreset(type);
-      if (type === 'custom') {
-        state.type = 'custom';
-        drawCustomPreview();
-        persistCurrentSettings();
-      } else generate(type);
+      generate(type);
       refreshScopeTime();
       closeFunctionSelectMenu();
     };
   });
-function drawCustomPreview() {
-  if (state.type !== 'custom' || !state.data.length) return;
-  const canvases = [
-      $('functionSelectBtn').querySelector('canvas'),
-      $('functionSelectMenu').querySelector('[data-wave="custom"] canvas'),
-    ],
-    values = state.data;
-  let min = Infinity,
-    max = -Infinity;
-  for (const value of values) {
-    if (value < min) min = value;
-    if (value > max) max = value;
-  }
-  for (const c of canvases) {
-    const x = c.getContext('2d'),
-      w = (c.width = 110),
-      h = (c.height = 42),
-      pad = 4,
-      span = max - min;
-    x.clearRect(0, 0, w, h);
-    x.strokeStyle =
-      getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#ff6b2c';
-    x.lineWidth = 2;
-    x.beginPath();
-    for (let px = 0; px < w; px++) {
-      const index = Math.round((px / (w - 1)) * (values.length - 1)),
-        y = span ? pad + ((max - values[index]) / span) * (h - pad * 2) : h / 2;
-      px ? x.lineTo(px, y) : x.moveTo(px, y);
-    }
-    x.stroke();
-  }
-}
 document.querySelector('.tool.active')?.classList.remove('active');
 document.querySelector(`.tool[data-tool="${state.tool}"]`)?.classList.add('active');
 document.querySelectorAll('.tool[data-tool]').forEach(

@@ -14,7 +14,7 @@ ArbDraw is most useful when you *do something* with the samples. Here are five w
 
 ## 1. Draw a trigger signature anywhere
 
-Choose a starting **Waveshape** such as Sine or Square. In the **Editor**, select the pencil-shaped **Edit** tool on the left, then drag across the trace where you want a change. The editor updates the samples under your stroke and changes the waveshape to **Custom**. A short notch, an extra edge, or a deliberately ugly pulse can become the signature for a scope trigger.
+Choose a starting **Waveshape** such as Sine or Square. In the **Editor**, select the pencil-shaped **Edit** tool on the left, then drag across the trace where you want a change. The editor updates the samples under your stroke while keeping the selected waveshape available for later edits. A short notch, an extra edge, or a deliberately ugly pulse can become the signature for a scope trigger.
 
 ![ArbDraw's Waveshape menu and editor, where a generated shape can be selected before drawing](images/arbdraw-shapes.jpg)
 

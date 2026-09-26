@@ -22,7 +22,6 @@ function renderDocument() {
   document.querySelector('.preset.active')?.classList.remove('active');
   document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');
   updateDutyAvailability(state.type);
-  updateCyclesAvailability(state.type);
   updateDcPropertyAvailability(state.type);
   updateTransitionPropertiesVisibility(state.type);
   updateNoisePropertiesVisibility(state.type);
@@ -66,7 +65,7 @@ function parseProject(raw) {
     source.values.every(Number.isFinite)
       ? source.values.map(Number)
       : [];
-  const importedType = source.type === 'ramp' ? 'triangle' : source.type === 'free' ? 'custom' : source.type;
+  const importedType = source.type === 'ramp' ? 'triangle' : source.type;
   const durationMs = sampleCount / (sampleRateMSa * 1000),
     cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
     frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
@@ -88,7 +87,7 @@ function parseProject(raw) {
       periodSeconds: cycles / frequencyHz,
     },
     waveform: {
-      type: titles[importedType] ? importedType : 'custom',
+      type: titles[importedType] ? importedType : 'sine',
       highVoltage: number('highVoltage', defaults.highVoltage),
       lowVoltage: number('lowVoltage', defaults.lowVoltage),
       durationMs,
