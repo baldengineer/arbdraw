@@ -29,8 +29,8 @@
             <button class="tool" id="zoomOut" title="Zoom out">−</button>
           </div>
           <div class="canvas-area">
-            <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
-            <div id="editorVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="editorTimeAxisLabel" class="axis-label x-label">TIME (ms)</div>
+            <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
+            <div id="editorVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="editorPointAxisLabel" class="axis-label x-label">POINTS</div>
           </div>
         </div>
 
@@ -65,41 +65,7 @@
           <pre id="jsonOutput" class="json-output" tabindex="0"></pre>
         </div>
 
-        <div class="statusbar panel">
-          <div id="editorControls" class="control-group">
-          <div class="status-timing-field awg-profile-field">
-            <label class="status-label" for="awgProfileSelect">AWG PROFILE</label><select id="awgProfileSelect" class="status-select" aria-label="AWG profile"></select>
-          </div>
-          <div id="sampleRateField" class="status-timing-field">
-            <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number"><button id="sampleRateUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Mpts/s</button></div>
-          </div>
-          <div id="samplesField" class="status-timing-field">
-            <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number"><button id="sampleCountUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">pts</button></div>
-          </div>
-          <span class="timing-link-icon" title="Sample rate and samples determine waveform timing" aria-label="Sample rate and samples determine waveform timing">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 14.5 5-5M7.2 17.8l-1.1 1.1a3.3 3.3 0 0 1-4.7-4.7l4.2-4.2a3.3 3.3 0 0 1 4.7 0M16.8 6.2l1.1-1.1a3.3 3.3 0 0 1 4.7 4.7l-4.2 4.2a3.3 3.3 0 0 1-4.7 0"/></svg>
-          </span>
-          <div id="tsResolutionField" class="status-timing-field">
-            <span class="status-label">TS RESOLUTION</span><div class="unit-input status-input"><input id="tsResolutionEdit" aria-label="TS resolution" type="number" min="0.000001" step="0.001" value="0.8"><button id="tsResolutionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">ns</button></div>
-          </div>
-          <span class="timing-separator" aria-hidden="true"></span>
-          <div id="awgFrequencyField" class="status-timing-field">
-            <span class="status-label">AWG FREQUENCY</span><div class="unit-input status-input calculated"><input id="awgFrequencyEdit" aria-label="AWG frequency" type="text" readonly><span id="awgFrequencyUnit">Hz</span></div>
-          </div>
-          <div id="awgPeriodField" class="status-timing-field">
-            <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
-          </div>
-          <div class="timing-actions">
-            <div id="audioVolumeControl" class="audio-volume-control">
-              <button id="audioVolumeBtn" class="audio-volume-button" type="button" aria-expanded="false" aria-controls="audioVolumePanel" aria-label="Adjust browser audio volume" title="Adjust browser audio volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg></button>
-              <div id="audioVolumePanel" class="audio-volume-panel" hidden><label for="audioVolumeInput">VOLUME</label><input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100" aria-label="Browser audio volume"><output id="audioVolumeValue" for="audioVolumeInput">100%</output></div>
-            </div>
-            <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
-            <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
-          </div>
-          </div>
-          <div id="viewerControls" class="control-group hidden"></div>
-        </div>
+        <div id="viewerControls" class="statusbar panel control-group hidden"></div>
       </section>
 
       <aside class="inspector panel">
@@ -153,6 +119,39 @@
           </div>
         </div>
       </aside>
+
+      <div id="editorControls" class="statusbar panel control-group">
+        <div class="status-timing-field awg-profile-field">
+          <label class="status-label" for="awgProfileSelect">AWG PROFILE</label><select id="awgProfileSelect" class="status-select" aria-label="AWG profile"></select>
+        </div>
+        <div id="sampleRateField" class="status-timing-field">
+          <span class="status-label">SAMPLE RATE</span><div class="unit-input status-input"><input id="rateEdit" aria-label="Sample rate" type="number"><button id="sampleRateUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Mpts/s</button></div>
+        </div>
+        <div id="samplesField" class="status-timing-field">
+          <span class="status-label">SAMPLES</span><div class="unit-input status-input"><input id="samplesEdit" aria-label="Samples" type="number"><button id="sampleCountUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">pts</button></div>
+        </div>
+        <span class="timing-link-icon" title="Sample rate and samples determine waveform timing" aria-label="Sample rate and samples determine waveform timing">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 14.5 5-5M7.2 17.8l-1.1 1.1a3.3 3.3 0 0 1-4.7-4.7l4.2-4.2a3.3 3.3 0 0 1 4.7 0M16.8 6.2l1.1-1.1a3.3 3.3 0 0 1 4.7 4.7l-4.2 4.2a3.3 3.3 0 0 1-4.7 0"/></svg>
+        </span>
+        <div id="tsResolutionField" class="status-timing-field">
+          <span class="status-label">TS RESOLUTION</span><div class="unit-input status-input"><input id="tsResolutionEdit" aria-label="TS resolution" type="number" min="0.000001" step="0.001" value="0.8"><button id="tsResolutionUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">ns</button></div>
+        </div>
+        <span class="timing-separator" aria-hidden="true"></span>
+        <div id="awgFrequencyField" class="status-timing-field">
+          <span class="status-label">AWG FREQUENCY</span><div class="unit-input status-input calculated"><input id="awgFrequencyEdit" aria-label="AWG frequency" type="text" readonly><span id="awgFrequencyUnit">Hz</span></div>
+        </div>
+        <div id="awgPeriodField" class="status-timing-field">
+          <span class="status-label">AWG PERIOD</span><div class="unit-input status-input calculated"><input id="awgPeriodEdit" aria-label="AWG period" type="text" readonly><span id="awgPeriodUnit">s</span></div>
+        </div>
+        <div class="timing-actions">
+          <div id="audioVolumeControl" class="audio-volume-control">
+            <button id="audioVolumeBtn" class="audio-volume-button" type="button" aria-expanded="false" aria-controls="audioVolumePanel" aria-label="Adjust browser audio volume" title="Adjust browser audio volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg></button>
+            <div id="audioVolumePanel" class="audio-volume-panel" hidden><label for="audioVolumeInput">VOLUME</label><input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100" aria-label="Browser audio volume"><output id="audioVolumeValue" for="audioVolumeInput">100%</output></div>
+          </div>
+          <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
+          <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
+        </div>
+      </div>
     </main>
   </div>
   <dialog id="openDialog" class="open-dialog">
@@ -188,6 +187,7 @@
       <label class="save-filename-label" for="exportFilenameInput">Filename<input id="exportFilenameInput" type="text" spellcheck="false"></label>
       <label class="save-name-option"><input id="updateProjectNameOnExport" type="checkbox" checked> Update project name from saved filename</label>
       <label id="csvHeadersOption" class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
+      <label id="csvTimestampsOption" class="save-name-option"><input id="includeCsvTimestamps" type="checkbox" checked> Include timestamp column</label>
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmExportBtn" type="button" class="primary">Export CSV</button></div>
     </form>
   </dialog>

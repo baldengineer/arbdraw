@@ -279,6 +279,9 @@
 
   const onboardArgument = new URLSearchParams(globalThis.location?.search || '').get('onboard');
   const urlOverride = onboardArgument === '1' ? true : onboardArgument === '0' ? false : null;
-  const shouldAutoStart = urlOverride === true || (urlOverride !== false && storageValue() !== 'complete');
+  const compactViewport = Boolean(globalThis.matchMedia?.('(max-width: 900px)').matches);
+  const shouldAutoStart =
+    urlOverride === true ||
+    (urlOverride !== false && !compactViewport && storageValue() !== 'complete');
   if (shouldAutoStart) setTimeout(() => startTour(), 0);
 })();

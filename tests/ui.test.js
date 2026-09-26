@@ -69,3 +69,25 @@ test('pointer down on a transition-time unit button does not dismiss its menu', 
 
   assert.equal(calls.closeTimingUnitMenus, 0);
 });
+
+test('view picker menu is positioned against its trigger', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+
+  assert.match(
+    source,
+    /\.view-picker \.view-picker-menu\{position:absolute;top:calc\(100% \+ 8px\)/,
+  );
+});
+
+test('mobile document order places AWG controls after waveform properties', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+  const editorColumnEnd = html.indexOf('</section>');
+  const inspectorEnd = html.indexOf('</aside>');
+
+  assert.ok(html.indexOf('id="viewerControls"') < editorColumnEnd);
+  assert.ok(html.indexOf('id="editorControls"') > inspectorEnd);
+  assert.match(styles, /grid-template-rows:minmax\(0,1fr\) auto/);
+  assert.match(styles, /\.inspector \{[^}]*grid-row:1 \/ span 2/);
+  assert.match(styles, /#editorControls\{grid-column:1;grid-row:2\}/);
+});

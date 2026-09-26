@@ -34,6 +34,13 @@ function renderDocument() {
   draw();
   ARBDRAW_FIELDS.formatInputs();
 }
+const defaultIncludeCsvTimestamps = globalThis.ARBDRAW_DEFAULTS?.includeCsvTimestamps !== false;
+let includeCsvTimestampsPreference = DEFAULT_VALUES.includeCsvTimestamps;
+function setIncludeCsvTimestampsPreference(value, save = true) {
+  includeCsvTimestampsPreference = value !== false;
+  $('includeCsvTimestamps').checked = includeCsvTimestampsPreference;
+  if (save) persistSettings({ includeCsvTimestamps: includeCsvTimestampsPreference });
+}
 function parseProject(raw) {
   if (!raw || raw.schema !== 'arbdraw.waveform' || raw.version !== 1 || !raw.waveform)
     throw new Error('This is not a supported ArbDraw project.');
@@ -153,6 +160,7 @@ projectNameInput.addEventListener('keydown', (event) => {
 });
 $('confirmNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
+  setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   projectDocument = createDefaultDocument();
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
@@ -231,17 +239,31 @@ $('confirmSaveBtn').onclick = () => {
   $('saveDialog').close();
   showToast('Project JSON downloaded');
 };
-function downloadCsv(includeHeader, filename) {
+function buildCsvRows({ values, durationSeconds, metadata = [], includeHeader, includeTimestamps }) {
+  const sampleCount = values.length,
+    csvValue = (value) => {
+      const text = String(value ?? '');
+      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    },
+    columnHeader = includeTimestamps ? 'Time (s),Voltage (V)' : 'Voltage (V)',
+    rows = includeHeader
+      ? [...metadata.map(([key, value]) => `${csvValue(key)},${csvValue(value)}`), '', columnHeader]
+      : [];
+  for (let index = 0; index < sampleCount; index++) {
+    if (includeTimestamps) {
+      const timeSeconds = (index / Math.max(1, sampleCount - 1)) * durationSeconds;
+      rows.push(`${timeSeconds},${values[index]}`);
+    } else rows.push(String(values[index]));
+  }
+  return rows;
+}
+function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   const values = state.data.map((value) => Number(value ?? 0)),
     sampleCount = values.length,
     durationSeconds = state.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
     voltageMin = sampleCount ? Math.min(...values) : 0,
     voltageMax = sampleCount ? Math.max(...values) : 0,
-    csvValue = (value) => {
-      const text = String(value ?? '');
-      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-    },
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
       ['Generated', new Date().toISOString()],
@@ -266,13 +288,7 @@ function downloadCsv(includeHeader, filename) {
       ['Voltage min (V)', voltageMin],
       ['Voltage max (V)', voltageMax],
     ],
-    rows = includeHeader
-      ? [...metadata.map(([key, value]) => `${csvValue(key)},${csvValue(value)}`), '', 'Time (s),Voltage (V)']
-      : [];
-  for (let index = 0; index < state.data.length; index++) {
-    const timeSeconds = (index / Math.max(1, sampleCount - 1)) * durationSeconds;
-    rows.push(`${timeSeconds},${values[index]}`);
-  }
+    rows = buildCsvRows({ values, durationSeconds, metadata, includeHeader, includeTimestamps });
   const blob = new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -310,9 +326,12 @@ function downloadWav(filename) {
   showToast('Waveform exported as WAV');
 }
 function updateExportFormat() {
-  const format = $('exportFormatSelect').value, svg = format === 'svg';
+  const format = $('exportFormatSelect').value,
+    csv = format === 'csv',
+    svg = format === 'svg';
   $('exportFilenameInput').value = $('exportFilenameInput').value.replace(/\.(csv|svg|wav)$/i, `.${format}`);
-  $('csvHeadersOption').hidden = format !== 'csv';
+  $('csvHeadersOption').hidden = !csv;
+  $('csvTimestampsOption').hidden = !csv;
   $('svgAxesOption').hidden = !svg;
   $('svgExportDescription').hidden = !svg;
   $('wavExportDescription').hidden = format !== 'wav';
@@ -322,6 +341,9 @@ function updateExportFormat() {
   $('confirmExportBtn').textContent = `Export ${format.toUpperCase()}`;
 }
 $('exportFormatSelect').addEventListener('change', updateExportFormat);
+$('includeCsvTimestamps').addEventListener('change', () => {
+  setIncludeCsvTimestampsPreference($('includeCsvTimestamps').checked);
+});
 function closeExportMenu() {
   $('exportMenu').classList.remove('open');
   $('exportBtn').setAttribute('aria-expanded', 'false');
@@ -335,6 +357,7 @@ $('exportBtn').onclick = (event) => {
   updateExportFormat();
   $('updateProjectNameOnExport').checked = true;
   $('includeCsvHeaders').checked = false;
+  setIncludeCsvTimestampsPreference(includeCsvTimestampsPreference, false);
   $('exportDialog').showModal();
   $('exportFilenameInput').focus();
   $('exportFilenameInput').select();
@@ -347,7 +370,12 @@ $('confirmExportBtn').onclick = () => {
   try {
     if (format === 'svg') downloadSvg(filename);
     else if (format === 'wav') downloadWav(filename);
-    else downloadCsv($('includeCsvHeaders').checked, filename);
+    else
+      downloadCsv(
+        $('includeCsvHeaders').checked,
+        filename,
+        $('includeCsvTimestamps').checked,
+      );
   } catch (error) {
     $('exportError').textContent = error.message;
     return;

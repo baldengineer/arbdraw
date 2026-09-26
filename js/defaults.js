@@ -63,4 +63,5 @@ globalThis.ARBDRAW_DEFAULTS = {
   editorColor: '#7bffb2',
   waveformColor: '#ffe45e',
   waveformVerticalDivisions: 10,
+  includeCsvTimestamps: true,
 };
