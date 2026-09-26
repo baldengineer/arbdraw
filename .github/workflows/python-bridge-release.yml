@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: baldengineer/rigol-awg-python-importer
-          ref: 68d325745537cd3ba000b5684d8440a43e8cd420
+          ref: 9b73dbd03ca19af192516bb69ab5b08de9f4afc4
           path: adapter-sources/rigol
 
       - name: Set up Python

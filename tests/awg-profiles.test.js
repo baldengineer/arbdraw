@@ -18,11 +18,11 @@ test('Rigol profile provides documented PyVISA option hooks', () => {
   const source = fs.readFileSync(path.join(__dirname, '../js/awg-profiles.js'), 'utf8');
   const instruments = fs.readFileSync(path.join(__dirname, '../js/instruments.js'), 'utf8');
 
-  assert.deepEqual(profile.pyvisaOptions, {});
+  assert.deepEqual(profile.pyvisaOptions, { query_delay: 5 });
   assert.ok(Object.isFrozen(profile.pyvisaOptions));
   assert.match(source, /\/\/ read_termination: '\\n'/);
   assert.match(source, /\/\/ write_termination: '\\n'/);
-  assert.match(source, /\/\/ query_delay: 5/);
+  assert.match(source, /^\s+query_delay: 5,/m);
   assert.match(source, /\/\/ send_end: true/);
   assert.match(instruments, /selectedAwgProfile\?\.pyvisaOptions/);
   assert.match(instruments, /bridgeClient\.identify\([\s\S]*pyvisaOptions:/);
