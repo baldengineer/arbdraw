@@ -87,7 +87,7 @@ function regenerateWithFilters() {
     pushHistory();
     draw();
     if (!$('samplesView').classList.contains('hidden')) renderSamples();
-  } else generate(state.type);
+  } else generate(state.type, true, true, false);
   refreshScopeVertical();
   persistCurrentSettings();
 }

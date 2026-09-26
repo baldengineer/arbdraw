@@ -53,3 +53,104 @@ test('selection interaction shades the range and supports movable markers and cl
   assert.match(source, /editorSelection\.dragging = 'range'/);
   assert.match(source, /editorSelectionClear'\)\.addEventListener\('click', clearEditorSelection\)/);
 });
+
+test('generated waveshapes replace only the active selected sample range', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function normalizeEditorSelection('),
+    source.indexOf('function currentEditorSelection()'),
+  ) + source.slice(
+    source.indexOf('function waveformGenerationRange('),
+    source.indexOf('function generate('),
+  );
+  const result = vm.runInNewContext(
+    `${helper}
+    const range = waveformGenerationRange(6, { left: 2, right: 4 }, 6);
+    ({ range, values: mergeGeneratedSamples([0, 1, 2, 3, 4, 5], [20, 30, 40], range, 6) });`,
+  );
+
+  assert.deepEqual(
+    { left: result.range.left, right: result.range.right, scoped: result.range.scoped },
+    { left: 2, right: 4, scoped: true },
+  );
+  assert.deepEqual(Array.from(result.values), [0, 1, 20, 30, 40, 5]);
+});
+
+test('waveshape generation spans the selected range and preserves surrounding samples', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helpers = source.slice(
+    source.indexOf('function normalizeEditorSelection('),
+    source.indexOf('function currentEditorSelection()'),
+  ) + source.slice(
+    source.indexOf('function waveformGenerationRange('),
+    source.indexOf('function cloneWaveform('),
+  );
+  const context = {
+    state: {
+      type: 'sine', samples: 6, data: [10, 11, 12, 13, 14, 15],
+      high: 1, low: -1, phase: 0, cycles: 1, frequency: 1,
+      duty: 50, symmetry: 50, rcTau: 5, riseTime: 0, fallTime: 0,
+      noiseColor: 'white',
+    },
+    currentEditorSelection: () => ({ left: 1, right: 4 }),
+    applyFilters: (values) => values,
+    waveformDurationMs: () => 1000,
+    serialBitPattern: () => [],
+    serialSettings: () => ({ baud: 1 }),
+    ARBDRAW_WAVEFORM_SHAPES: {},
+    updateFunctionSelect() {},
+    pushHistory() {},
+    draw() {},
+    renderSamples() {},
+    persistCurrentSettings() {},
+    $: () => ({ classList: { contains: () => true } }),
+  };
+  vm.runInNewContext(`${helpers}\ngenerate('sine', false, false);`, context);
+
+  assert.equal(context.state.data[0], 10);
+  assert.equal(context.state.data[5], 15);
+  assert.ok(Math.abs(context.state.data[1]) < 1e-12);
+  assert.ok(Math.abs(context.state.data[2] - Math.sqrt(3) / 2) < 1e-12);
+  assert.ok(Math.abs(context.state.data[3] + Math.sqrt(3) / 2) < 1e-12);
+  assert.ok(Math.abs(context.state.data[4]) < 1e-12);
+});
+
+test('generation falls back to the whole record without a valid selection-sized buffer', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function normalizeEditorSelection('),
+    source.indexOf('function currentEditorSelection()'),
+  ) + source.slice(
+    source.indexOf('function waveformGenerationRange('),
+    source.indexOf('function generate('),
+  );
+  const result = vm.runInNewContext(
+    `${helper}
+    const noSelection = waveformGenerationRange(4, null, 4);
+    const resizedRecord = waveformGenerationRange(4, { left: 1, right: 2 }, 6);
+    ({ noSelection, resizedRecord,
+       values: mergeGeneratedSamples([8, 8, 8, 8], [1, 2, 3, 4], noSelection, 4) });`,
+  );
+
+  for (const range of [result.noSelection, result.resizedRecord]) {
+    assert.deepEqual(
+      { left: range.left, right: range.right, scoped: range.scoped },
+      { left: 0, right: 3, scoped: false },
+    );
+  }
+  assert.deepEqual(Array.from(result.values), [1, 2, 3, 4]);
+});
+
+test('selection scope is used by waveshape and property generation but not record-level changes', () => {
+  const editor = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const properties = fs.readFileSync(path.join(root, 'js/properties.js'), 'utf8');
+  const filters = fs.readFileSync(path.join(root, 'js/filters.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  assert.match(editor, /scopeSelection \? currentEditorSelection\(\) : null/);
+  assert.match(editor, /state\.data = mergeGeneratedSamples\(/);
+  assert.match(properties, /if \(waveformChanged\) \{\s*generate\(state\.type/);
+  assert.match(properties, /generate\(state\.type, true, true, false\)/);
+  assert.match(filters, /generate\(state\.type, true, true, false\)/);
+  assert.match(html, /Selection · edits scoped/);
+});

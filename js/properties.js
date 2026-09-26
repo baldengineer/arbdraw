@@ -73,7 +73,7 @@ function applyAwgProfile(profile) {
   }
   state.duration = state.samples / (state.sampleRate * 1000);
   renderTiming();
-  generate();
+  generate(state.type, true, true, false);
   persistCurrentSettings();
 }
 
@@ -373,7 +373,7 @@ function commitTimingInput(kind, { preview = false } = {}) {
     if (preview) beginWaveformPreview();
     state.samples = Math.min(Math.max(2, samples), maximumSamples);
     renderTiming();
-    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing);
+    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing, false);
     if (!preview && wasPreviewing) finishWaveformPreview();
   } else {
     const samples = Math.min(
@@ -391,7 +391,7 @@ function commitTimingInput(kind, { preview = false } = {}) {
     state.samples = samples;
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
-    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing);
+    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing, false);
     if (!preview && wasPreviewing) finishWaveformPreview();
   }
 }

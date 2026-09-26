@@ -97,11 +97,35 @@ function setEditorViewportCenter(center) {
     nextCenter = Number.isFinite(requestedCenter) ? Math.round(requestedCenter) : view.center;
   setEditorViewport({ start: nextCenter - Math.round((view.pointsPerScreen - 1) / 2) });
 }
-function generate(type = state.type, recordHistory = true, persist = true) {
+
+function waveformGenerationRange(totalPoints, selection, existingPointCount) {
+  const total = Math.max(1, Math.trunc(Number(totalPoints)) || 1),
+    normalized = normalizeEditorSelection(selection, total);
+  if (!normalized || Number(existingPointCount) !== total)
+    return { left: 0, right: total - 1, scoped: false };
+  return { ...normalized, scoped: true };
+}
+
+function mergeGeneratedSamples(existingValues, generatedValues, range, totalPoints) {
+  if (!range.scoped) return generatedValues;
+  const merged = Array.from(existingValues).slice(0, totalPoints);
+  for (let offset = 0; offset < generatedValues.length; offset++)
+    merged[range.left + offset] = generatedValues[offset];
+  return merged;
+}
+
+function generate(type = state.type, recordHistory = true, persist = true, scopeSelection = true) {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   state.type = type;
   const n = state.samples,
+    existingData = [...state.data],
+    range = waveformGenerationRange(
+      n,
+      scopeSelection ? currentEditorSelection() : null,
+      existingData.length,
+    ),
+    generatedPointCount = range.right - range.left + 1,
     mid = (state.high + state.low) / 2,
     amp = (state.high - state.low) / 2,
     phase = (state.phase * Math.PI) / 180,
@@ -118,15 +142,15 @@ function generate(type = state.type, recordHistory = true, persist = true) {
     noiseSamples =
       type === 'noise'
         ? ARBDRAW_WAVEFORM_SHAPES.generateNoiseSamples({
-            count: n,
+            count: generatedPointCount,
             high: state.high,
             low: state.low,
             color: state.noiseColor,
           })
         : null,
     bufferDurationSeconds = waveformDurationMs() / 1000;
-  const generatedData = Array.from({ length: n }, (_, i) => {
-    const t = i / (n - 1),
+  const generatedData = Array.from({ length: generatedPointCount }, (_, i) => {
+    const t = i / Math.max(1, generatedPointCount - 1),
       p = (t * state.cycles + state.phase / 360) % 1;
     switch (type) {
       case 'sine':
@@ -178,7 +202,7 @@ function generate(type = state.type, recordHistory = true, persist = true) {
         return mid;
     }
   });
-  state.data = applyFilters(generatedData);
+  state.data = mergeGeneratedSamples(existingData, applyFilters(generatedData), range, n);
   if (type === 'triangle') updateFunctionSelect(type);
   if (recordHistory) pushHistory();
   draw();
@@ -219,9 +243,16 @@ function resize() {
   if (!$('waveformView').classList.contains('hidden')) resizeCanvas(scopeCanvas, drawScope);
 }
 function voltageBounds() {
-  if (state.high !== state.low) return { high: state.high, low: state.low };
-  const span = Math.max(5, Math.abs(state.high));
-  return { high: state.high + span, low: state.low - span };
+  let high = state.high,
+    low = state.low;
+  for (const value of state.data) {
+    if (!Number.isFinite(value)) continue;
+    high = Math.max(high, value);
+    low = Math.min(low, value);
+  }
+  if (high !== low) return { high, low };
+  const span = Math.max(5, Math.abs(high));
+  return { high: high + span, low: low - span };
 }
 function editorPointTicks(startIndex, endIndex, divisionCount = 10) {
   const firstPointIndex = Math.max(0, Math.trunc(startIndex)),
