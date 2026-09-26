@@ -128,6 +128,16 @@ function voltageBounds() {
   const span = Math.max(5, Math.abs(state.high));
   return { high: state.high + span, low: state.low - span };
 }
+function editorPointTicks(pointCount, divisionCount = 10) {
+  const lastPointIndex = Math.max(0, Math.trunc(pointCount) - 1);
+  if (!lastPointIndex) return [0];
+  const pointStep = Math.max(1, Math.ceil(lastPointIndex / divisionCount));
+  const ticks = [];
+  for (let pointIndex = 0; pointIndex <= lastPointIndex; pointIndex += pointStep)
+    ticks.push(pointIndex);
+  if (ticks.at(-1) !== lastPointIndex) ticks.push(lastPointIndex);
+  return ticks;
+}
 function draw() {
   const w = canvas.width,
     h = canvas.height,
@@ -140,10 +150,10 @@ function draw() {
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
     bounds = voltageBounds(),
-    waveformDuration = waveformDurationMs(),
-    timeUnit = axisTimeUnitFor(waveformDuration),
+    pointTicks = editorPointTicks(state.samples),
+    lastPointIndex = pointTicks.at(-1),
     voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
-  $('editorTimeAxisLabel').textContent = `TIME (${timeUnit.label})`;
+  $('editorPointAxisLabel').textContent = 'POINTS';
   $('editorVoltageAxisLabel').textContent = `VOLTAGE (${voltageUnit.label})`;
   ctx.font = `${10 * d}px ui-monospace`;
   ctx.lineWidth = 1 * d;
@@ -162,19 +172,15 @@ function draw() {
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  for (let x = 0; x <= 10; x++) {
-    const px = pad.l + (pw * x) / 10;
-    ctx.strokeStyle = x === 0 ? '#405053' : '#1e2c2f';
+  for (const pointIndex of pointTicks) {
+    const px = pad.l + (pw * pointIndex) / (lastPointIndex || 1);
+    ctx.strokeStyle = pointIndex === 0 ? '#405053' : '#1e2c2f';
     ctx.beginPath();
     ctx.moveTo(px, pad.t);
     ctx.lineTo(px, h - pad.b);
     ctx.stroke();
     ctx.fillStyle = '#718083';
-    ctx.fillText(
-      Number((((waveformDuration * x) / 10) / timeUnit.scaleMs).toPrecision(4)),
-      px,
-      h - pad.b + 10 * d,
-    );
+    ctx.fillText(pointIndex, px, h - pad.b + 10 * d);
   }
   if (!state.data.length) return;
   ctx.save();
@@ -380,7 +386,6 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
-  const timeUnit = axisTimeUnitFor(waveformDurationMs());
   const bounds = voltageBounds();
   const voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
   canvas.classList.toggle(
@@ -389,7 +394,7 @@ canvas.addEventListener('pointermove', (e) => {
   );
   $('cursorReadout').style.display = 'block';
   $('cursorReadout').innerHTML =
-    `${(((p.i / (state.samples - 1)) * waveformDurationMs()) / timeUnit.scaleMs).toPrecision(5)} ${timeUnit.label} &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
+    `${p.i} pts &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
   if (state.drawing) {
     editAt(p, state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null);
     state.lastPoint = p;
