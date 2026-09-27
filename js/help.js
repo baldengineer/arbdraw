@@ -13,13 +13,19 @@ const helpItems = [
 ];
 const keyboardShortcuts = [
   { keys: ['?'], description: 'Show keyboard shortcuts' },
+  { keys: ['A'], description: 'Toggle Pointer / Select tools' },
+  { keys: ['E'], description: 'Switch to Edit tool' },
+  { keys: ['D'], description: 'Switch to Delete tool' },
   { keys: ['Ctrl / ⌘', 'Z'], description: 'Undo' },
   {
     keys: ['Ctrl / ⌘', 'Shift', 'Z'],
     description: 'Redo',
   },
   { keys: ['Ctrl', 'Y'], description: 'Redo (Windows/Linux)' },
-  { keys: ['Esc'], description: 'Close open menus and dialogs' },
+  {
+    keys: ['Esc'],
+    description: 'Close menus/dialogs or clear markers and activate Select',
+  },
 ];
 
 const helpButton = document.createElement('button');
