@@ -524,23 +524,42 @@ function pointerIsNearWaveform(e) {
   return Math.abs(y - waveformY) <= 7 * d;
 }
 
+function editorEditIndexRange(firstIndex, secondIndex = firstIndex, selection = currentEditorSelection()) {
+  const first = Math.round(Number(firstIndex)),
+    second = Math.round(Number(secondIndex));
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+  let lo = Math.max(0, Math.min(first, second)),
+    hi = Math.min(state.data.length - 1, Math.max(first, second));
+  if (selection) {
+    lo = Math.max(lo, selection.left);
+    hi = Math.min(hi, selection.right);
+  }
+  return lo <= hi ? { lo, hi } : null;
+}
+
 function editAt(pt, last) {
-  if (state.tool === 'pan') return;
+  if (state.tool === 'pan') return false;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
   if (state.tool === 'line' && state.lineStart) {
     const a = state.lineStart,
       b = pt,
-      lo = Math.min(a.i, b.i),
-      hi = Math.max(a.i, b.i);
-    for (let i = lo; i <= hi; i++)
+      editRange = editorEditIndexRange(a.i, b.i);
+    if (!editRange) return false;
+    for (let i = editRange.lo; i <= editRange.hi; i++)
       state.data[i] = a.v + ((b.v - a.v) * (i - a.i)) / (b.i - a.i || 1);
   } else if (last) {
-    const lo = Math.min(last.i, pt.i),
-      hi = Math.max(last.i, pt.i);
-    for (let i = lo; i <= hi; i++)
+    const editRange = editorEditIndexRange(last.i, pt.i);
+    if (!editRange) return false;
+    for (let i = editRange.lo; i <= editRange.hi; i++)
       state.data[i] = last.v + ((pt.v - last.v) * (i - last.i)) / (pt.i - last.i || 1);
-  } else state.data[pt.i] = pt.v;
+  } else {
+    const editRange = editorEditIndexRange(pt.i);
+    if (!editRange) return false;
+    state.data[pt.i] = pt.v;
+  }
+  state.samplesEdited = true;
   draw();
+  return true;
 }
 const dutyDisabledTypes = new Set([
   'sine',
@@ -652,9 +671,10 @@ canvas.addEventListener('pointerdown', (e) => {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   state.drawing = true;
+  state.drawingChanged = false;
   canvas.setPointerCapture(e.pointerId);
   const p = canvasPoint(e);
-  if (state.high === state.low && state.tool !== 'pan') {
+  if (state.high === state.low && state.tool !== 'pan' && editorEditIndexRange(p.i)) {
     state.high = Math.max(state.high, p.v);
     state.low = Math.min(state.low, p.v);
     $('highInput').value = displayVoltage('highInput', state.high);
@@ -664,7 +684,7 @@ canvas.addEventListener('pointerdown', (e) => {
   }
   state.lineStart = state.tool === 'line' ? p : null;
   state.lastPoint = p;
-  editAt(p);
+  state.drawingChanged = editAt(p);
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
@@ -680,7 +700,11 @@ canvas.addEventListener('pointermove', (e) => {
   if (editorSelection.dragging) {
     moveEditorSelection(e);
   } else if (state.drawing) {
-    editAt(p, state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null);
+    const changed = editAt(
+      p,
+      state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null,
+    );
+    state.drawingChanged = changed || state.drawingChanged;
     state.lastPoint = p;
   }
 });
@@ -690,9 +714,11 @@ canvas.addEventListener('pointerup', (e) => {
     finishEditorSelection();
     return;
   }
-  if (state.drawing && state.tool === 'line') editAt(canvasPoint(e));
-  if (state.drawing) pushHistory();
+  if (state.drawing && state.tool === 'line')
+    state.drawingChanged = editAt(canvasPoint(e)) || state.drawingChanged;
+  if (state.drawingChanged) pushHistory();
   state.drawing = false;
+  state.drawingChanged = false;
   state.lineStart = null;
 });
 canvas.addEventListener('pointercancel', finishEditorSelection);

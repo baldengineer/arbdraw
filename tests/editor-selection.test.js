@@ -54,6 +54,89 @@ test('selection interaction shades the range and supports movable markers and cl
   assert.match(source, /editorSelectionClear'\)\.addEventListener\('click', clearEditorSelection\)/);
 });
 
+test('direct editing is clipped to the active marker range', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helpers = source.slice(
+    source.indexOf('function editorEditIndexRange('),
+    source.indexOf('const dutyDisabledTypes'),
+  );
+  const context = {
+    state: {
+      tool: 'pencil',
+      data: [0, 0, 0, 0, 0, 0, 0],
+      high: 1,
+      low: -1,
+      samplesEdited: false,
+      lineStart: null,
+    },
+    currentEditorSelection: () => ({ left: 2, right: 4 }),
+    draw() {},
+  };
+  vm.runInNewContext(
+    `${helpers}
+    editAt({ i: 0, v: 9 });
+    editAt({ i: 5, v: 5 }, { i: 1, v: 1 });`,
+    context,
+  );
+
+  assert.deepEqual(Array.from(context.state.data), [0, 0, 2, 3, 4, 0, 0]);
+  assert.equal(context.state.samplesEdited, true);
+});
+
+test('delete and line edits cannot change samples outside the active marker range', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helpers = source.slice(
+    source.indexOf('function editorEditIndexRange('),
+    source.indexOf('const dutyDisabledTypes'),
+  );
+  const context = {
+    state: {
+      tool: 'erase',
+      data: [9, 9, 9, 9, 9, 9, 9],
+      high: 2,
+      low: -2,
+      samplesEdited: false,
+      lineStart: null,
+    },
+    currentEditorSelection: () => ({ left: 2, right: 4 }),
+    draw() {},
+  };
+  vm.runInNewContext(
+    `${helpers}
+    editAt({ i: 6, v: 9 }, { i: 0, v: 9 });
+    state.tool = 'line';
+    state.lineStart = { i: 0, v: 0 };
+    editAt({ i: 6, v: 6 });`,
+    context,
+  );
+
+  assert.deepEqual(Array.from(context.state.data), [9, 9, 2, 3, 4, 9, 9]);
+});
+
+test('an edit entirely outside the marker range leaves the waveform unchanged', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helpers = source.slice(
+    source.indexOf('function editorEditIndexRange('),
+    source.indexOf('const dutyDisabledTypes'),
+  );
+  const context = {
+    state: {
+      tool: 'pencil',
+      data: [0, 0, 0, 0, 0],
+      high: 1,
+      low: -1,
+      samplesEdited: false,
+      lineStart: null,
+    },
+    currentEditorSelection: () => ({ left: 2, right: 3 }),
+    draw() {},
+  };
+  vm.runInNewContext(`${helpers}\neditAt({ i: 1, v: 7 });`, context);
+
+  assert.deepEqual(Array.from(context.state.data), [0, 0, 0, 0, 0]);
+  assert.equal(context.state.samplesEdited, false);
+});
+
 test('generated waveshapes replace only the active selected sample range', () => {
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const helper = source.slice(

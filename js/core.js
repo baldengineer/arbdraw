@@ -370,6 +370,7 @@ const state = {
   history: [],
   redo: [],
   drawing: false,
+  drawingChanged: false,
   lineStart: null,
 };
 
