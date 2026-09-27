@@ -97,6 +97,57 @@ test('Escape leaves the active tool alone when there is no marker range', () => 
   assert.deepEqual(calls, []);
 });
 
+test('A toggles Pointer and Select while E and D activate their tools', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function handleEditorToolShortcut('),
+    source.indexOf('function editorRecordLength()'),
+  );
+  const state = { tool: 'pencil' };
+  const tools = [];
+  const context = {
+    state,
+    setEditorTool(tool) {
+      tools.push(tool);
+      state.tool = tool;
+    },
+  };
+  const press = (key) =>
+    vm.runInNewContext(
+      `${helper}\nhandleEditorToolShortcut({ key: '${key}', preventDefault() {} });`,
+      context,
+    );
+
+  assert.equal(press('A'), true);
+  assert.equal(press('a'), true);
+  assert.equal(press('e'), true);
+  assert.equal(press('D'), true);
+  assert.deepEqual(tools, ['pointer', 'selection', 'pencil', 'erase']);
+  assert.match(source, /if \(handleEditorToolShortcut\(event\)\) return;/);
+});
+
+test('tool shortcuts ignore modifiers and repeated keydown events', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function handleEditorToolShortcut('),
+    source.indexOf('function editorRecordLength()'),
+  );
+  const tools = [];
+  const context = {
+    state: { tool: 'pencil' },
+    setEditorTool: (tool) => tools.push(tool),
+  };
+
+  for (const options of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { repeat: true }]) {
+    const handled = vm.runInNewContext(
+      `${helper}\nhandleEditorToolShortcut({ key: 'a', preventDefault() {}, ...${JSON.stringify(options)} });`,
+      context,
+    );
+    assert.equal(handled, false);
+  }
+  assert.deepEqual(tools, []);
+});
+
 test('direct editing is clipped to the active marker range', () => {
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const helpers = source.slice(

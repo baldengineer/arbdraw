@@ -75,6 +75,19 @@ function handleEditorSelectionEscape(event) {
   return true;
 }
 
+function handleEditorToolShortcut(event) {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return false;
+  const key = event.key.toLowerCase();
+  let tool = null;
+  if (key === 'a') tool = state.tool === 'pointer' ? 'selection' : 'pointer';
+  else if (key === 'e') tool = 'pencil';
+  else if (key === 'd') tool = 'erase';
+  if (!tool) return false;
+  event.preventDefault();
+  setEditorTool(tool);
+  return true;
+}
+
 function editorRecordLength() {
   return Math.max(1, state.data.length || state.samples || 1);
 }
@@ -1016,6 +1029,7 @@ document.addEventListener('keydown', (event) => {
   const editing = event.target.matches?.('input, textarea, select, [contenteditable="true"]');
   if (editing) return;
   if (handleEditorSelectionEscape(event)) return;
+  if (handleEditorToolShortcut(event)) return;
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();
