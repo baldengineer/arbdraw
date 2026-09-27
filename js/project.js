@@ -106,6 +106,9 @@ function parseProject(raw) {
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
       filters: normalizeFilterSettings(source.filters),
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
+      samplesEdited:
+        values.length > 0 &&
+        (source.samplesEdited === true || !titles[importedType]),
       sampleCount,
       values,
     },

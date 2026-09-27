@@ -67,6 +67,14 @@ function clearEditorSelection(render = true) {
   if (render) draw();
 }
 
+function handleEditorSelectionEscape(event) {
+  if (event.key !== 'Escape' || !currentEditorSelection()) return false;
+  event.preventDefault();
+  clearEditorSelection();
+  setEditorTool('selection');
+  return true;
+}
+
 function editorRecordLength() {
   return Math.max(1, state.data.length || state.samples || 1);
 }
@@ -114,10 +122,31 @@ function mergeGeneratedSamples(existingValues, generatedValues, range, totalPoin
   return merged;
 }
 
-function generate(type = state.type, recordHistory = true, persist = true, scopeSelection = true) {
+function waveformReplacementNeedsConfirmation(scopeSelection = true) {
+  if (state.samplesEdited !== true) return false;
+  return !waveformGenerationRange(
+    state.samples,
+    scopeSelection ? currentEditorSelection() : null,
+    state.data.length,
+  ).scoped;
+}
+
+function confirmWaveformReplacement(scopeSelection = true) {
+  return (
+    !waveformReplacementNeedsConfirmation(scopeSelection) ||
+    window.confirm('This action will replace waveform samples you edited. Continue?')
+  );
+}
+
+function generate(
+  type = state.type,
+  recordHistory = true,
+  persist = true,
+  scopeSelection = true,
+  confirmOverwrite = true,
+) {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
-  state.type = type;
   const n = state.samples,
     existingData = [...state.data],
     range = waveformGenerationRange(
@@ -149,6 +178,8 @@ function generate(type = state.type, recordHistory = true, persist = true, scope
           })
         : null,
     bufferDurationSeconds = waveformDurationMs() / 1000;
+  if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
+  state.type = type;
   const generatedData = Array.from({ length: generatedPointCount }, (_, i) => {
     const t = i / Math.max(1, generatedPointCount - 1),
       p = (t * state.cycles + state.phase / 360) % 1;
@@ -195,7 +226,7 @@ function generate(type = state.type, recordHistory = true, persist = true, scope
         return noiseSamples[i];
       case 'serial':
         {
-          const elapsedSeconds = (i / (n - 1)) * bufferDurationSeconds;
+          const elapsedSeconds = t * bufferDurationSeconds;
           return serialVoltage(elapsedSeconds);
         }
       default:
@@ -203,11 +234,13 @@ function generate(type = state.type, recordHistory = true, persist = true, scope
     }
   });
   state.data = mergeGeneratedSamples(existingData, applyFilters(generatedData), range, n);
+  state.samplesEdited = range.scoped;
   if (type === 'triangle') updateFunctionSelect(type);
   if (recordHistory) pushHistory();
   draw();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
   if (persist) persistCurrentSettings();
+  return true;
 }
 function cloneWaveform(source = projectDocument.waveform) {
   return {
@@ -602,8 +635,13 @@ function updateNoisePropertiesVisibility(type) {
   $('noiseColorProperty').hidden = type !== 'noise';
 }
 $('noiseColorSelect').addEventListener('change', () => {
-  state.noiseColor = $('noiseColorSelect').value === 'pink' ? 'pink' : 'white';
-  if (state.type === 'noise') generate('noise');
+  const noiseColor = $('noiseColorSelect').value === 'pink' ? 'pink' : 'white';
+  if (state.type === 'noise' && !confirmWaveformReplacement()) {
+    $('noiseColorSelect').value = state.noiseColor;
+    return;
+  }
+  state.noiseColor = noiseColor;
+  if (state.type === 'noise') generate('noise', true, true, true, false);
   else persistCurrentSettings();
 });
 function selectPreset(type) {
@@ -934,22 +972,28 @@ $('functionSelectMenu')
     drawMini(option.querySelector('canvas'), option.dataset.wave);
     option.onclick = () => {
       const type = option.dataset.wave;
+      if (!generate(type)) {
+        selectPreset(state.type);
+        closeFunctionSelectMenu();
+        return;
+      }
       selectPreset(type);
-      generate(type);
       refreshScopeTime();
       closeFunctionSelectMenu();
     };
   });
-document.querySelector('.tool.active')?.classList.remove('active');
-document.querySelector(`.tool[data-tool="${state.tool}"]`)?.classList.add('active');
+function setEditorTool(tool, persist = true) {
+  const button = document.querySelector(`.tool[data-tool="${tool}"]`);
+  if (!button) return false;
+  document.querySelector('.tool.active')?.classList.remove('active');
+  button.classList.add('active');
+  state.tool = tool;
+  if (persist) persistCurrentSettings();
+  return true;
+}
+setEditorTool(state.tool, false);
 document.querySelectorAll('.tool[data-tool]').forEach(
-  (b) =>
-    (b.onclick = () => {
-      document.querySelector('.tool.active')?.classList.remove('active');
-      b.classList.add('active');
-      state.tool = b.dataset.tool;
-      persistCurrentSettings();
-    }),
+  (button) => (button.onclick = () => setEditorTool(button.dataset.tool)),
 );
 function undoWaveform() {
   if (state.history.length > 1) {
@@ -971,6 +1015,7 @@ $('redoBtn').onclick = redoWaveform;
 document.addEventListener('keydown', (event) => {
   const editing = event.target.matches?.('input, textarea, select, [contenteditable="true"]');
   if (editing) return;
+  if (handleEditorSelectionEscape(event)) return;
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();

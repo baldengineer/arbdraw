@@ -35,6 +35,7 @@
     "phaseDegrees": 0,
     "dutyCyclePercent": 50,
     "rcTau": 5,
+    "samplesEdited": false,
     "sampleCount": 8,
     "values": [0, 0.7818314825, 0.9749279122, 0.4338837391,
       -0.4338837391, -0.9749279122, -0.7818314825, 0]
@@ -53,6 +54,7 @@
       <tr><td><code>cycles</code></td><td>cycles</td><td>Number of waveform cycles represented by the samples.</td></tr>
       <tr><td><code>phaseDegrees</code></td><td>degrees</td><td>Nominal phase offset.</td></tr>
       <tr><td><code>dutyCyclePercent</code></td><td>%</td><td>High-state percentage for square and pulse waveforms, from 1 through 99.</td></tr>
+      <tr><td><code>samplesEdited</code></td><td>—</td><td>Tracks whether direct or selection-scoped edits would be lost by regenerating the full waveform.</td></tr>
       <tr><td><code>sampleCount</code></td><td>samples</td><td>Must match the length of <code>values</code>; minimum is 2.</td></tr>
       <tr><td><code>values</code></td><td>V</td><td>Ordered voltage samples. Every entry must be a finite JSON number.</td></tr>
     </tbody>

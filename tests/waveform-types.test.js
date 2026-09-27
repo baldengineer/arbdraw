@@ -31,7 +31,7 @@ test('Custom is not offered or retained as a waveshape', () => {
   assert.doesNotMatch(views, /markCustom/);
 });
 
-test('removed and unknown waveshape types normalize to sine while preserving samples', () => {
+test('removed and unknown waveshape types normalize to sine while preserving edited samples', () => {
   const context = projectContext();
   assert.equal(context.normalizeDefaults({ waveformType: 'custom' }).waveformType, 'sine');
   assert.equal(context.normalizeDefaults({ waveformType: 'free' }).waveformType, 'sine');
@@ -43,6 +43,22 @@ test('removed and unknown waveshape types normalize to sine while preserving sam
     document.waveform.values = [0, 0.25, -0.5, 1];
     const imported = context.parseProject(document).waveform;
     assert.equal(imported.type, 'sine');
+    assert.equal(imported.samplesEdited, true);
     assert.deepEqual(Array.from(imported.values), document.waveform.values);
   }
+});
+
+test('known generated waveshapes do not become edited when imported', () => {
+  const context = projectContext();
+  const document = context.createDefaultDocument();
+  document.waveform.type = 'square';
+  document.AWG.sampleCount = document.waveform.sampleCount = 4;
+  document.waveform.values = [-1, -1, 1, 1];
+
+  assert.equal(context.parseProject(document).waveform.samplesEdited, false);
+  document.waveform.samplesEdited = true;
+  assert.equal(context.parseProject(document).waveform.samplesEdited, true);
+
+  document.waveform.values = [];
+  assert.equal(context.parseProject(document).waveform.samplesEdited, false);
 });

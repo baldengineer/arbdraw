@@ -62,6 +62,10 @@ function renderAwgProfiles() {
 
 function applyAwgProfile(profile) {
   if (!profile) return;
+  if (!confirmWaveformReplacement(false)) {
+    awgProfileSelect.value = selectedAwgProfile?.id || '';
+    return false;
+  }
   selectedAwgProfile = profile;
   if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
   if (Number.isFinite(profile.sampleDepth?.default)) state.samples = profile.sampleDepth.default;
@@ -73,8 +77,9 @@ function applyAwgProfile(profile) {
   }
   state.duration = state.samples / (state.sampleRate * 1000);
   renderTiming();
-  generate(state.type, true, true, false);
+  generate(state.type, true, true, false, false);
   persistCurrentSettings();
+  return true;
 }
 
 function restoreAwgSettingsFromDocument(awg = {}) {
@@ -370,10 +375,28 @@ function commitTimingInput(kind, { preview = false } = {}) {
       renderTiming();
       return;
     }
+    if (samples === state.samples) {
+      renderTiming();
+      if (!preview) finishWaveformPreview();
+      return;
+    }
+    if (waveformReplacementNeedsConfirmation(false)) {
+      if (preview) return;
+      if (!confirmWaveformReplacement(false)) {
+        renderTiming();
+        return;
+      }
+    }
     if (preview) beginWaveformPreview();
     state.samples = Math.min(Math.max(2, samples), maximumSamples);
     renderTiming();
-    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing, false);
+    generate(
+      state.type,
+      !preview && !wasPreviewing,
+      !preview && !wasPreviewing,
+      false,
+      false,
+    );
     if (!preview && wasPreviewing) finishWaveformPreview();
   } else {
     const samples = Math.min(
@@ -387,11 +410,24 @@ function commitTimingInput(kind, { preview = false } = {}) {
       if (!preview) finishWaveformPreview();
       return;
     }
+    if (waveformReplacementNeedsConfirmation(false)) {
+      if (preview) return;
+      if (!confirmWaveformReplacement(false)) {
+        renderTiming();
+        return;
+      }
+    }
     if (preview) beginWaveformPreview();
     state.samples = samples;
     state.duration = state.samples / (state.sampleRate * 1000);
     renderTiming();
-    generate(state.type, !preview && !wasPreviewing, !preview && !wasPreviewing, false);
+    generate(
+      state.type,
+      !preview && !wasPreviewing,
+      !preview && !wasPreviewing,
+      false,
+      false,
+    );
     if (!preview && wasPreviewing) finishWaveformPreview();
   }
 }
@@ -494,7 +530,6 @@ function applyProperties({ preview = false } = {}) {
   if (!propertiesValid()) return false;
   const differs = propertiesDiffer();
   if (!differs && !waveformPreviewTransaction) return false;
-  if (preview && differs) beginWaveformPreview();
   const frequencyChanged = valueChanged(inputFrequency(), state.frequency);
   const transitionChanged =
     valueChanged(inputTransitionTime('riseTimeInput'), state.riseTime) ||
@@ -512,9 +547,23 @@ function applyProperties({ preview = false } = {}) {
     valueChanged(+$('dutyInput').value, state.duty) ||
     valueChanged(+$('symmetryInput').value, state.symmetry) ||
     valueChanged(+$('rcTauInput').value, state.rcTau);
+  if (waveformChanged && waveformReplacementNeedsConfirmation()) {
+    if (preview) return false;
+    if (!confirmWaveformReplacement()) {
+      renderDocument();
+      return false;
+    }
+  }
+  if (preview && differs) beginWaveformPreview();
   syncInputs();
   if (waveformChanged) {
-    generate(state.type, !preview && !waveformPreviewTransaction, !preview && !waveformPreviewTransaction);
+    generate(
+      state.type,
+      !preview && !waveformPreviewTransaction,
+      !preview && !waveformPreviewTransaction,
+      true,
+      false,
+    );
     if (amplitudeChanged) refreshScopeTime();
     else refreshScopeVertical();
   } else {
@@ -535,14 +584,25 @@ document.querySelectorAll('[data-symmetry]').forEach((button) => {
     applyProperties();
   });
 });
+let dutyInputChanged = false;
 $('dutyInput').oninput = () => {
   if ($('dutyInput').disabled) return;
+  if (!confirmWaveformReplacement()) {
+    $('dutyInput').value = state.duty;
+    $('dutyValue').textContent = state.duty + '%';
+    dutyInputChanged = false;
+    return;
+  }
   state.duty = +$('dutyInput').value;
   $('dutyValue').textContent = state.duty + '%';
-  generate(state.type, false);
+  generate(state.type, false, true, true, false);
+  dutyInputChanged = true;
   refreshScopeVertical();
 };
-$('dutyInput').addEventListener('change', () => pushHistory());
+$('dutyInput').addEventListener('change', () => {
+  if (dutyInputChanged) pushHistory();
+  dutyInputChanged = false;
+});
 $('frequencyInput').addEventListener('input', () => {
   const value = inputFrequency();
   if (value > 0) $('periodInput').value = displayPeriod(value);

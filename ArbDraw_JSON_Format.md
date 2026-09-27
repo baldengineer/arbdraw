@@ -51,6 +51,7 @@ The current format identifier is:
       "smoothingEnabled": false,
       "smoothingWindowPoints": 5
     },
+    "samplesEdited": false,
     "sampleCount": 8,
     "values": [
       0,
@@ -98,6 +99,7 @@ Unknown top-level fields are ignored.
 | `noiseColor` | string | — | Noise spectrum used by the `noise` waveform. Allowed values are `white` and `pink`. |
 | `filters` | object | — | Post-processing filter settings. |
 | `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
+| `samplesEdited` | boolean | — | `true` when point editing or selection-scoped generation has made the saved samples differ from a full waveshape regeneration. ArbDraw uses this to warn before replacing those samples. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
 
@@ -183,7 +185,7 @@ Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values in olde
 
 The `rc` waveform is a capacitor charging curve, `V(t) = Vhigh - (Vhigh - Vlow)e^(-t/τ)`. `waveform.rcTau` sets how many time constants are represented in each cycle; it defaults to 5, which reaches about 99.3% of the high level before the next cycle begins. Here, `τ = R × C`.
 
-The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved and remains the waveform's authoritative sample data.
+The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved, marked as edited, and remains the waveform's authoritative sample data.
 
 ## Serial settings
 
@@ -245,6 +247,7 @@ ArbDraw applies the following rules while opening a file:
 - `dutyCyclePercent` is limited to the range 1 through 99.
 - `riseTimeSeconds` and `fallTimeSeconds` are limited to zero or greater. A transition longer than its available portion of the cycle is capped to that portion during generation.
 - `noiseColor` accepts `white` or `pink`; missing or unrecognized values become `white`.
+- `samplesEdited` is `true` only when explicitly saved as `true`, or when a valid legacy waveform uses a removed or unknown type.
 - `values` must contain exactly `sampleCount` entries.
 - Every `values` entry must already be a finite JSON number. Numeric strings are not accepted in this array.
 - If any sample-array validation fails, the entire `values` array is discarded and ArbDraw regenerates samples from the waveform metadata.

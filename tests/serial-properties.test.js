@@ -57,6 +57,8 @@ function createSerialHarness() {
     normalizeSerialSettings: (source) => source,
     renderFrequency: () => calls.renderFrequency++,
     generate: (type) => calls.generate.push(type),
+    waveformReplacementNeedsConfirmation: () => false,
+    confirmWaveformReplacement: () => true,
     pushHistory() {},
   });
   const source = fs.readFileSync(path.join(__dirname, '../js/serial-properties.js'), 'utf8');

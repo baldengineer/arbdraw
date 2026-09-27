@@ -82,9 +82,16 @@ function renderFilterMenu() {
 function regenerateWithFilters() {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
-  generate(state.type, true, true, false);
+  if (!confirmWaveformReplacement(false)) {
+    const snapshot = state.history.at(-1);
+    if (snapshot) restoreWaveform(snapshot);
+    else renderDocument();
+    return false;
+  }
+  generate(state.type, true, true, false, false);
   refreshScopeVertical();
   persistCurrentSettings();
+  return true;
 }
 
 function openFilterDialog(kind) {

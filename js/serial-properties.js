@@ -120,6 +120,13 @@ function renderSerialProperties() {
 function commitSerialProperties(event, { preview = false } = {}) {
   const previewSupport = typeof waveformPreviewTransaction !== 'undefined';
   const wasPreviewing = previewSupport && Boolean(waveformPreviewTransaction);
+  if (state.type === 'serial' && waveformReplacementNeedsConfirmation()) {
+    if (preview) return false;
+    if (!confirmWaveformReplacement()) {
+      renderSerialProperties();
+      return false;
+    }
+  }
   if (preview && previewSupport) beginWaveformPreview();
   const editingBinary = event?.target?.id === 'serialBinaryPattern';
   const binaryPattern = editingBinary
@@ -142,9 +149,10 @@ function commitSerialProperties(event, { preview = false } = {}) {
   if (state.type === 'serial') ensureSerialPeriodCoversPayload();
   renderSerialProperties();
   if (state.type === 'serial')
-    generate('serial', !preview && !wasPreviewing, !preview && !wasPreviewing);
+    generate('serial', !preview && !wasPreviewing, !preview && !wasPreviewing, true, false);
   else if (!preview && !wasPreviewing) pushHistory();
   if (!preview && wasPreviewing) finishWaveformPreview();
+  return true;
 }
 
 const serialFieldControllers = [];

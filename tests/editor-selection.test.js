@@ -54,6 +54,49 @@ test('selection interaction shades the range and supports movable markers and cl
   assert.match(source, /editorSelectionClear'\)\.addEventListener\('click', clearEditorSelection\)/);
 });
 
+test('Escape clears the marker range and switches back to the selection tool', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function handleEditorSelectionEscape('),
+    source.indexOf('function editorRecordLength()'),
+  );
+  const calls = [];
+  const context = {
+    currentEditorSelection: () => ({ left: 2, right: 4 }),
+    clearEditorSelection: () => calls.push('clear'),
+    setEditorTool: (tool) => calls.push(`tool:${tool}`),
+  };
+  const handled = vm.runInNewContext(
+    `${helper}\nhandleEditorSelectionEscape({ key: 'Escape', preventDefault() { calls.push('prevent'); } });`,
+    { ...context, calls },
+  );
+
+  assert.equal(handled, true);
+  assert.deepEqual(calls, ['prevent', 'clear', 'tool:selection']);
+  assert.match(source, /if \(handleEditorSelectionEscape\(event\)\) return;/);
+});
+
+test('Escape leaves the active tool alone when there is no marker range', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(
+    source.indexOf('function handleEditorSelectionEscape('),
+    source.indexOf('function editorRecordLength()'),
+  );
+  const calls = [];
+  const handled = vm.runInNewContext(
+    `${helper}\nhandleEditorSelectionEscape({ key: 'Escape', preventDefault() { calls.push('prevent'); } });`,
+    {
+      calls,
+      currentEditorSelection: () => null,
+      clearEditorSelection: () => calls.push('clear'),
+      setEditorTool: (tool) => calls.push(`tool:${tool}`),
+    },
+  );
+
+  assert.equal(handled, false);
+  assert.deepEqual(calls, []);
+});
+
 test('direct editing is clipped to the active marker range', () => {
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const helpers = source.slice(
@@ -174,6 +217,7 @@ test('waveshape generation spans the selected range and preserves surrounding sa
       high: 1, low: -1, phase: 0, cycles: 1, frequency: 1,
       duty: 50, symmetry: 50, rcTau: 5, riseTime: 0, fallTime: 0,
       noiseColor: 'white',
+      samplesEdited: false,
     },
     currentEditorSelection: () => ({ left: 1, right: 4 }),
     applyFilters: (values) => values,
@@ -190,12 +234,17 @@ test('waveshape generation spans the selected range and preserves surrounding sa
   };
   vm.runInNewContext(`${helpers}\ngenerate('sine', false, false);`, context);
 
+  assert.equal(context.state.samplesEdited, true);
   assert.equal(context.state.data[0], 10);
   assert.equal(context.state.data[5], 15);
   assert.ok(Math.abs(context.state.data[1]) < 1e-12);
   assert.ok(Math.abs(context.state.data[2] - Math.sqrt(3) / 2) < 1e-12);
   assert.ok(Math.abs(context.state.data[3] + Math.sqrt(3) / 2) < 1e-12);
   assert.ok(Math.abs(context.state.data[4]) < 1e-12);
+
+  context.currentEditorSelection = () => null;
+  vm.runInNewContext(`generate('sine', false, false, true, false);`, context);
+  assert.equal(context.state.samplesEdited, false);
 });
 
 test('generation falls back to the whole record without a valid selection-sized buffer', () => {
@@ -232,8 +281,8 @@ test('selection scope is used by waveshape and property generation but not recor
 
   assert.match(editor, /scopeSelection \? currentEditorSelection\(\) : null/);
   assert.match(editor, /state\.data = mergeGeneratedSamples\(/);
-  assert.match(properties, /if \(waveformChanged\) \{\s*generate\(state\.type/);
-  assert.match(properties, /generate\(state\.type, true, true, false\)/);
-  assert.match(filters, /generate\(state\.type, true, true, false\)/);
+  assert.match(properties, /if \(waveformChanged\) \{\s*generate\(\s*state\.type/);
+  assert.match(properties, /generate\(state\.type, true, true, false, false\)/);
+  assert.match(filters, /generate\(state\.type, true, true, false, false\)/);
   assert.match(html, /Selection · edits scoped/);
 });
