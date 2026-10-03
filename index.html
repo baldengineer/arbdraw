@@ -115,18 +115,26 @@
         </div>
         <div class="section">
           <div class="section-title">Amplitude</div>
-          <label>High level <div class="unit-input"><input id="highInput" type="number" step="0.1" value="5"><button class="unit-button voltage-unit-button" type="button" data-input="highInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
-          <label>Amplitude <div class="unit-input"><input id="amplitudeInput" type="number" step="0.1" min="0" value="10"><button id="amplitudeUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Vpp</button></div></label>
-          <label>Offset <div class="unit-input"><input id="offsetInput" type="number" step="0.1" value="0"><button class="unit-button voltage-unit-button" type="button" data-input="offsetInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
-          <label>Low level <div class="unit-input"><input id="lowInput" type="number" step="0.1" value="-5"><button class="unit-button voltage-unit-button" type="button" data-input="lowInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
+          <div class="property-mode-switch" role="group" aria-label="Amplitude controls">
+            <button type="button" data-amplitude-mode="amplitude" aria-pressed="true">Amplitude / Offset</button>
+            <button type="button" data-amplitude-mode="levels" aria-pressed="false">High / Low</button>
+          </div>
+          <label class="property-mode-field" data-amplitude-field="levels" hidden>High level <div class="unit-input"><input id="highInput" type="number" step="0.1" value="5"><button class="unit-button voltage-unit-button" type="button" data-input="highInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
+          <label class="property-mode-field" data-amplitude-field="amplitude">Amplitude <div class="unit-input"><input id="amplitudeInput" type="number" step="0.1" min="0" value="10"><button id="amplitudeUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Vpp</button></div></label>
+          <label class="property-mode-field" data-amplitude-field="amplitude">Offset <div class="unit-input"><input id="offsetInput" type="number" step="0.1" value="0"><button class="unit-button voltage-unit-button" type="button" data-input="offsetInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
+          <label class="property-mode-field" data-amplitude-field="levels" hidden>Low level <div class="unit-input"><input id="lowInput" type="number" step="0.1" value="-5"><button class="unit-button voltage-unit-button" type="button" data-input="lowInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
           <label class="transition-property" hidden>Rise time <div class="unit-input"><input id="riseTimeInput" type="number" step="0.1" min="0" value="0"><button class="unit-button transition-time-unit-button" type="button" data-input="riseTimeInput" aria-haspopup="menu" aria-expanded="false">ns</button></div></label>
           <label class="transition-property" hidden>Fall time <div class="unit-input"><input id="fallTimeInput" type="number" step="0.1" min="0" value="0"><button class="unit-button transition-time-unit-button" type="button" data-input="fallTimeInput" aria-haspopup="menu" aria-expanded="false">ns</button></div></label>
         </div>
         <div class="section">
           <div class="section-title">Timing</div>
+          <div class="property-mode-switch" role="group" aria-label="Timing controls">
+            <button type="button" data-timing-mode="frequency" aria-pressed="true">Frequency</button>
+            <button type="button" data-timing-mode="period" aria-pressed="false">Period</button>
+          </div>
           <label>N Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" value="1"></div></label>
-          <label>Frequency <div class="unit-input"><input id="frequencyInput" type="number" step="1" min="0.000001" value="750000"><button id="frequencyUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Hz</button></div></label>
-          <label>Period <div class="unit-input"><input id="periodInput" type="number" step="0.001" min="0.000001" value="1.333333"><button id="periodUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">µs</button></div></label>
+          <label class="property-mode-field" data-timing-field="frequency">Frequency <div class="unit-input"><input id="frequencyInput" type="number" step="1" min="0.000001" value="750000"><button id="frequencyUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">Hz</button></div></label>
+          <label class="property-mode-field" data-timing-field="period" hidden>Period <div class="unit-input"><input id="periodInput" type="number" step="0.001" min="0.000001" value="1.333333"><button id="periodUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">µs</button></div></label>
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
           <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="1" max="99" value="50"></label>
         </div>
@@ -299,6 +307,7 @@
   <script src="js/core.js"></script>
   <script src="js/bridge-client.js"></script>
   <script src="js/properties.js"></script>
+  <script src="js/property-modes.js"></script>
   <script src="js/waveform-shapes.js"></script>
   <script src="js/waveform-editor.js"></script>
   <script src="js/filters.js"></script>
