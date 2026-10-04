@@ -430,12 +430,14 @@ function closeFileMenu() {
 fileButton.onclick = (event) => {
   event.stopPropagation();
   closeEditMenu();
+  closeViewPicker();
   const isOpen = fileMenu.classList.toggle('open');
   fileButton.setAttribute('aria-expanded', String(isOpen));
 };
 editButton.onclick = (event) => {
   event.stopPropagation();
   closeFileMenu();
+  closeViewPicker();
   closeExportMenu();
   const isOpen = editMenu.classList.toggle('open');
   editButton.setAttribute('aria-expanded', String(isOpen));

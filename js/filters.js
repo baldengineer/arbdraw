@@ -159,6 +159,7 @@ function openFilterDialog(kind) {
 
 $('filtersBtn').onclick = (event) => {
   event.stopPropagation();
+  closeViewPicker();
   const menu = $('filtersMenu'),
     isOpen = menu.classList.toggle('open');
   $('filtersBtn').setAttribute('aria-expanded', String(isOpen));

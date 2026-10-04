@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Editor tabs, sample table, JSON view, and sample-point editing.
+// View menu, sample table, JSON view, and sample-point editing.
 function formatSampleTime(index) {
   const seconds = ((index / (state.samples - 1)) * waveformDurationMs()) / 1000;
   return seconds === 0 ? '0' : seconds.toExponential(9);
@@ -40,38 +40,41 @@ function renderJson() {
   $('jsonStats').textContent = `${lines.toLocaleString()} lines · ${bytes.toLocaleString()} bytes`;
 }
 const viewPicker = document.querySelector('.view-tabs');
-const viewLabels = { editor: 'Editor', waveform: 'Viewer', samples: 'Samples', json: 'JSON' };
 const viewTabButtons = Object.fromEntries(
   ['editor', 'waveform', 'samples', 'json'].map((name) => [name, $(name + 'Tab')]),
 );
 viewPicker.className = 'view-picker';
-viewPicker.setAttribute('role', 'group');
-viewPicker.setAttribute('aria-label', 'Project view');
+viewPicker.removeAttribute('role');
+viewPicker.removeAttribute('aria-label');
+document.querySelector('.filters-menu-anchor').before(viewPicker);
 const viewPickerButton = document.createElement('button');
 viewPickerButton.id = 'viewPickerBtn';
-viewPickerButton.className = 'view-picker-button';
+viewPickerButton.className = 'ghost file-button view-picker-button';
 viewPickerButton.type = 'button';
 viewPickerButton.setAttribute('aria-haspopup', 'menu');
 viewPickerButton.setAttribute('aria-expanded', 'false');
 const viewPickerLabel = document.createElement('span');
 viewPickerLabel.className = 'view-picker-label';
+viewPickerLabel.textContent = 'View';
 const viewPickerChevron = document.createElement('span');
 viewPickerChevron.setAttribute('aria-hidden', 'true');
 viewPickerChevron.textContent = '▾';
 viewPickerButton.append(viewPickerLabel, viewPickerChevron);
 const viewPickerMenu = document.createElement('div');
 viewPickerMenu.id = 'viewPickerMenu';
-viewPickerMenu.className = 'context-menu view-picker-menu';
+viewPickerMenu.className = 'context-menu file-menu view-picker-menu';
 viewPickerMenu.setAttribute('role', 'menu');
-viewPickerMenu.setAttribute('aria-label', 'Project view');
+viewPickerMenu.setAttribute('aria-label', 'View');
 viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
-viewPickerLabel.textContent = 'Editor';
 function closeViewPicker() {
   viewPickerMenu.classList.remove('open');
   viewPickerButton.setAttribute('aria-expanded', 'false');
 }
 viewPickerButton.onclick = (event) => {
   event.stopPropagation();
+  closeFileMenu();
+  closeEditMenu();
+  closeFiltersMenu();
   const isOpen = viewPickerMenu.classList.toggle('open');
   viewPickerButton.setAttribute('aria-expanded', String(isOpen));
 };
@@ -82,7 +85,6 @@ function setEditorTab(tab) {
     $(name + 'Tab').setAttribute('aria-checked', String(active));
     $(name + 'View').classList.toggle('hidden', !active);
   }
-  viewPickerLabel.textContent = viewLabels[tab];
   $('editorControls').classList.toggle('hidden', tab !== 'editor');
   $('viewerControls').classList.toggle('hidden', tab !== 'waveform');
   if (tab === 'samples') requestAnimationFrame(renderSamples);

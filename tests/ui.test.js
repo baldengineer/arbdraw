@@ -70,13 +70,19 @@ test('pointer down on a transition-time unit button does not dismiss its menu', 
   assert.equal(calls.closeTimingUnitMenus, 0);
 });
 
-test('view picker menu is positioned against its trigger', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+test('View menu follows Edit and retains all project views', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const views = fs.readFileSync(path.join(__dirname, '../js/views.js'), 'utf8');
+  const project = fs.readFileSync(path.join(__dirname, '../js/project.js'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
 
-  assert.match(
-    source,
-    /\.view-picker \.view-picker-menu\{position:absolute;top:calc\(100% \+ 8px\)/,
-  );
+  assert.match(views, /\.filters-menu-anchor'\)\.before\(viewPicker\)/);
+  assert.match(project, /fileMenu\.after\(editMenuAnchor\)/);
+  assert.match(views, /viewPickerLabel\.textContent = 'View'/);
+  assert.match(views, /role', 'menuitemradio'/);
+  for (const id of ['editorTab', 'waveformTab', 'samplesTab', 'jsonTab'])
+    assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(styles, /\.project-actions \.view-picker-menu\{top:calc\(100% \+ 8px\);right:auto;left:0/);
 });
 
 test('mobile document order places AWG controls after waveform properties', () => {

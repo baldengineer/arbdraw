@@ -168,3 +168,10 @@ button { color:inherit; }
 .arbdraw-tour-popover .driver-popover-footer-btn{padding:6px 10px;color:var(--ink);background:var(--field);border-color:var(--line);border-radius:6px;font-weight:700}.arbdraw-tour-popover .driver-popover-footer-btn:hover,.arbdraw-tour-popover .driver-popover-footer-btn:focus{color:var(--ink);background:var(--soft);border-color:var(--blue)}
 .arbdraw-tour-popover .driver-popover-next-btn{color:white;background:var(--orange);border-color:var(--orange)}.arbdraw-tour-popover .driver-popover-next-btn:hover,.arbdraw-tour-popover .driver-popover-next-btn:focus{color:white;background:var(--orange);border-color:var(--orange);filter:brightness(.92)}
 .arbdraw-tour-popover .driver-popover-arrow{border-color:var(--panel-raised)}.arbdraw-tour-popover .driver-popover-arrow-side-left{border-top-color:transparent;border-bottom-color:transparent;border-right-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-right{border-top-color:transparent;border-bottom-color:transparent;border-left-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-top{border-right-color:transparent;border-bottom-color:transparent;border-left-color:transparent}.arbdraw-tour-popover .driver-popover-arrow-side-bottom{border-top-color:transparent;border-right-color:transparent;border-left-color:transparent}
+
+/* Keep the View menu in the File / Edit / Filters menu row. */
+.project-actions .view-picker{width:auto;min-height:0;align-self:auto;justify-content:flex-start}
+.project-actions .view-picker-button{min-width:0;height:auto;gap:4px;padding:6px 8px;color:var(--muted);background:transparent;border:0;border-radius:4px;font-size:inherit;font-weight:inherit}
+.project-actions .view-picker-button:hover,.project-actions .view-picker-button[aria-expanded="true"]{color:var(--ink);background:var(--soft)}
+.project-actions .view-picker-menu{top:calc(100% + 8px);right:auto;left:0;min-width:132px}
+@media (max-width:560px){.project-identity{flex-wrap:wrap}.project-actions{width:100%}}
