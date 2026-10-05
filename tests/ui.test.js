@@ -78,7 +78,7 @@ test('View menu follows Edit and retains all project views', () => {
 
   assert.match(views, /\.filters-menu-anchor'\)\.before\(viewPicker\)/);
   assert.match(project, /fileMenu\.after\(editMenuAnchor\)/);
-  assert.match(views, /viewPickerLabel\.textContent = 'View'/);
+  assert.match(views, /viewPickerButton\.append\('View ', viewPickerChevron\)/);
   assert.match(views, /role', 'menuitemradio'/);
   for (const id of ['editorTab', 'waveformTab', 'samplesTab', 'jsonTab'])
     assert.match(html, new RegExp(`id="${id}"`));
