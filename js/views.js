@@ -84,6 +84,7 @@ function setEditorTab(tab) {
   }
   $('editorControls').classList.toggle('hidden', tab !== 'editor');
   $('viewerControls').classList.toggle('hidden', tab !== 'waveform');
+  $('inspectorControls').disabled = tab === 'waveform';
   if (tab === 'samples') requestAnimationFrame(renderSamples);
   else sampleRenderToken++;
   if (tab === 'editor') resize();
