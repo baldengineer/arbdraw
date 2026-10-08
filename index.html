@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: MIT -->
 <!-- Copyright (c) 2026 James Lewis <james@baldengineer.com> -->
-<html lang="en">
+<html lang="en" data-editor-mode="basic">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,6 +30,17 @@
             <button class="tool" id="zoomOut" title="Zoom out">−</button>
           </div>
           <div class="canvas-area">
+            <div class="editor-mode-bar">
+              <div class="editor-mode-switch" role="group" aria-label="Editing mode">
+                <button id="basicModeBtn" type="button" aria-pressed="true">Basic</button>
+                <button id="advancedModeBtn" type="button" aria-pressed="false">Advanced</button>
+              </div>
+              <span id="editorModeDescription">Choose a waveshape and adjust its properties.</span>
+              <div id="advancedContentNotice" class="advanced-content-notice" role="status" hidden>
+                <span id="advancedContentText"></span>
+                <button id="editInAdvancedBtn" type="button">Edit in Advanced</button>
+              </div>
+            </div>
             <div class="editor-waveform-stage">
               <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
               <div id="editorPointAxisLabel" class="axis-label x-label editor-point-label">POINTS</div>
@@ -85,7 +96,7 @@
         </div>
 
         <div id="samplesView" class="samples-view panel view-panel hidden" role="tabpanel" aria-labelledby="samplesTab">
-          <div class="samples-heading"><div><span class="eyebrow">POINT DATA</span><h3>Waveform samples</h3></div><span id="tableCount" class="table-count">10,000 points</span></div>
+          <div class="samples-heading"><div><span class="eyebrow">POINT DATA</span><h3>Waveform samples</h3><span id="sampleEditHint" class="sample-edit-hint">Samples are read only in Basic. <button id="advancedSamplesBtn" type="button">Switch to Advanced</button></span></div><span id="tableCount" class="table-count">10,000 points</span></div>
           <div class="samples-scroll">
             <div id="samplesLoading" class="samples-loading"><span class="loading-spinner"></span><strong>Preparing samples…</strong><small id="samplesProgress">0 of 10,000</small></div>
             <table class="samples-table">
@@ -107,7 +118,7 @@
         <fieldset id="inspectorControls" class="inspector-controls">
         <div class="panel-heading inspector-heading"><div class="property-heading-row"><span class="eyebrow">PROPERTIES</span><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div></div>
         <div class="section function-section">
-          <div class="section-title">Function</div>
+          <div id="functionSectionTitle" class="section-title">Function</div>
           <label>Waveshape <button id="functionSelectBtn" class="function-select-button" type="button" aria-haspopup="menu" aria-expanded="false"><canvas aria-hidden="true"></canvas><span>Sine</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button></label>
           <label id="symmetryProperty" class="symmetry-property" hidden>Symmetry <div class="unit-input"><input id="symmetryInput" aria-label="Triangle symmetry" type="number" min="0" max="100" step="1" value="50"><span>%</span></div></label>
           <div id="symmetryPresets" class="symmetry-property symmetry-presets" role="group" aria-label="Quick set triangle symmetry" hidden><button type="button" data-symmetry="0" aria-label="Set symmetry to 0 percent" title="Falling ramp">0</button><button type="button" data-symmetry="50" aria-label="Set symmetry to 50 percent" title="Standard triangle">50</button><button type="button" data-symmetry="100" aria-label="Set symmetry to 100 percent" title="Rising ramp">100</button></div>
@@ -320,6 +331,7 @@
   <script src="js/wav-export.js"></script>
   <script src="js/audio-playback.js"></script>
   <script src="js/project.js"></script>
+  <script src="js/editor-modes.js"></script>
   <script src="js/help.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/instruments.js"></script>

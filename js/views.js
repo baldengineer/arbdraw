@@ -23,7 +23,7 @@ function renderSamples() {
       rows = [];
     for (; index < end; index++)
       rows.push(
-        `<tr><td>${formatSampleTime(index)}</td><td><input class="sample-voltage" type="number" step="any" data-index="${index}" value="${Number(state.data[index] ?? 0).toPrecision(10)}" aria-label="Voltage at sample ${index + 1}"></td></tr>`,
+        `<tr><td>${formatSampleTime(index)}</td><td><input class="sample-voltage" type="number" step="any" data-index="${index}" value="${Number(state.data[index] ?? 0).toPrecision(10)}" aria-label="Voltage at sample ${index + 1}"${globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false ? ' readonly' : ''}></td></tr>`,
       );
     body.insertAdjacentHTML('beforeend', rows.join(''));
     $('samplesProgress').textContent = index.toLocaleString() + ' of ' + total.toLocaleString();
@@ -134,6 +134,7 @@ $('copyJsonBtn').onclick = async () => {
   }
 };
 function updateSampleVoltage(input, recordHistory = false) {
+  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   const index = +input.dataset.index,

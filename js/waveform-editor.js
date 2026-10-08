@@ -76,6 +76,7 @@ function handleEditorSelectionEscape(event) {
 }
 
 function handleEditorToolShortcut(event) {
+  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return false;
   const key = event.key.toLowerCase();
   let tool = null;
@@ -248,6 +249,7 @@ function generate(
   });
   state.data = mergeGeneratedSamples(existingData, applyFilters(generatedData), range, n);
   state.samplesEdited = range.scoped;
+  globalThis.ARBDRAW_EDITOR_MODES?.refresh();
   if (type === 'triangle') updateFunctionSelect(type);
   if (recordHistory) pushHistory();
   draw();
@@ -268,6 +270,7 @@ function restoreWaveform(snapshot) {
   globalThis.updateAudioPlaybackButton?.();
   projectDocument.waveform = cloneWaveform(snapshot);
   renderDocument();
+  globalThis.ARBDRAW_EDITOR_MODES?.refresh();
 }
 function pushHistory() {
   state.history.push(cloneWaveform());
@@ -584,6 +587,7 @@ function editorEditIndexRange(firstIndex, secondIndex = firstIndex, selection = 
 }
 
 function editAt(pt, last) {
+  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   if (state.tool === 'pan') return false;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
   if (state.tool === 'line' && state.lineStart) {
@@ -714,6 +718,7 @@ function finishEditorSelection() {
   editorSelection.origin = null;
 }
 canvas.addEventListener('pointerdown', (e) => {
+  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return;
   if (state.tool === 'pointer') return;
   if (state.tool === 'selection') {
     beginEditorSelection(e);
@@ -996,6 +1001,7 @@ $('functionSelectMenu')
     };
   });
 function setEditorTool(tool, persist = true) {
+  if (tool !== 'pointer' && globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   const button = document.querySelector(`.tool[data-tool="${tool}"]`);
   if (!button) return false;
   document.querySelector('.tool.active')?.classList.remove('active');

@@ -13,9 +13,9 @@ const helpItems = [
 ];
 const keyboardShortcuts = [
   { keys: ['?'], description: 'Show keyboard shortcuts' },
-  { keys: ['A'], description: 'Toggle Pointer / Select tools' },
-  { keys: ['E'], description: 'Switch to Edit tool' },
-  { keys: ['D'], description: 'Switch to Delete tool' },
+  { keys: ['A'], description: 'Toggle Pointer / Select tools (Advanced)' },
+  { keys: ['E'], description: 'Switch to Edit tool (Advanced)' },
+  { keys: ['D'], description: 'Switch to Delete tool (Advanced)' },
   { keys: ['Ctrl / ⌘', 'Z'], description: 'Undo' },
   {
     keys: ['Ctrl / ⌘', 'Shift', 'Z'],

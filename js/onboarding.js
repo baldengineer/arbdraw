@@ -5,11 +5,11 @@
   const storageKey = 'arbdraw-onboarding-driverjs-v1';
   const steps = [
     {
-      element: '#toolrail',
+      element: '.editor-mode-switch',
       popover: {
-        title: 'Editor tools',
-        description: 'Choose Pointer, Select, Edit, or Delete, then use the zoom controls to adjust your view of the waveform.',
-        side: 'right',
+        title: 'Basic and Advanced editing',
+        description: 'Basic lets you choose a waveshape and adjust its properties. Switch to Advanced when you want to select points, draw edits, or apply filters.',
+        side: 'bottom',
         align: 'start',
       },
     },

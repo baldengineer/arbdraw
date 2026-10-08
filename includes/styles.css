@@ -177,3 +177,23 @@ button { color:inherit; }
 .project-actions .view-picker-button:hover,.project-actions .view-picker-button[aria-expanded="true"]{color:var(--ink);background:var(--soft)}
 .project-actions .view-picker-menu{top:calc(100% + 8px);right:auto;left:0;min-width:132px}
 @media (max-width:560px){.project-identity{flex-wrap:wrap}.project-actions{width:100%}}
+
+/* Basic and Advanced share the same waveform; only editing controls change. */
+.canvas-area{grid-template-rows:auto minmax(0,1fr) 42px auto}
+.editor-mode-bar{display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;min-height:34px;color:var(--muted);font-size:11px}
+.editor-mode-switch{display:flex;flex:none;padding:2px;background:var(--field);border:1px solid var(--line);border-radius:7px}
+.editor-mode-switch button{padding:5px 10px;color:var(--muted);background:transparent;border:0;border-radius:5px;cursor:pointer;font-size:11px;font-weight:750}
+.editor-mode-switch button[aria-pressed="true"]{color:var(--ink);background:var(--soft);box-shadow:0 1px 3px #0003}
+.editor-mode-switch button:focus-visible,.advanced-content-notice button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.advanced-content-notice{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-left:auto;color:var(--blue);font-weight:700}
+.advanced-content-notice[hidden]{display:none}
+.advanced-content-notice button{padding:3px 5px;color:var(--blue);background:transparent;border:0;border-radius:4px;cursor:pointer;text-decoration:underline;font-size:11px;font-weight:700}
+.advanced-content-notice button:hover{background:var(--field)}
+[data-editor-mode="basic"] .toolrail,[data-editor-mode="basic"] .filters-menu-anchor{display:none}
+[data-editor-mode="basic"] #waveCanvas.waveform-hover{cursor:crosshair}
+.sample-edit-hint{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+.sample-edit-hint[hidden]{display:none}
+.sample-edit-hint button{padding:0;color:var(--blue);background:transparent;border:0;cursor:pointer;font:inherit;font-weight:700;text-decoration:underline}
+.sample-edit-hint button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sample-voltage[readonly]{color:var(--muted);cursor:default}
+@media (max-width:560px){.canvas-area{grid-template-rows:auto minmax(0,1fr) 38px auto}.editor-mode-bar{align-content:center}.advanced-content-notice{margin-left:0}}

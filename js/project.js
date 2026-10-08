@@ -123,6 +123,7 @@ function loadProject(raw) {
   renderDocument();
   if (!state.data.length) generate();
   else pushHistory();
+  globalThis.ARBDRAW_EDITOR_MODES?.forOpenedProject();
   showToast('Project opened');
 }
 
@@ -171,6 +172,7 @@ $('confirmNewBtn').onclick = () => {
   state.redo = [];
   renderDocument();
   generate();
+  globalThis.ARBDRAW_EDITOR_MODES?.forNewProject();
   showToast('New project created');
 };
 $('newBtn').onclick = () => {

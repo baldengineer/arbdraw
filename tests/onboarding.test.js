@@ -107,7 +107,7 @@ test('onboarding defines the starter tour through Driver.js', () => {
 
   assert.match(source, /globalThis\.ARBDRAW_DRIVER_READY/);
   assert.deepEqual(starterTourTargets, [
-    '#toolrail',
+    '.editor-mode-switch',
     '.function-section',
     '.inspector',
     '#editorControls',

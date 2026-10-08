@@ -37,6 +37,10 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 - Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
 
+## Editing modes
+
+New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Switching modes does not change waveform data. Projects with point edits or active filters open in Advanced; Basic shows a notice when those edits are present. Sample values can be changed in the Samples view only while Advanced is active.
+
 ## ArbDraw Files
 
 The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth.
