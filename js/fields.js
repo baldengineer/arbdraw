@@ -98,7 +98,7 @@
       error.id = `${input.id || definition.id}-error`;
       error.className = 'field-error';
       error.setAttribute('role', 'alert');
-      const anchor = input.closest('.unit-input, .filter-value-input') || input;
+      const anchor = input.closest('.unit-input') || input;
       anchor.insertAdjacentElement('afterend', error);
     }
     const describedBy = new Set((input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));

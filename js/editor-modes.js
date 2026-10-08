@@ -46,7 +46,6 @@ function setEditorMode(requestedMode) {
   if (nextMode === 'basic') {
     clearEditorSelection(false);
     setEditorTool('pointer', false);
-    closeFiltersMenu();
   } else {
     setEditorTool(lastAdvancedTool, false);
   }

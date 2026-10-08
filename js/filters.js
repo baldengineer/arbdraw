@@ -1,20 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Waveform filter settings, menu controls, and post-processing.
+// Waveform filter settings, property controls, and post-processing.
 const LOW_PASS_INITIAL_HZ = 1_000;
 const SMOOTHING_INITIAL_WINDOW = 5;
 const SMOOTHING_MAX_WINDOW = 101;
-const FILTER_MENU_ENABLED = new URLSearchParams(window.location.search).get('lpf') === '1';
-let filterDialogField = null;
-
-const lowPassFilterButton = $('lowPassFilterBtn');
-lowPassFilterButton.hidden = !FILTER_MENU_ENABLED;
-lowPassFilterButton.style.display = FILTER_MENU_ENABLED ? '' : 'none';
-
-const filtersMenuAnchor = document.createElement('span');
-filtersMenuAnchor.className = 'filters-menu-anchor';
-$('filtersBtn').before(filtersMenuAnchor);
-filtersMenuAnchor.append($('filtersBtn'), $('filtersMenu'));
 
 function applyNoiseFilter(values, percentage) {
   const span = Math.abs(state.high - state.low) * (percentage / 100);
@@ -52,206 +41,107 @@ function applyFilters(values) {
   return filtered;
 }
 
-function closeFiltersMenu() {
-  $('filtersMenu').classList.remove('open');
-  $('filtersBtn').setAttribute('aria-expanded', 'false');
+const filterControls = {
+  noise: { checkbox: $('noiseFilterEnabled'), input: $('noiseFilterInput'), enabledKey: 'noiseEnabled', valueKey: 'noisePercent' },
+  lowPass: { checkbox: $('lowPassFilterEnabled'), input: $('lowPassFilterInput'), enabledKey: 'lowPassEnabled', valueKey: 'lowPassCutoffHz' },
+  smoothing: { checkbox: $('smoothingFilterEnabled'), input: $('smoothingFilterInput'), enabledKey: 'smoothingEnabled', valueKey: 'smoothingWindowPoints' },
+};
+
+function renderFilterControls() {
+  const filters = state.filters || {};
+  filterControls.noise.input.max = String(DEFAULT_VALUES.noisePercentMax);
+  for (const control of Object.values(filterControls)) {
+    const enabled = filters.enabled !== false && filters[control.enabledKey] === true;
+    control.checkbox.checked = enabled;
+    control.input.disabled = !enabled;
+    control.input.setCustomValidity('');
+    control.input.removeAttribute('aria-invalid');
+  }
+  filterControls.noise.input.value = Number.isFinite(filters.noisePercent)
+    ? filters.noisePercent : DEFAULT_VALUES.noisePercent;
+  filterControls.lowPass.input.value = Number.isFinite(filters.lowPassCutoffHz) && filters.lowPassCutoffHz > 0
+    ? filters.lowPassCutoffHz / 1e3 : LOW_PASS_INITIAL_HZ / 1e3;
+  filterControls.smoothing.input.value = Number.isFinite(filters.smoothingWindowPoints)
+    ? filters.smoothingWindowPoints : SMOOTHING_INITIAL_WINDOW;
 }
 
-function renderFilterMenu() {
-  const noisePercent = Number.isFinite(state.filters?.noisePercent)
-    ? state.filters.noisePercent
-    : DEFAULT_VALUES.noisePercent;
-  $('noiseFilterBtn').setAttribute('aria-checked', String(state.filters?.noiseEnabled === true));
-  $('lowPassFilterBtn').setAttribute(
-    'aria-checked',
-    String(state.filters?.lowPassEnabled === true),
-  );
-  $('smoothingFilterBtn').setAttribute(
-    'aria-checked',
-    String(state.filters?.smoothingEnabled === true),
-  );
-  const smoothingWindow = Number.isFinite(state.filters?.smoothingWindowPoints)
-    ? state.filters.smoothingWindowPoints
-    : SMOOTHING_INITIAL_WINDOW;
-  $('noiseFilterValue').textContent = `${Number(noisePercent.toPrecision(6))}%`;
-  $('noiseFilterDefaultValue').textContent = `${Number(DEFAULT_VALUES.noisePercent.toPrecision(6))}%`;
-  $('smoothingFilterValue').textContent = `${smoothingWindow} pts`;
-  $('smoothingFilterDefaultValue').textContent = `${SMOOTHING_INITIAL_WINDOW} pts`;
-}
-
-function regenerateWithFilters() {
-  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
-  globalThis.updateAudioPlaybackButton?.();
+function regenerateWithFilters(nextFilters) {
   if (!confirmWaveformReplacement(false)) {
-    const snapshot = state.history.at(-1);
-    if (snapshot) restoreWaveform(snapshot);
-    else renderDocument();
+    renderFilterControls();
     return false;
   }
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  globalThis.updateAudioPlaybackButton?.();
+  state.filters = nextFilters;
   generate(state.type, true, true, false, false);
   refreshScopeVertical();
   persistCurrentSettings();
+  renderFilterControls();
   return true;
 }
 
-function openFilterDialog(kind) {
-  closeFiltersMenu();
-  const dialog = $('filterDialog'),
-    title = $('filterDialogTitle'),
-    description = $('filterDialogDescription'),
-    input = $('filterDialogInput'),
-    unit = $('filterDialogUnit');
-  if (!filterDialogField) {
-    filterDialogField = ARBDRAW_FIELDS.attach(
-      input,
-      {
-        ...ARBDRAW_FIELD_DEFINITIONS.filterValue,
-        id: 'filterDialogInput',
-      },
-      { commit: () => true },
-    );
-  }
-  if (kind === 'noise') {
-    title.textContent = 'Add Noise';
-    description.textContent = 'Set the amount of random vertical noise to add.';
-    input.value = Number.isFinite(state.filters.noisePercent)
-      ? state.filters.noisePercent
-      : DEFAULT_VALUES.noisePercent;
-    input.min = 0;
-    input.max = DEFAULT_VALUES.noisePercentMax;
-    input.step = 'any';
-    input.setAttribute('aria-label', 'Noise percentage');
-    unit.textContent = '%';
-  } else if (kind === 'lowPass') {
-    title.textContent = 'Low-Pass Filter';
-    description.textContent = 'Set the low-pass filter cut-off frequency.';
-    input.value = state.filters.lowPassCutoffHz
-      ? state.filters.lowPassCutoffHz / 1e3
-      : LOW_PASS_INITIAL_HZ / 1e3;
-    input.min = 0.000001;
-    input.removeAttribute('max');
-    input.step = 'any';
-    input.setAttribute('aria-label', 'Cut-off frequency in kHz');
-    unit.textContent = 'kHz';
-  } else {
-    title.textContent = 'Smoothing';
-    description.textContent = 'Set the centered moving-average window size. Larger windows smooth more variation.';
-    input.value = Number.isFinite(state.filters.smoothingWindowPoints)
-      ? state.filters.smoothingWindowPoints
-      : SMOOTHING_INITIAL_WINDOW;
-    input.min = 3;
-    input.max = SMOOTHING_MAX_WINDOW;
-    input.step = 2;
-    input.setAttribute('aria-label', 'Smoothing window size in points');
-    unit.textContent = 'pts';
-  }
-  filterDialogField.definition.constraints = {
-    min: Number(input.min),
-    ...(input.max ? { max: Number(input.max) } : {}),
-  };
-  filterDialogField.refresh(input.value);
-  filterDialogField.setError('');
-  dialog.dataset.filter = kind;
-  dialog.showModal();
-  input.focus();
-  input.select();
+function nextFilterSettings() {
+  const filters = { ...state.filters, enabled: true };
+  for (const control of Object.values(filterControls))
+    filters[control.enabledKey] = control.checkbox.checked;
+  return filters;
 }
 
-$('filtersBtn').onclick = (event) => {
-  event.stopPropagation();
-  closeViewPicker();
-  const menu = $('filtersMenu'),
-    isOpen = menu.classList.toggle('open');
-  $('filtersBtn').setAttribute('aria-expanded', String(isOpen));
-  renderFilterMenu();
-};
-$('enableFiltersBtn').onclick = () => {
-  state.filters.enabled = true;
-  state.filters.noiseEnabled = true;
-  state.filters.lowPassEnabled = true;
-  state.filters.smoothingEnabled = true;
-  if (!state.filters.noisePercent) state.filters.noisePercent = DEFAULT_VALUES.noisePercent;
-  if (!state.filters.lowPassCutoffHz) state.filters.lowPassCutoffHz = LOW_PASS_INITIAL_HZ;
-  if (!state.filters.smoothingWindowPoints) state.filters.smoothingWindowPoints = SMOOTHING_INITIAL_WINDOW;
-  renderFilterMenu();
-  regenerateWithFilters();
-};
-$('disableFiltersBtn').onclick = () => {
-  state.filters.enabled = false;
-  state.filters.noiseEnabled = false;
-  state.filters.lowPassEnabled = false;
-  state.filters.smoothingEnabled = false;
-  renderFilterMenu();
-  regenerateWithFilters();
-};
-$('noiseFilterBtn').onclick = () => {
-  if (state.filters.noiseEnabled) {
-    state.filters.noiseEnabled = false;
-    renderFilterMenu();
-    closeFiltersMenu();
-    regenerateWithFilters();
-  } else openFilterDialog('noise');
-};
-$('changeNoiseFilterBtn').onclick = () => openFilterDialog('noise');
-$('defaultNoiseFilterBtn').onclick = () => {
-  state.filters.noisePercent = DEFAULT_VALUES.noisePercent;
-  state.filters.noiseEnabled = true;
-  renderFilterMenu();
-  closeFiltersMenu();
-  regenerateWithFilters();
-};
-$('lowPassFilterBtn').onclick = () => {
-  if (state.filters.lowPassEnabled) {
-    state.filters.lowPassEnabled = false;
-    renderFilterMenu();
-    closeFiltersMenu();
-    regenerateWithFilters();
-  } else openFilterDialog('lowPass');
-};
-$('smoothingFilterBtn').onclick = () => {
-  if (state.filters.smoothingEnabled) {
-    state.filters.smoothingEnabled = false;
-    renderFilterMenu();
-    closeFiltersMenu();
-    regenerateWithFilters();
-  } else openFilterDialog('smoothing');
-};
-$('changeSmoothingFilterBtn').onclick = () => openFilterDialog('smoothing');
-$('defaultSmoothingFilterBtn').onclick = () => {
-  state.filters.enabled = true;
-  state.filters.smoothingWindowPoints = SMOOTHING_INITIAL_WINDOW;
-  state.filters.smoothingEnabled = true;
-  renderFilterMenu();
-  closeFiltersMenu();
-  regenerateWithFilters();
-};
-$('applyFilterDialogBtn').onclick = () => {
-  const dialog = $('filterDialog'),
-    valueInput = $('filterDialogInput');
-  if (!filterDialogField?.commit('dialog')) return;
-  const value = Number(valueInput.value);
-  if (!Number.isFinite(value) || value <= 0) return;
-  if (dialog.dataset.filter === 'noise') {
-    state.filters.noisePercent = Math.min(DEFAULT_VALUES.noisePercentMax, value);
-    state.filters.noiseEnabled = true;
-  } else if (dialog.dataset.filter === 'lowPass') {
-    state.filters.lowPassCutoffHz = value * 1e3;
-    state.filters.lowPassEnabled = true;
-  } else {
-    const roundedWindow = Math.max(3, Math.min(SMOOTHING_MAX_WINDOW, Math.round(value)));
-    state.filters.enabled = true;
-    state.filters.smoothingWindowPoints = roundedWindow % 2 ? roundedWindow : roundedWindow + 1;
-    state.filters.smoothingEnabled = true;
-  }
-  renderFilterMenu();
-  dialog.close();
-  regenerateWithFilters();
-};
-$('filterDialog').addEventListener('close', () => filterDialogField?.cancel('dialog-close'));
+function validFilterValue(kind, rawValue) {
+  const value = Number(rawValue);
+  if (rawValue === '' || !Number.isFinite(value) || value <= 0)
+    return { error: 'Enter a value greater than zero.' };
+  if (kind === 'noise' && value > DEFAULT_VALUES.noisePercentMax)
+    return { error: `Use a value of at most ${DEFAULT_VALUES.noisePercentMax}%.` };
+  if (kind === 'smoothing' && (!Number.isInteger(value) || value < 3 || value > SMOOTHING_MAX_WINDOW || value % 2 === 0))
+    return { error: 'Use an odd whole number from 3 to 101.' };
+  if (kind === 'lowPass' && !Number.isFinite(value * 1e3))
+    return { error: 'Enter a smaller cutoff frequency.' };
+  return { value };
+}
 
-document.addEventListener('pointerdown', (event) => {
-  if (!event.target.closest?.('#filtersMenu,#filtersBtn')) closeFiltersMenu();
-});
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeFiltersMenu();
-});
+for (const [kind, control] of Object.entries(filterControls)) {
+  control.checkbox.addEventListener('change', () => {
+    const next = nextFilterSettings();
+    if (control.checkbox.checked) {
+      const result = validFilterValue(kind, control.input.value);
+      const value = result.error
+        ? kind === 'noise' ? DEFAULT_VALUES.noisePercent
+          : kind === 'lowPass' ? LOW_PASS_INITIAL_HZ / 1e3 : SMOOTHING_INITIAL_WINDOW
+        : result.value;
+      control.input.value = value;
+      next[control.valueKey] = kind === 'lowPass' ? value * 1e3 : value;
+    }
+    regenerateWithFilters(next);
+  });
+  control.input.addEventListener('change', () => {
+    const result = validFilterValue(kind, control.input.value);
+    if (result.error) {
+      control.input.setCustomValidity(result.error);
+      control.input.setAttribute('aria-invalid', 'true');
+      control.input.reportValidity();
+      return;
+    }
+    control.input.setCustomValidity('');
+    control.input.removeAttribute('aria-invalid');
+    const next = nextFilterSettings();
+    const value = kind === 'lowPass' ? result.value * 1e3 : result.value;
+    if (next[control.valueKey] === value) return;
+    next[control.valueKey] = value;
+    regenerateWithFilters(next);
+  });
+  control.input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') control.input.blur();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      renderFilterControls();
+      control.input.blur();
+    }
+  });
+  control.input.addEventListener('input', () => {
+    control.input.setCustomValidity('');
+    control.input.removeAttribute('aria-invalid');
+  });
+}
+
+renderFilterControls();

@@ -28,7 +28,7 @@ function renderDocument() {
   updateSymmetryVisibility(state.type);
   updateRcVisibility(state.type);
   renderSerialProperties();
-  renderFilterMenu();
+  renderFilterControls();
   updateFunctionSelect(state.type);
   draw();
   ARBDRAW_FIELDS.formatInputs();

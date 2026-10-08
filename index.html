@@ -15,7 +15,7 @@
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Instruments</button></div><button id="filtersBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">Filters <span aria-hidden="true">▾</span></button><div id="filtersMenu" class="context-menu file-menu filters-menu" role="menu" aria-label="Filters"><button id="enableFiltersBtn" role="menuitem" type="button">Enable All Filters</button><button id="disableFiltersBtn" role="menuitem" type="button">Disable All Filters</button><div class="menu-divider" role="separator"></div><div id="noiseFilterItem" class="filter-menu-item"><button id="noiseFilterBtn" role="menuitemcheckbox" aria-haspopup="menu" aria-checked="false" type="button">Add Noise…</button><div class="filter-submenu" role="menu" aria-label="Add Noise settings"><div class="filter-value"><span>Current</span><strong id="noiseFilterValue">1%</strong></div><button id="defaultNoiseFilterBtn" role="menuitem" type="button">Use Default (<span id="noiseFilterDefaultValue">1%</span>)</button><button id="changeNoiseFilterBtn" role="menuitem" type="button">Change…</button></div></div><div id="smoothingFilterItem" class="filter-menu-item"><button id="smoothingFilterBtn" role="menuitemcheckbox" aria-haspopup="menu" aria-checked="false" type="button">Smoothing…</button><div class="filter-submenu" role="menu" aria-label="Smoothing settings"><div class="filter-value"><span>Current</span><strong id="smoothingFilterValue">5 pts</strong></div><button id="defaultSmoothingFilterBtn" role="menuitem" type="button">Use Default (<span id="smoothingFilterDefaultValue">5 pts</span>)</button><button id="changeSmoothingFilterBtn" role="menuitem" type="button">Change…</button></div></div><button id="lowPassFilterBtn" role="menuitemcheckbox" aria-checked="false" type="button">Low-Pass Filter…</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button" type="button" aria-haspopup="menu" aria-expanded="false">File <span aria-hidden="true">▾</span></button><div id="fileMenu" class="context-menu file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Instruments</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
@@ -165,6 +165,21 @@
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
           <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
         </div>
+        <div class="section advanced-filters-section" aria-labelledby="filtersSectionTitle">
+          <div id="filtersSectionTitle" class="section-title">Filters</div>
+          <div class="filter-setting">
+            <label class="filter-toggle" for="noiseFilterEnabled"><input id="noiseFilterEnabled" type="checkbox"><span>Add noise</span></label>
+            <div class="unit-input filter-setting-input"><input id="noiseFilterInput" type="number" min="0.000001" max="10" step="any" value="1" data-decimal-places="6" aria-label="Noise amount" disabled><span>%</span></div>
+          </div>
+          <div class="filter-setting">
+            <label class="filter-toggle" for="lowPassFilterEnabled"><input id="lowPassFilterEnabled" type="checkbox"><span>Low-pass</span></label>
+            <div class="unit-input filter-setting-input"><input id="lowPassFilterInput" type="number" min="0.000001" step="any" value="1" data-decimal-places="6" aria-label="Low-pass cutoff" disabled><span>kHz</span></div>
+          </div>
+          <div class="filter-setting">
+            <label class="filter-toggle" for="smoothingFilterEnabled"><input id="smoothingFilterEnabled" type="checkbox"><span>Smoothing</span></label>
+            <div class="unit-input filter-setting-input"><input id="smoothingFilterInput" type="number" min="3" max="101" step="2" value="5" aria-label="Smoothing window" disabled><span>pts</span></div>
+          </div>
+        </div>
         <div class="section theme-section">
           <div class="section-title">Theme</div>
           <div class="theme-picker" role="group" aria-label="Color theme">
@@ -245,14 +260,6 @@
       <label id="csvHeadersOption" class="save-name-option"><input id="includeCsvHeaders" type="checkbox"> Include Headers</label>
       <label id="csvTimestampsOption" class="save-name-option"><input id="includeCsvTimestamps" type="checkbox" checked> Include timestamp column</label>
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmExportBtn" type="button" class="primary">Export CSV</button></div>
-    </form>
-  </dialog>
-  <dialog id="filterDialog" class="open-dialog filter-dialog">
-    <form method="dialog">
-      <div class="dialog-heading"><div><span class="eyebrow">FILTER</span><h2 id="filterDialogTitle">Add Noise</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
-      <p id="filterDialogDescription"></p>
-      <label class="save-filename-label" for="filterDialogInput">Value<div class="filter-value-input"><input id="filterDialogInput" type="number" step="any"><span id="filterDialogUnit"></span></div></label>
-      <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="applyFilterDialogBtn" type="button" class="primary">Apply filter</button></div>
     </form>
   </dialog>
   <dialog id="bridgeDialog" class="open-dialog bridge-dialog">

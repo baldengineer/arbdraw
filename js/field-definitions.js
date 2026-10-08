@@ -79,14 +79,6 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     },
   },
 
-  filterValue: {
-    kind: 'number',
-    label: 'Filter value',
-    liveUpdate: false,
-    behavior: 'manual',
-    constraints: { min: 0 },
-  },
-
   timing: {
     rateEdit: {
       kind: 'number',

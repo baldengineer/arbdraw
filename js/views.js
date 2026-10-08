@@ -46,7 +46,7 @@ const viewTabButtons = Object.fromEntries(
 viewPicker.className = 'view-picker';
 viewPicker.removeAttribute('role');
 viewPicker.removeAttribute('aria-label');
-document.querySelector('.filters-menu-anchor').before(viewPicker);
+document.querySelector('#fileMenu').after(viewPicker);
 const viewPickerButton = document.createElement('button');
 viewPickerButton.id = 'viewPickerBtn';
 viewPickerButton.className = 'ghost file-button view-picker-button';
@@ -71,7 +71,6 @@ viewPickerButton.onclick = (event) => {
   event.stopPropagation();
   closeFileMenu();
   closeEditMenu();
-  closeFiltersMenu();
   const isOpen = viewPickerMenu.classList.toggle('open');
   viewPickerButton.setAttribute('aria-expanded', String(isOpen));
 };

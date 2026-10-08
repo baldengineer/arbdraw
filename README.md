@@ -30,7 +30,7 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 - SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - WAV export as mono 16-bit PCM at the current sample rate, with peak normalization (use the Audio profile for 48 kHz)
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
-- Optional noise, low-pass, and smoothing filters with adjustable settings
+- Optional noise, low-pass, and smoothing filters with checkbox and value controls in Advanced mode Properties
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)

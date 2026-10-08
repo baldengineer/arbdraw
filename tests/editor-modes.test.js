@@ -25,14 +25,13 @@ function createHarness() {
     filters: { enabled: true, noiseEnabled: false, lowPassEnabled: false, smoothingEnabled: false },
     data: [0, 1, 0],
   };
-  const calls = { clear: 0, draw: 0, closeFilters: 0 };
+  const calls = { clear: 0, draw: 0 };
   const context = vm.createContext({
     $: element,
     state,
     document: { documentElement: { dataset: {} } },
     clearEditorSelection() { calls.clear++; },
     setEditorTool(tool) { state.tool = tool; },
-    closeFiltersMenu() { calls.closeFilters++; },
     renderSamples() {},
     draw() { calls.draw++; },
   });

@@ -20,6 +20,6 @@
 
 /* Keep the existing compact input shell visually equivalent while it moves
  * onto the shared token set. */
-.unit-input, .filter-value-input, .bridge-resource-select { transition: border-color .12s, box-shadow .12s; }
-.unit-input:focus-within, .filter-value-input:focus-within, .bridge-resource-select:focus-within { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent); }
+.unit-input, .bridge-resource-select { transition: border-color .12s, box-shadow .12s; }
+.unit-input:focus-within, .bridge-resource-select:focus-within { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent); }
 .field-help { margin: 0; color: var(--muted); font-size: 10px; }

@@ -76,7 +76,7 @@ test('View menu follows Edit and retains all project views', () => {
   const project = fs.readFileSync(path.join(__dirname, '../js/project.js'), 'utf8');
   const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
 
-  assert.match(views, /\.filters-menu-anchor'\)\.before\(viewPicker\)/);
+  assert.match(views, /'#fileMenu'\)\.after\(viewPicker\)/);
   assert.match(project, /fileMenu\.after\(editMenuAnchor\)/);
   assert.match(views, /viewPickerButton\.append\('View ', viewPickerChevron\)/);
   assert.match(views, /role', 'menuitemradio'/);
