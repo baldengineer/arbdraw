@@ -275,8 +275,7 @@ persistSettings({ ...globalThis.ARBDRAW_DEFAULTS, ...STORED_SETTINGS });
 
 function normalizeFilterSettings(source = {}) {
   const noisePercent = Number(source.noisePercent);
-  const cutoff = Number(source.lowPassCutoffHz),
-    smoothingWindow = Number(source.smoothingWindowPoints);
+  const smoothingWindow = Number(source.smoothingWindowPoints);
   const roundedSmoothingWindow = Math.round(smoothingWindow);
   return {
     enabled: source.enabled !== false,
@@ -284,8 +283,6 @@ function normalizeFilterSettings(source = {}) {
     noisePercent: Number.isFinite(noisePercent)
       ? Math.min(DEFAULT_VALUES.noisePercentMax, Math.max(0, noisePercent))
       : DEFAULT_VALUES.noisePercent,
-    lowPassEnabled: source.lowPassEnabled === true,
-    lowPassCutoffHz: Number.isFinite(cutoff) && cutoff > 0 ? cutoff : null,
     smoothingEnabled: source.smoothingEnabled === true,
     smoothingWindowPoints: Number.isFinite(smoothingWindow)
       ? Math.min(
@@ -331,8 +328,6 @@ function createDefaultDocument() {
         enabled: DEFAULT_VALUES.filtersEnabled,
         noiseEnabled: false,
         noisePercent: DEFAULT_VALUES.noisePercent,
-        lowPassEnabled: false,
-        lowPassCutoffHz: null,
         smoothingEnabled: false,
         smoothingWindowPoints: 5,
       },

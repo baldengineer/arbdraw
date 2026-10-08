@@ -36,10 +36,6 @@
                 <button id="advancedModeBtn" type="button" aria-pressed="false">Advanced</button>
               </div>
               <span id="editorModeDescription">Choose a waveshape and adjust its properties.</span>
-              <div id="advancedContentNotice" class="advanced-content-notice" role="status" hidden>
-                <span id="advancedContentText"></span>
-                <button id="editInAdvancedBtn" type="button">Edit in Advanced</button>
-              </div>
             </div>
             <div class="editor-waveform-stage">
               <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
@@ -172,20 +168,8 @@
             <div class="unit-input filter-setting-input"><input id="noiseFilterInput" type="number" min="0.000001" max="10" step="any" value="1" data-decimal-places="6" aria-label="Noise amount" disabled><span>%</span></div>
           </div>
           <div class="filter-setting">
-            <label class="filter-toggle" for="lowPassFilterEnabled"><input id="lowPassFilterEnabled" type="checkbox"><span>Low-pass</span></label>
-            <div class="unit-input filter-setting-input"><input id="lowPassFilterInput" type="number" min="0.000001" step="any" value="1" data-decimal-places="6" aria-label="Low-pass cutoff" disabled><span>kHz</span></div>
-          </div>
-          <div class="filter-setting">
             <label class="filter-toggle" for="smoothingFilterEnabled"><input id="smoothingFilterEnabled" type="checkbox"><span>Smoothing</span></label>
             <div class="unit-input filter-setting-input"><input id="smoothingFilterInput" type="number" min="3" max="101" step="2" value="5" aria-label="Smoothing window" disabled><span>pts</span></div>
-          </div>
-        </details>
-        <details class="section theme-section" data-property-panel="theme" open>
-          <summary class="section-title">Theme</summary>
-          <div class="theme-picker" role="group" aria-label="Color theme">
-            <button class="theme-option active" data-theme="dark">Dark</button>
-            <button class="theme-option" data-theme="light">Light</button>
-            <button class="theme-option" data-theme="contrast">Contrast</button>
           </div>
         </details>
         </fieldset>
@@ -220,11 +204,17 @@
             <div id="audioVolumePanel" class="audio-volume-panel" hidden><label for="audioVolumeInput">VOLUME</label><input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100" aria-label="Browser audio volume"><output id="audioVolumeValue" for="audioVolumeInput">100%</output></div>
           </div>
           <button id="playWaveformBtn" class="primary audio-play-button" type="button" aria-pressed="false" title="Play waveform through browser audio">▶ Play</button>
-          <div id="waveformModePicker" class="theme-picker waveform-mode-picker" role="group" aria-label="Waveform rendering mode"><button class="theme-option active" data-mode="vectors" type="button">Vectors</button><button class="theme-option" data-mode="dots" type="button">Dots</button></div>
         </div>
       </div>
     </main>
   </div>
+  <dialog id="basicModeConfirmDialog" class="open-dialog mode-confirm-dialog" aria-labelledby="basicModeConfirmTitle">
+    <form method="dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">EDITING MODE</span><h2 id="basicModeConfirmTitle">Switch to Basic?</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p>Switching to Basic will discard Advanced point edits and filters. The waveform will be regenerated from its properties. Continue?</p>
+      <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmBasicModeBtn" type="button" class="primary">Switch to Basic</button></div>
+    </form>
+  </dialog>
   <dialog id="openDialog" class="open-dialog">
     <form method="dialog">
       <div class="dialog-heading"><div><span class="eyebrow">OPEN PROJECT</span><h2>Import ArbDraw JSON</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>

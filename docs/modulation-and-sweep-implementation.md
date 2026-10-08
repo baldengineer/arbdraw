@@ -39,7 +39,7 @@ These are observations of the local source, not assumptions about instrument beh
 | `js/project.js` | Record duration is `N/Fs`; CSV timestamps extend through that duration using `i/(N-1)` | Last CSV timestamp differs from the usual sampled-signal convention |
 | `js/audio-playback.js` | Accepts duration override, uses endpoint interpolation, normalizes, always loops | Needs an explicit timed-record path and one-shot support |
 | `js/wav-export.js` | Writes one buffer at its supplied sample rate, peak-normalized | Does not preserve calibrated voltage or frequency-derived playback timing |
-| `js/filters.js` | Low-pass uses `state.sampleRate`; smoothing clamps to nominal high/low | Can use the wrong effective rate or clip an AM envelope |
+| `js/filters.js` | Smoothing clamps to nominal high/low; low-pass has been removed pending redesign | Can clip an AM envelope; a future low-pass needs an explicit effective rate |
 | `js/awg-profiles.js` | Contains nominal sample rates and point limits | Does not establish actual record playback rate, interpolation, or native modulation support |
 | `js/project.js`, `python_bridge/ADAPTERS.md` | Version 1 schema; adapters validate supported versions | New timing semantics require an explicit compatibility boundary |
 

@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../js/property-panels.js'),
 const storageKey = 'arbdraw-property-panels';
 
 function createHarness(storage = new Map()) {
-  const panels = ['function', 'amplitude', 'timing', 'serial', 'filters', 'theme']
+  const panels = ['function', 'amplitude', 'timing', 'serial', 'filters']
     .map((name) => ({
       dataset: { propertyPanel: name },
       open: true,

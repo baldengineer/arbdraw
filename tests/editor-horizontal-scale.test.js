@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..');
 test('editor horizontal scale uses point indices', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
-  const draw = source.slice(source.indexOf('function draw()'), source.indexOf('function updateWaveformModeButton()'));
+  const draw = source.slice(source.indexOf('function draw()'), source.indexOf('function setWaveformRenderMode('));
   const pointerMove = source.slice(
     source.indexOf("canvas.addEventListener('pointermove'"),
     source.indexOf("canvas.addEventListener('pointerup'"),

@@ -108,7 +108,7 @@ function parseProject(raw) {
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
       samplesEdited:
         values.length > 0 &&
-        (source.samplesEdited === true || !titles[importedType]),
+        (source.samplesEdited === true || source.filters?.lowPassEnabled === true || !titles[importedType]),
       sampleCount,
       values,
     },

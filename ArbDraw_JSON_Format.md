@@ -46,8 +46,6 @@ The current format identifier is:
       "enabled": true,
       "noiseEnabled": false,
       "noisePercent": 1,
-      "lowPassEnabled": false,
-      "lowPassCutoffHz": null,
       "smoothingEnabled": false,
       "smoothingWindowPoints": 5
     },
@@ -105,8 +103,8 @@ Unknown top-level fields are ignored.
 
 All waveform numbers use canonical units. UI display prefixes such as mV, kHz, and µs are not stored in the project JSON.
 
-The `filters` object contains `enabled`, `noiseEnabled`, `noisePercent`, `lowPassEnabled`,
-`lowPassCutoffHz`, `smoothingEnabled`, and `smoothingWindowPoints`. Smoothing uses a centered,
+The `filters` object contains `enabled`, `noiseEnabled`, `noisePercent`,
+`smoothingEnabled`, and `smoothingWindowPoints`. Smoothing uses a centered,
 odd-sized moving-average window and preserves the configured voltage limits.
 
 ## AWG fields

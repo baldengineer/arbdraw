@@ -2,16 +2,12 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Application-wide theme, toast, menu-dismissal, and lifecycle behavior.
 function setTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem('arbdraw-theme', theme);
-  document
-    .querySelectorAll('.theme-option[data-theme]')
-    .forEach((button) => button.classList.toggle('active', button.dataset.theme === theme));
+  const selected = ['dark', 'light', 'contrast'].includes(theme) ? theme : 'dark';
+  document.documentElement.dataset.theme = selected;
+  localStorage.setItem('arbdraw-theme', selected);
+  globalThis.ARBDRAW_VIEW_MENU?.render();
 }
 setTheme(localStorage.getItem('arbdraw-theme') || 'dark');
-document
-  .querySelectorAll('.theme-option[data-theme]')
-  .forEach((button) => button.addEventListener('click', () => setTheme(button.dataset.theme)));
 function showToast(message) {
   $('toast').textContent = message;
   $('toast').classList.add('show');

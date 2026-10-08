@@ -30,7 +30,7 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 - SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - WAV export as mono 16-bit PCM at the current sample rate, with peak normalization (use the Audio profile for 48 kHz)
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
-- Optional noise, low-pass, and smoothing filters with checkbox and value controls in Advanced mode Properties
+- Optional noise and smoothing filters with checkbox and value controls in Advanced mode Properties
 - Undo and redo for waveform changes
 - Freehand, line, and erase editing
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
@@ -39,7 +39,7 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 
 ## Editing modes
 
-New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Switching modes does not change waveform data. Projects with point edits or active filters open in Advanced; Basic shows a notice when those edits are present. Sample values can be changed in the Samples view only while Advanced is active.
+New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
 
 ## ArbDraw Files
 

@@ -28,7 +28,6 @@ function createHarness() {
     type: 'sine', high: 5, low: -5, sampleRate: 1,
     filters: {
       enabled: true, noiseEnabled: false, noisePercent: 1,
-      lowPassEnabled: false, lowPassCutoffHz: null,
       smoothingEnabled: false, smoothingWindowPoints: 5,
     },
   };
@@ -69,16 +68,8 @@ test('checkboxes enable their value inputs and regenerate once per change', () =
   assert.equal(noiseInput.disabled, true);
 });
 
-test('low-pass and smoothing values use the displayed units', () => {
+test('smoothing accepts odd window sizes and rejects even ones', () => {
   const { element, state } = createHarness();
-  element('lowPassFilterEnabled').checked = true;
-  element('lowPassFilterEnabled').dispatch('change');
-  const cutoff = element('lowPassFilterInput');
-  assert.equal(state.filters.lowPassCutoffHz, 1000);
-  cutoff.value = '2.25';
-  cutoff.dispatch('change');
-  assert.equal(state.filters.lowPassCutoffHz, 2250);
-
   element('smoothingFilterEnabled').checked = true;
   element('smoothingFilterEnabled').dispatch('change');
   const window = element('smoothingFilterInput');

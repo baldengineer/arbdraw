@@ -31,7 +31,6 @@ button { color:inherit; }
 
 /* Theme surface overrides */
 .topbar{background:var(--top);border-color:var(--line)}
-.theme-picker{display:flex;width:max-content;padding:3px;gap:2px;border:1px solid var(--line);border-radius:7px;background:var(--field)}.theme-option{border:0;padding:5px 8px;border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;font-size:10px;font-weight:700}.theme-option:hover{color:var(--orange)}.theme-option.active{background:color-mix(in srgb,var(--blue) 22%,var(--soft));color:var(--blue);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 55%,transparent)}
 .primary:hover{background:var(--orange);filter:brightness(.92)}
 .icon-btn:hover{background:var(--soft);color:var(--ink)}
 .eyebrow,.empty-state,.save-state,.view-tabs button,.section label,.unit-input span,.axis-label{color:var(--muted)}
@@ -141,7 +140,6 @@ button { color:inherit; }
   .control-group { gap:10px; }
   .status-timing-field { flex-basis:calc(50% - 5px); }
   .timing-actions { width:100%; }
-  .waveform-mode-picker { width:100%; justify-content:space-between; }
   .scope-controls { padding:6px 0; }
   .scope-controls label { flex:1 1 130px; }
   .scope-control, .scope-position-control { width:100%; }
@@ -174,6 +172,13 @@ button { color:inherit; }
 .project-actions .view-picker-button{min-width:0;height:auto;gap:4px;padding:6px 8px;color:var(--muted);background:transparent;border:0;border-radius:4px;font-size:inherit;font-weight:inherit}
 .project-actions .view-picker-button:hover,.project-actions .view-picker-button[aria-expanded="true"]{color:var(--ink);background:var(--soft)}
 .project-actions .view-picker-menu{top:calc(100% + 8px);right:auto;left:0;min-width:132px}
+.view-submenu-item{position:relative}
+.view-submenu-item>button{display:flex;align-items:center;justify-content:space-between}
+.view-submenu-item>button::after{content:'›';margin-left:16px;color:var(--muted);font-size:15px;line-height:10px}
+.view-submenu-item.open>button{background:var(--soft)}
+.view-picker-menu .view-submenu{position:absolute;top:-5px;left:calc(100% + 3px);right:auto;display:none;min-width:135px}
+.view-submenu-item.open>.view-submenu{display:block}
+@media (max-width:560px){.view-picker-menu .view-submenu{top:calc(100% + 3px);left:0;min-width:100%}}
 @media (max-width:560px){.project-identity{flex-wrap:wrap}.project-actions{width:100%}}
 
 /* Basic and Advanced share the same waveform; only editing controls change. */
@@ -189,11 +194,8 @@ button { color:inherit; }
 .editor-mode-switch{display:flex;flex:none;padding:2px;background:var(--field);border:1px solid var(--line);border-radius:7px}
 .editor-mode-switch button{padding:5px 10px;color:var(--muted);background:transparent;border:0;border-radius:5px;cursor:pointer;font-size:11px;font-weight:750}
 .editor-mode-switch button[aria-pressed="true"]{color:var(--ink);background:var(--soft);box-shadow:0 1px 3px #0003}
-.editor-mode-switch button:focus-visible,.advanced-content-notice button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.advanced-content-notice{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-left:auto;color:var(--blue);font-weight:700}
-.advanced-content-notice[hidden]{display:none}
-.advanced-content-notice button{padding:3px 5px;color:var(--blue);background:transparent;border:0;border-radius:4px;cursor:pointer;text-decoration:underline;font-size:11px;font-weight:700}
-.advanced-content-notice button:hover{background:var(--field)}
+.editor-mode-switch button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.mode-confirm-dialog{width:min(390px,calc(100vw - 32px))}
 [data-editor-mode="basic"] .toolrail,[data-editor-mode="basic"] .advanced-filters-section{display:none}
 .filter-setting{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:9px 0}
 .inspector .filter-toggle{display:flex;align-items:center;gap:7px;min-width:0;margin:0;cursor:pointer;white-space:nowrap}
@@ -208,4 +210,4 @@ button { color:inherit; }
 .sample-edit-hint button{padding:0;color:var(--blue);background:transparent;border:0;cursor:pointer;font:inherit;font-weight:700;text-decoration:underline}
 .sample-edit-hint button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .sample-voltage[readonly]{color:var(--muted);cursor:default}
-@media (max-width:560px){.canvas-area{grid-template-rows:auto minmax(0,1fr) 38px auto}.editor-mode-bar{align-content:center}.advanced-content-notice{margin-left:0}}
+@media (max-width:560px){.canvas-area{grid-template-rows:auto minmax(0,1fr) 38px auto}.editor-mode-bar{align-content:center}}

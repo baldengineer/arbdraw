@@ -509,22 +509,9 @@ function draw() {
   ctx.restore();
   if (!$('waveformView').classList.contains('hidden')) drawScope();
 }
-function updateWaveformModeButton() {
-  document.querySelectorAll('#waveformModePicker .theme-option').forEach((button) => {
-    button.classList.toggle('active', button.dataset.mode === state.waveformRenderMode);
-  });
-}
-document.querySelectorAll('#waveformModePicker .theme-option').forEach((button) => {
-  button.addEventListener('click', () => {
-    state.waveformRenderMode = button.dataset.mode;
-    updateWaveformModeButton();
-    draw();
-  });
-});
-/* Keep the active segment synchronized if the render mode is changed elsewhere. */
 function setWaveformRenderMode(mode) {
   state.waveformRenderMode = mode === 'dots' ? 'dots' : 'vectors';
-  updateWaveformModeButton();
+  globalThis.ARBDRAW_VIEW_MENU?.render();
   draw();
 }
 function canvasPoint(e) {

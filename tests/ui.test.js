@@ -80,6 +80,11 @@ test('View menu follows Edit and retains all project views', () => {
   assert.match(project, /fileMenu\.after\(editMenuAnchor\)/);
   assert.match(views, /viewPickerButton\.append\('View ', viewPickerChevron\)/);
   assert.match(views, /role', 'menuitemradio'/);
+  assert.match(views, /addViewSubmenu\('theme', 'Theme'/);
+  assert.match(views, /addViewSubmenu\('rendering', 'Rendering'/);
+  assert.match(views, /role', 'menuitemcheckbox'/);
+  assert.doesNotMatch(html, /id="waveformModePicker"|class="section theme-section"/);
+  assert.doesNotMatch(html, /id="lowPassFilterEnabled"/);
   for (const id of ['editorTab', 'waveformTab', 'samplesTab', 'jsonTab'])
     assert.match(html, new RegExp(`id="${id}"`));
   assert.match(styles, /\.project-actions \.view-picker-menu\{top:calc\(100% \+ 8px\);right:auto;left:0/);

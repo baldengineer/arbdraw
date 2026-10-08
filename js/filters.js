@@ -1,24 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Waveform filter settings, property controls, and post-processing.
-const LOW_PASS_INITIAL_HZ = 1_000;
 const SMOOTHING_INITIAL_WINDOW = 5;
 const SMOOTHING_MAX_WINDOW = 101;
 
 function applyNoiseFilter(values, percentage) {
   const span = Math.abs(state.high - state.low) * (percentage / 100);
   return values.map((value) => value + (Math.random() * 2 - 1) * span);
-}
-
-function applyLowPassFilter(values, cutoffHz) {
-  const sampleRateHz = state.sampleRate * 1e6;
-  if (!Number.isFinite(cutoffHz) || cutoffHz <= 0 || cutoffHz >= sampleRateHz / 2)
-    return values;
-  const alpha = 1 - Math.exp((-2 * Math.PI * cutoffHz) / sampleRateHz);
-  const filtered = [values[0]];
-  for (let index = 1; index < values.length; index++)
-    filtered[index] = filtered[index - 1] + alpha * (values[index] - filtered[index - 1]);
-  return filtered;
 }
 
 function applySmoothingFilter(values, windowPoints) {
@@ -34,8 +22,6 @@ function applyFilters(values) {
   let filtered = values;
   if (state.filters.noiseEnabled && state.filters.noisePercent > 0)
     filtered = applyNoiseFilter(filtered, state.filters.noisePercent);
-  if (state.filters.lowPassEnabled && state.filters.lowPassCutoffHz)
-    filtered = applyLowPassFilter(filtered, state.filters.lowPassCutoffHz);
   if (state.filters.smoothingEnabled)
     filtered = applySmoothingFilter(filtered, state.filters.smoothingWindowPoints);
   return filtered;
@@ -43,7 +29,6 @@ function applyFilters(values) {
 
 const filterControls = {
   noise: { checkbox: $('noiseFilterEnabled'), input: $('noiseFilterInput'), enabledKey: 'noiseEnabled', valueKey: 'noisePercent' },
-  lowPass: { checkbox: $('lowPassFilterEnabled'), input: $('lowPassFilterInput'), enabledKey: 'lowPassEnabled', valueKey: 'lowPassCutoffHz' },
   smoothing: { checkbox: $('smoothingFilterEnabled'), input: $('smoothingFilterInput'), enabledKey: 'smoothingEnabled', valueKey: 'smoothingWindowPoints' },
 };
 
@@ -59,8 +44,6 @@ function renderFilterControls() {
   }
   filterControls.noise.input.value = Number.isFinite(filters.noisePercent)
     ? filters.noisePercent : DEFAULT_VALUES.noisePercent;
-  filterControls.lowPass.input.value = Number.isFinite(filters.lowPassCutoffHz) && filters.lowPassCutoffHz > 0
-    ? filters.lowPassCutoffHz / 1e3 : LOW_PASS_INITIAL_HZ / 1e3;
   filterControls.smoothing.input.value = Number.isFinite(filters.smoothingWindowPoints)
     ? filters.smoothingWindowPoints : SMOOTHING_INITIAL_WINDOW;
 }
@@ -95,8 +78,6 @@ function validFilterValue(kind, rawValue) {
     return { error: `Use a value of at most ${DEFAULT_VALUES.noisePercentMax}%.` };
   if (kind === 'smoothing' && (!Number.isInteger(value) || value < 3 || value > SMOOTHING_MAX_WINDOW || value % 2 === 0))
     return { error: 'Use an odd whole number from 3 to 101.' };
-  if (kind === 'lowPass' && !Number.isFinite(value * 1e3))
-    return { error: 'Enter a smaller cutoff frequency.' };
   return { value };
 }
 
@@ -106,11 +87,10 @@ for (const [kind, control] of Object.entries(filterControls)) {
     if (control.checkbox.checked) {
       const result = validFilterValue(kind, control.input.value);
       const value = result.error
-        ? kind === 'noise' ? DEFAULT_VALUES.noisePercent
-          : kind === 'lowPass' ? LOW_PASS_INITIAL_HZ / 1e3 : SMOOTHING_INITIAL_WINDOW
+        ? kind === 'noise' ? DEFAULT_VALUES.noisePercent : SMOOTHING_INITIAL_WINDOW
         : result.value;
       control.input.value = value;
-      next[control.valueKey] = kind === 'lowPass' ? value * 1e3 : value;
+      next[control.valueKey] = value;
     }
     regenerateWithFilters(next);
   });
@@ -125,7 +105,7 @@ for (const [kind, control] of Object.entries(filterControls)) {
     control.input.setCustomValidity('');
     control.input.removeAttribute('aria-invalid');
     const next = nextFilterSettings();
-    const value = kind === 'lowPass' ? result.value * 1e3 : result.value;
+    const value = result.value;
     if (next[control.valueKey] === value) return;
     next[control.valueKey] = value;
     regenerateWithFilters(next);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Basic and Advanced are views of the same waveform document.
+// Basic uses a generated waveform; Advanced can also contain point edits and filters.
 let editorMode = null;
 let lastAdvancedTool = state.tool === 'pointer' ? 'pencil' : state.tool;
 
@@ -8,7 +8,6 @@ function hasActiveFilters() {
   const filters = state.filters || {};
   return filters.enabled !== false && (
     filters.noiseEnabled === true ||
-    filters.lowPassEnabled === true ||
     filters.smoothingEnabled === true
   );
 }
@@ -17,17 +16,7 @@ function hasAdvancedContent() {
   return state.samplesEdited === true || hasActiveFilters();
 }
 
-function refreshEditorModeNotice() {
-  const hasPointEdits = state.samplesEdited === true;
-  const hasFilters = hasActiveFilters();
-  $('advancedContentNotice').hidden = editorMode !== 'basic' || (!hasPointEdits && !hasFilters);
-  $('advancedContentText').textContent = hasPointEdits && hasFilters
-    ? 'Point edits and filters are active.'
-    : hasPointEdits
-      ? 'This waveform has point edits.'
-      : hasFilters
-        ? 'Filters are active.'
-        : '';
+function refreshEditorModeHints() {
   $('sampleEditHint').hidden = editorMode !== 'basic';
 }
 
@@ -49,20 +38,42 @@ function setEditorMode(requestedMode) {
   } else {
     setEditorTool(lastAdvancedTool, false);
   }
-  refreshEditorModeNotice();
+  refreshEditorModeHints();
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
   draw();
 }
 
+function requestBasicMode() {
+  if (editorMode !== 'advanced' || !hasAdvancedContent()) {
+    setEditorMode('basic');
+    return;
+  }
+  $('basicModeConfirmDialog').showModal();
+}
+
+function convertToBasic() {
+  $('basicModeConfirmDialog').close();
+  clearEditorSelection(false);
+  state.filters = normalizeFilterSettings();
+  generate(state.type, false, false, false, false);
+  state.history = [];
+  state.redo = [];
+  pushHistory();
+  renderFilterControls();
+  refreshScopeVertical();
+  persistCurrentSettings();
+  setEditorMode('basic');
+}
+
 globalThis.ARBDRAW_EDITOR_MODES = {
   isAdvanced: () => editorMode === 'advanced',
-  refresh: refreshEditorModeNotice,
+  refresh: refreshEditorModeHints,
   forOpenedProject: () => setEditorMode(hasAdvancedContent() ? 'advanced' : 'basic'),
   forNewProject: () => setEditorMode('basic'),
 };
 
-$('basicModeBtn').onclick = () => setEditorMode('basic');
+$('basicModeBtn').onclick = requestBasicMode;
 $('advancedModeBtn').onclick = () => setEditorMode('advanced');
-$('editInAdvancedBtn').onclick = () => setEditorMode('advanced');
+$('confirmBasicModeBtn').onclick = convertToBasic;
 $('advancedSamplesBtn').onclick = () => setEditorMode('advanced');
 setEditorMode('basic');

@@ -63,7 +63,15 @@ viewPickerMenu.className = 'context-menu file-menu view-picker-menu';
 viewPickerMenu.setAttribute('role', 'menu');
 viewPickerMenu.setAttribute('aria-label', 'View');
 viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
+const viewSubmenus = new Map();
+function closeViewSubmenus() {
+  for (const { wrapper, trigger } of viewSubmenus.values()) {
+    wrapper.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+}
 function closeViewPicker() {
+  closeViewSubmenus();
   viewPickerMenu.classList.remove('open');
   viewPickerButton.setAttribute('aria-expanded', 'false');
 }
@@ -72,6 +80,8 @@ viewPickerButton.onclick = (event) => {
   closeFileMenu();
   closeEditMenu();
   const isOpen = viewPickerMenu.classList.toggle('open');
+  if (!isOpen) closeViewSubmenus();
+  else renderViewPreferences();
   viewPickerButton.setAttribute('aria-expanded', String(isOpen));
 };
 function setEditorTab(tab) {
@@ -107,6 +117,87 @@ for (const name of ['editor', 'waveform', 'samples', 'json']) {
     closeViewPicker();
   };
 }
+const viewMenuDivider = document.createElement('div');
+viewMenuDivider.className = 'menu-divider';
+viewMenuDivider.setAttribute('role', 'separator');
+viewPickerMenu.append(viewMenuDivider);
+
+function openViewSubmenu(name) {
+  const item = viewSubmenus.get(name);
+  if (!item) return;
+  closeViewSubmenus();
+  item.wrapper.classList.add('open');
+  item.trigger.setAttribute('aria-expanded', 'true');
+}
+
+function addViewSubmenu(name, label, choices, choose) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'view-submenu-item';
+  const trigger = document.createElement('button');
+  trigger.id = `${name}ViewMenuBtn`;
+  trigger.type = 'button';
+  trigger.setAttribute('role', 'menuitem');
+  trigger.setAttribute('aria-haspopup', 'menu');
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.textContent = label;
+  const submenu = document.createElement('div');
+  submenu.className = 'context-menu file-menu view-submenu';
+  submenu.setAttribute('role', 'menu');
+  submenu.setAttribute('aria-label', label);
+  for (const [value, title] of choices) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.dataset.viewChoice = name;
+    option.dataset.value = value;
+    option.setAttribute('role', 'menuitemcheckbox');
+    option.setAttribute('aria-checked', 'false');
+    option.textContent = title;
+    option.onclick = () => {
+      choose(value);
+      closeViewPicker();
+    };
+    submenu.append(option);
+  }
+  wrapper.append(trigger, submenu);
+  viewPickerMenu.append(wrapper);
+  viewSubmenus.set(name, { wrapper, trigger, submenu });
+  trigger.onclick = (event) => {
+    event.stopPropagation();
+    openViewSubmenu(name);
+  };
+  trigger.addEventListener('pointerenter', (event) => {
+    if (event.pointerType === 'mouse') openViewSubmenu(name);
+  });
+  trigger.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      openViewSubmenu(name);
+      submenu.querySelector('button')?.focus();
+    }
+  });
+  submenu.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeViewSubmenus();
+      trigger.focus();
+    }
+  });
+}
+
+addViewSubmenu('theme', 'Theme', [['dark', 'Dark'], ['light', 'Light'], ['contrast', 'Contrast']], (value) => setTheme(value));
+addViewSubmenu('rendering', 'Rendering', [['vectors', 'Vectors'], ['dots', 'Dots']], (value) => setWaveformRenderMode(value));
+function renderViewPreferences() {
+  const selected = {
+    theme: document.documentElement.dataset.theme || 'dark',
+    rendering: state.waveformRenderMode,
+  };
+  viewPickerMenu.querySelectorAll('[data-view-choice]').forEach((option) => {
+    option.setAttribute('aria-checked', String(selected[option.dataset.viewChoice] === option.dataset.value));
+  });
+}
+globalThis.ARBDRAW_VIEW_MENU = { render: renderViewPreferences };
+renderViewPreferences();
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#viewPickerMenu,#viewPickerBtn')) closeViewPicker();
 });

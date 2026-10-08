@@ -13,25 +13,38 @@ function createHarness() {
         attributes,
         hidden: false,
         textContent: '',
+        open: false,
         setAttribute(name, value) { attributes[name] = value; },
         classList: { contains(name) { return name === 'hidden'; } },
+        showModal() { this.open = true; },
+        close() { this.open = false; },
       });
     }
     return elements.get(id);
   };
   const state = {
     tool: 'pencil',
+    type: 'sine',
+    high: 2,
     samplesEdited: false,
-    filters: { enabled: true, noiseEnabled: false, lowPassEnabled: false, smoothingEnabled: false },
+    filters: { enabled: true, noiseEnabled: false, smoothingEnabled: false },
     data: [0, 1, 0],
+    history: [{ data: [0, 1, 0] }],
+    redo: [],
   };
-  const calls = { clear: 0, draw: 0 };
+  const calls = { clear: 0, draw: 0, generate: 0, persist: 0, filtersRendered: 0 };
   const context = vm.createContext({
     $: element,
     state,
     document: { documentElement: { dataset: {} } },
     clearEditorSelection() { calls.clear++; },
     setEditorTool(tool) { state.tool = tool; },
+    normalizeFilterSettings() { return { enabled: true, noiseEnabled: false, smoothingEnabled: false }; },
+    generate() { calls.generate++; state.data = [state.high, state.high, state.high]; state.samplesEdited = false; },
+    pushHistory() { state.history.push({ data: [...state.data] }); },
+    renderFilterControls() { calls.filtersRendered++; },
+    refreshScopeVertical() {},
+    persistCurrentSettings() { calls.persist++; },
     renderSamples() {},
     draw() { calls.draw++; },
   });
@@ -58,22 +71,39 @@ test('a new editor starts in Basic and switching modes preserves waveform data',
   assert.deepEqual(state.data, [0, 1, 0]);
 });
 
-test('Basic keeps advanced project content visible and offers a return to Advanced', () => {
-  const { context, element, state } = createHarness();
+test('switching to Basic asks before discarding Advanced edits and regenerates on approval', () => {
+  const { calls, context, element, state } = createHarness();
   state.samplesEdited = true;
   state.filters.noiseEnabled = true;
+  state.data = [9, 9, 9];
+  state.history.push({ data: [9, 9, 9] });
+  state.redo.push({ data: [8, 8, 8] });
   context.ARBDRAW_EDITOR_MODES.forOpenedProject();
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
 
   element('basicModeBtn').onclick();
-  assert.equal(element('advancedContentNotice').hidden, false);
-  assert.equal(element('advancedContentText').textContent, 'Point edits and filters are active.');
+  assert.equal(element('basicModeConfirmDialog').open, true);
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
   assert.equal(state.samplesEdited, true);
   assert.equal(state.filters.noiseEnabled, true);
+  assert.deepEqual(state.data, [9, 9, 9]);
 
-  element('editInAdvancedBtn').onclick();
+  element('basicModeConfirmDialog').close();
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
-  assert.equal(element('advancedContentNotice').hidden, true);
+  assert.equal(calls.generate, 0);
+
+  element('basicModeBtn').onclick();
+  element('confirmBasicModeBtn').onclick();
+  assert.equal(element('basicModeConfirmDialog').open, false);
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
+  assert.deepEqual(state.data, [2, 2, 2]);
+  assert.equal(state.samplesEdited, false);
+  assert.equal(state.filters.noiseEnabled, false);
+  assert.equal(state.history.length, 1);
+  assert.equal(state.redo.length, 0);
+  assert.equal(calls.generate, 1);
+  assert.equal(calls.persist, 1);
+  assert.equal(calls.filtersRendered, 1);
 });
 
 test('opening an unedited project and creating a new project start in Basic', () => {
