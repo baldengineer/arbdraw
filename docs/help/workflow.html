@@ -4,13 +4,14 @@
   <p>ArbDraw follows a simple three-step process: draw the waveform, transfer the data, and configure the AWG to generate it.</p>
 
   <h2>1. Draw</h2>
-  <p>Create the waveform you need in the editor. Basic mode starts with a waveshape and its properties. Switch to Advanced for point editing and filters. Returning to Basic regenerates the waveform from its properties.</p>
+  <p>Create the waveform you need in the Editor. In Basic, choose a waveshape and set its Properties. Switch to Advanced to edit points or apply filters. The waveform stays intact when you enter Advanced.</p>
   <ul>
-    <li>Edit individual waveform points in the Editor view.</li>
+    <li>In Advanced, edit individual waveform points in the Editor or Samples view.</li>
     <li>Choose a waveshape such as sine, square, triangle, or DC and configure its properties.</li>
     <li>In Advanced mode, enable filters and set their values in Properties.</li>
     <li>Select Serial to generate a UART stream from a text or hexadecimal payload.</li>
   </ul>
+  <p>If the waveform has Advanced point edits or active filters, switching back to Basic asks for confirmation. Cancel keeps the edits. Continuing removes the edits and filters, regenerates the full waveform from its Properties, and clears the earlier edit history.</p>
   <p>Use the AWG controls to choose the instrument profile and define the sample rate, sample count, and timestamp resolution. The AWG Frequency and AWG Period fields show the timing settings to use on the instrument.</p>
 
   <h2>2. Transfer</h2>

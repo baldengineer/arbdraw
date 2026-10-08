@@ -7,9 +7,16 @@
   <ol>
     <li>Choose a waveshape from the Waveshape selector.</li>
     <li>Note: The amplitude settings set the visual scale. The values are saved in the JSON file. However, the exported waveform does not contain absolute voltage points.</li>
-    <li>Use Basic mode in the Editor to choose a waveshape and set its properties. Switch to Advanced to edit points or apply filters. Returning to Basic regenerates from the properties and discards Advanced edits after confirmation.</li>
     <li>Use the Waveform view to inspect the generated signal with oscilloscope-style controls.</li>
   </ol>
+  <h2>Basic and Advanced editing</h2>
+  <p>Use the <strong>Basic</strong> and <strong>Advanced</strong> buttons above the Editor waveform to choose how you work with the waveform. A new project starts in Basic.</p>
+  <ul>
+    <li><strong>Basic:</strong> Choose a waveshape and adjust its Properties to generate the waveform. The Samples view shows the point values, but they are read only. Point editing tools and filters are unavailable.</li>
+    <li><strong>Advanced:</strong> Select or draw points in the Editor, edit values in the Samples view, and use the Add noise or Smoothing checkboxes in Properties. Checking a filter enables its value field.</li>
+  </ul>
+  <p>Switching from Basic to Advanced keeps the current waveform. If you have edited points or enabled a filter, switching back to Basic opens a confirmation dialog. <strong>Cancel</strong> keeps the Advanced waveform. <strong>Switch to Basic</strong> discards the point edits and filters, regenerates the entire waveform from its current waveshape and Properties, and clears the previous edit history. If there are no Advanced edits or active filters, switching to Basic does not need confirmation.</p>
+  <p>Projects saved with point edits or active filters open in Advanced so their waveform can be inspected and edited. A new project opens in Basic.</p>
   <h2>Create serial data</h2>
   <ol>
     <li>Select Serial as the waveshape.</li>
