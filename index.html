@@ -117,16 +117,16 @@
       <aside class="inspector panel">
         <fieldset id="inspectorControls" class="inspector-controls">
         <div class="panel-heading inspector-heading"><div class="property-heading-row"><span class="eyebrow">PROPERTIES</span><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div></div>
-        <div class="section function-section">
-          <div id="functionSectionTitle" class="section-title">Function</div>
+        <details class="section function-section" data-property-panel="function" open>
+          <summary id="functionSectionTitle" class="section-title">Function</summary>
           <label>Waveshape <button id="functionSelectBtn" class="function-select-button" type="button" aria-haspopup="menu" aria-expanded="false"><canvas aria-hidden="true"></canvas><span>Sine</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button></label>
           <label id="symmetryProperty" class="symmetry-property" hidden>Symmetry <div class="unit-input"><input id="symmetryInput" aria-label="Triangle symmetry" type="number" min="0" max="100" step="1" value="50"><span>%</span></div></label>
           <div id="symmetryPresets" class="symmetry-property symmetry-presets" role="group" aria-label="Quick set triangle symmetry" hidden><button type="button" data-symmetry="0" aria-label="Set symmetry to 0 percent" title="Falling ramp">0</button><button type="button" data-symmetry="50" aria-label="Set symmetry to 50 percent" title="Standard triangle">50</button><button type="button" data-symmetry="100" aria-label="Set symmetry to 100 percent" title="Rising ramp">100</button></div>
           <label id="rcProperty" class="rc-property" hidden>Tau <div class="unit-input"><input id="rcTauInput" aria-label="Unitless RC tau value" type="number" min="0.000001" step="0.1" value="5"></div></label>
           <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
-        </div>
-        <div class="section">
-          <div class="section-title">Amplitude</div>
+        </details>
+        <details class="section" data-property-panel="amplitude" open>
+          <summary class="section-title">Amplitude</summary>
           <div class="property-mode-switch" role="group" aria-label="Amplitude controls">
             <button type="button" data-amplitude-mode="amplitude" aria-pressed="true">Amplitude / Offset</button>
             <button type="button" data-amplitude-mode="levels" aria-pressed="false">High / Low</button>
@@ -137,9 +137,9 @@
           <label class="property-mode-field" data-amplitude-field="levels" hidden>Low level <div class="unit-input"><input id="lowInput" type="number" step="0.1" value="-5"><button class="unit-button voltage-unit-button" type="button" data-input="lowInput" aria-haspopup="menu" aria-expanded="false">V</button></div></label>
           <label class="transition-property" hidden>Rise time <div class="unit-input"><input id="riseTimeInput" type="number" step="0.1" min="0" value="0"><button class="unit-button transition-time-unit-button" type="button" data-input="riseTimeInput" aria-haspopup="menu" aria-expanded="false">ns</button></div></label>
           <label class="transition-property" hidden>Fall time <div class="unit-input"><input id="fallTimeInput" type="number" step="0.1" min="0" value="0"><button class="unit-button transition-time-unit-button" type="button" data-input="fallTimeInput" aria-haspopup="menu" aria-expanded="false">ns</button></div></label>
-        </div>
-        <div class="section">
-          <div class="section-title">Timing</div>
+        </details>
+        <details class="section" data-property-panel="timing" open>
+          <summary class="section-title">Timing</summary>
           <div class="property-mode-switch" role="group" aria-label="Timing controls">
             <button type="button" data-timing-mode="frequency" aria-pressed="true">Frequency</button>
             <button type="button" data-timing-mode="period" aria-pressed="false">Period</button>
@@ -149,9 +149,9 @@
           <label class="property-mode-field" data-timing-field="period" hidden>Period <div class="unit-input"><input id="periodInput" type="number" step="0.001" min="0.000001" value="1.333333"><button id="periodUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">µs</button></div></label>
           <label>Phase <div class="unit-input"><input id="phaseInput" type="number" step="1" value="0"><span>°</span></div></label>
           <label class="range-label">Duty cycle <span id="dutyValue">50%</span><input id="dutyInput" type="range" min="1" max="99" value="50"></label>
-        </div>
-        <div id="serialProperties" class="section serial-section" hidden>
-          <div class="section-title">Serial</div>
+        </details>
+        <details id="serialProperties" class="section serial-section" data-property-panel="serial" open hidden>
+          <summary class="section-title">Serial</summary>
           <label>Protocol <div class="unit-input"><select id="serialProtocol"><option value="UART">UART</option><option value="I2C">I2C</option></select></div></label>
           <label>Baud <div class="unit-input"><input id="serialBaud" type="number" min="1" step="1" value="115200" list="serialBaudRates"></div></label>
           <label>Word Size <div class="unit-input"><select id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
@@ -164,9 +164,9 @@
           <label>Stop Bits <div class="unit-input"><select id="serialStopBits"><option value="1" selected>1</option><option value="2">2</option></select></div></label>
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
           <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
-        </div>
-        <div class="section advanced-filters-section" aria-labelledby="filtersSectionTitle">
-          <div id="filtersSectionTitle" class="section-title">Filters</div>
+        </details>
+        <details class="section advanced-filters-section" data-property-panel="filters" open>
+          <summary id="filtersSectionTitle" class="section-title">Filters</summary>
           <div class="filter-setting">
             <label class="filter-toggle" for="noiseFilterEnabled"><input id="noiseFilterEnabled" type="checkbox"><span>Add noise</span></label>
             <div class="unit-input filter-setting-input"><input id="noiseFilterInput" type="number" min="0.000001" max="10" step="any" value="1" data-decimal-places="6" aria-label="Noise amount" disabled><span>%</span></div>
@@ -179,15 +179,15 @@
             <label class="filter-toggle" for="smoothingFilterEnabled"><input id="smoothingFilterEnabled" type="checkbox"><span>Smoothing</span></label>
             <div class="unit-input filter-setting-input"><input id="smoothingFilterInput" type="number" min="3" max="101" step="2" value="5" aria-label="Smoothing window" disabled><span>pts</span></div>
           </div>
-        </div>
-        <div class="section theme-section">
-          <div class="section-title">Theme</div>
+        </details>
+        <details class="section theme-section" data-property-panel="theme" open>
+          <summary class="section-title">Theme</summary>
           <div class="theme-picker" role="group" aria-label="Color theme">
             <button class="theme-option active" data-theme="dark">Dark</button>
             <button class="theme-option" data-theme="light">Light</button>
             <button class="theme-option" data-theme="contrast">Contrast</button>
           </div>
-        </div>
+        </details>
         </fieldset>
       </aside>
 
@@ -325,6 +325,7 @@
   <script src="js/fields.js"></script>
   <script src="js/field-definitions.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/property-panels.js"></script>
   <script src="js/bridge-client.js"></script>
   <script src="js/properties.js"></script>
   <script src="js/property-modes.js"></script>

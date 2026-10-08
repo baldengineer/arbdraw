@@ -702,6 +702,7 @@ $('defaultAllBtn').onclick = () => {
   if (!window.confirm('Reset all settings to defaults? This will replace your saved settings.'))
     return;
   resetStoredSettings();
+  resetPropertyPanels();
   window.location.reload();
 };
 let contextPropertyInput = null;

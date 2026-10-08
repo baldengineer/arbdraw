@@ -177,6 +177,13 @@ button { color:inherit; }
 @media (max-width:560px){.project-identity{flex-wrap:wrap}.project-actions{width:100%}}
 
 /* Basic and Advanced share the same waveform; only editing controls change. */
+.inspector details.section:not([open]){padding-bottom:4px}
+.inspector details.section>summary.section-title{display:flex;align-items:center;justify-content:space-between;list-style:none;cursor:pointer;user-select:none}
+.inspector details.section>summary.section-title::-webkit-details-marker{display:none}
+.inspector details.section>summary.section-title::after{content:'';width:6px;height:6px;margin-right:3px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+.inspector details.section:not([open])>summary.section-title::after{transform:rotate(-45deg)}
+.inspector details.section>summary.section-title:hover{color:var(--ink)}
+.inspector details.section>summary.section-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
 .canvas-area{grid-template-rows:auto minmax(0,1fr) 42px auto}
 .editor-mode-bar{display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;min-height:34px;color:var(--muted);font-size:11px}
 .editor-mode-switch{display:flex;flex:none;padding:2px;background:var(--field);border:1px solid var(--line);border-radius:7px}

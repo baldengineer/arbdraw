@@ -165,6 +165,7 @@ projectNameInput.addEventListener('keydown', (event) => {
 $('confirmNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
+  resetPropertyPanels();
   projectDocument = createDefaultDocument();
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
