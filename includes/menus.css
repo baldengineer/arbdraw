@@ -26,7 +26,9 @@
   letter-spacing: normal;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"]) {
+/* Role selectors beat surrounding control styles; button/a keep new actions
+   visually consistent even before a role is supplied. */
+.menu-surface :is([role^="menuitem"], [role="option"], button, a) {
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -46,43 +48,43 @@
   letter-spacing: normal;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"]):is(:hover, :focus-visible),
-.menu-surface .view-submenu-item.open > [role="menuitem"] {
+.menu-surface :is([role^="menuitem"], [role="option"], button, a):is(:hover, :focus-visible),
+.menu-surface .view-submenu-item.open > button {
   color: var(--ink);
   background: var(--soft);
 }
 
-.menu-surface .view-submenu-item > [role="menuitem"] {
+.menu-surface .view-submenu-item > button {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.menu-surface.function-select-menu [role="menuitem"] {
+.menu-surface.function-select-menu button {
   display: grid;
   grid-template-columns: 52px 1fr;
   align-items: center;
   gap: 9px;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"]):focus-visible {
+.menu-surface :is([role^="menuitem"], [role="option"], button, a):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: -2px;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"]):disabled,
-.menu-surface :is([role^="menuitem"], [role="option"])[aria-disabled="true"] {
+.menu-surface :is([role^="menuitem"], [role="option"], button, a):disabled,
+.menu-surface :is([role^="menuitem"], [role="option"], button, a)[aria-disabled="true"] {
   opacity: .45;
   cursor: not-allowed;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"]):disabled:is(:hover, :focus-visible),
-.menu-surface :is([role^="menuitem"], [role="option"])[aria-disabled="true"]:is(:hover, :focus-visible) {
+.menu-surface :is([role^="menuitem"], [role="option"], button, a):disabled:is(:hover, :focus-visible),
+.menu-surface :is([role^="menuitem"], [role="option"], button, a)[aria-disabled="true"]:is(:hover, :focus-visible) {
   background: transparent;
 }
 
-.menu-surface :is([role^="menuitem"], [role="option"])[aria-checked="true"],
-.menu-surface [role="option"][aria-selected="true"] {
+.menu-surface :is([role^="menuitem"], [role="option"], button, a)[aria-checked="true"],
+.menu-surface :is([role^="menuitem"], [role="option"], button, a)[aria-selected="true"] {
   color: var(--blue);
   font-weight: 700;
 }
@@ -107,7 +109,7 @@
   outline-offset: 2px;
 }
 
-:root[data-theme="contrast"] .menu-surface :is([role^="menuitem"], [role="option"]):focus-visible,
+:root[data-theme="contrast"] .menu-surface :is([role^="menuitem"], [role="option"], button, a):focus-visible,
 :root[data-theme="contrast"] .menu-trigger:focus-visible {
   outline-width: 3px;
   outline-offset: 2px;

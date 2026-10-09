@@ -183,35 +183,18 @@ $('newBtn').onclick = () => {
 $('cancelNewBtn').onclick = () => {
   $('newConfirm').hidden = true;
 };
-const exportButton = document.createElement('button');
+const exportButton = ARBDRAW_MENU.item({
+  id: 'exportBtn',
+  className: 'ghost',
+  text: 'Export Waveform',
+});
 $('newBtn').textContent = 'New Project';
 $('openBtn').textContent = 'Open JSON Waveform';
 $('saveBtn').textContent = 'Save JSON Waveform';
-exportButton.id = 'exportBtn';
-exportButton.className = 'ghost';
-exportButton.type = 'button';
-exportButton.setAttribute('role', 'menuitem');
-exportButton.setAttribute('aria-haspopup', 'menu');
-exportButton.setAttribute('aria-expanded', 'false');
 exportButton.title = 'CSV, SVG, or WAV';
-exportButton.textContent = 'Export Waveform';
 $('saveBtn').after(exportButton);
 $('saveBtn').title = 'JSON';
 $('openBtn').title = 'JSON';
-const exportMenu = document.createElement('div');
-exportMenu.id = 'exportMenu';
-exportMenu.className = 'context-menu menu-surface';
-exportMenu.setAttribute('role', 'menu');
-exportMenu.setAttribute('aria-label', 'Export format');
-['CSV', 'CSV with header'].forEach((label) => {
-  const option = document.createElement('button');
-  option.type = 'button';
-  option.setAttribute('role', 'menuitem');
-  option.textContent = label;
-  option.onclick = () => downloadCsv(label === 'CSV with header');
-  exportMenu.append(option);
-});
-document.body.append(exportMenu);
 function projectNameFromFilename(filename) {
   return (
     String(filename)
@@ -303,7 +286,6 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
-  closeExportMenu();
   showToast(`Waveform exported as ${includeHeader ? 'CSV with header' : 'CSV'}`);
 }
 function downloadSvg(filename) {
@@ -352,10 +334,6 @@ $('exportFormatSelect').addEventListener('change', updateExportFormat);
 $('includeCsvTimestamps').addEventListener('change', () => {
   setIncludeCsvTimestampsPreference($('includeCsvTimestamps').checked);
 });
-function closeExportMenu() {
-  $('exportMenu').classList.remove('open');
-  $('exportBtn').setAttribute('aria-expanded', 'false');
-}
 $('exportBtn').onclick = (event) => {
   event.stopPropagation();
   closeFileMenu();
@@ -413,11 +391,7 @@ editButton.type = 'button';
 editButton.setAttribute('aria-haspopup', 'menu');
 editButton.setAttribute('aria-expanded', 'false');
 editButton.textContent = 'Edit ▾';
-const editMenu = document.createElement('div');
-editMenu.id = 'editMenu';
-editMenu.className = 'context-menu file-menu edit-menu menu-surface';
-editMenu.setAttribute('role', 'menu');
-editMenu.setAttribute('aria-label', 'Edit');
+const editMenu = ARBDRAW_MENU.create({ id: 'editMenu', label: 'Edit', className: 'file-menu edit-menu' });
 const editMenuAnchor = document.createElement('span');
 editMenuAnchor.className = 'edit-menu-anchor';
 editMenuAnchor.append(editButton, editMenu);
@@ -425,41 +399,34 @@ fileMenu.after(editMenuAnchor);
 editMenu.append($('undoBtn'), $('redoBtn'));
 for (const action of [$('undoBtn'), $('redoBtn')]) {
   action.classList.replace('icon-btn', 'ghost');
-  action.setAttribute('role', 'menuitem');
+  ARBDRAW_MENU.prepareItem(action);
 }
 function closeEditMenu() {
-  editMenu.classList.remove('open');
-  editButton.setAttribute('aria-expanded', 'false');
+  ARBDRAW_MENU.setOpen(editMenu, editButton, false);
 }
 function closeFileMenu() {
-  fileMenu.classList.remove('open');
-  fileButton.setAttribute('aria-expanded', 'false');
+  ARBDRAW_MENU.setOpen(fileMenu, fileButton, false);
 }
 fileButton.onclick = (event) => {
   event.stopPropagation();
   closeEditMenu();
   closeViewPicker();
-  const isOpen = fileMenu.classList.toggle('open');
-  fileButton.setAttribute('aria-expanded', String(isOpen));
+  ARBDRAW_MENU.setOpen(fileMenu, fileButton, !fileMenu.classList.contains('open'));
 };
 editButton.onclick = (event) => {
   event.stopPropagation();
   closeFileMenu();
   closeViewPicker();
-  closeExportMenu();
-  const isOpen = editMenu.classList.toggle('open');
-  editButton.setAttribute('aria-expanded', String(isOpen));
+  ARBDRAW_MENU.setOpen(editMenu, editButton, !editMenu.classList.contains('open'));
 };
 $('undoBtn').addEventListener('click', closeEditMenu);
 $('redoBtn').addEventListener('click', closeEditMenu);
 document.addEventListener('pointerdown', (event) => {
-  if (!event.target.closest?.('#exportMenu,#exportBtn')) closeExportMenu();
   if (!event.target.closest?.('#fileMenu,#fileBtn')) closeFileMenu();
   if (!event.target.closest?.('#editMenu,#editBtn')) closeEditMenu();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    closeExportMenu();
     closeFileMenu();
     closeEditMenu();
   }

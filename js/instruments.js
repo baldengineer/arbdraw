@@ -75,8 +75,7 @@
   }
 
   function closeResourceMenu() {
-    resourceMenu.classList.remove('open');
-    dropdownButton.setAttribute('aria-expanded', 'false');
+    ARBDRAW_MENU.setOpen(resourceMenu, dropdownButton, false);
   }
 
   function renderResourceList() {
@@ -91,12 +90,8 @@
       return;
     }
     visibleResources.forEach((resource) => {
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.className = 'bridge-resource-option';
-      option.role = 'option';
+      const option = ARBDRAW_MENU.item({ text: resource, role: 'option', className: 'bridge-resource-option' });
       option.dataset.resource = resource;
-      option.textContent = resource;
       resourceList.append(option);
     });
   }
@@ -219,8 +214,7 @@
   });
 
   dropdownButton.addEventListener('click', () => {
-    const isOpen = resourceMenu.classList.toggle('open');
-    dropdownButton.setAttribute('aria-expanded', String(isOpen));
+    const isOpen = ARBDRAW_MENU.setOpen(resourceMenu, dropdownButton, !resourceMenu.classList.contains('open'));
     if (isOpen) {
       resourceFilter.value = '';
       renderResourceList();

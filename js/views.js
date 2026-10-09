@@ -57,32 +57,25 @@ const viewPickerChevron = document.createElement('span');
 viewPickerChevron.setAttribute('aria-hidden', 'true');
 viewPickerChevron.textContent = '▾';
 viewPickerButton.append('View ', viewPickerChevron);
-const viewPickerMenu = document.createElement('div');
-viewPickerMenu.id = 'viewPickerMenu';
-viewPickerMenu.className = 'context-menu file-menu view-picker-menu menu-surface';
-viewPickerMenu.setAttribute('role', 'menu');
-viewPickerMenu.setAttribute('aria-label', 'View');
+const viewPickerMenu = ARBDRAW_MENU.create({ id: 'viewPickerMenu', label: 'View', className: 'file-menu view-picker-menu' });
 viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
 const viewSubmenus = new Map();
 function closeViewSubmenus() {
   for (const { wrapper, trigger } of viewSubmenus.values()) {
-    wrapper.classList.remove('open');
-    trigger.setAttribute('aria-expanded', 'false');
+    ARBDRAW_MENU.setOpen(wrapper, trigger, false);
   }
 }
 function closeViewPicker() {
   closeViewSubmenus();
-  viewPickerMenu.classList.remove('open');
-  viewPickerButton.setAttribute('aria-expanded', 'false');
+  ARBDRAW_MENU.setOpen(viewPickerMenu, viewPickerButton, false);
 }
 viewPickerButton.onclick = (event) => {
   event.stopPropagation();
   closeFileMenu();
   closeEditMenu();
-  const isOpen = viewPickerMenu.classList.toggle('open');
+  const isOpen = ARBDRAW_MENU.setOpen(viewPickerMenu, viewPickerButton, !viewPickerMenu.classList.contains('open'));
   if (!isOpen) closeViewSubmenus();
   else renderViewPreferences();
-  viewPickerButton.setAttribute('aria-expanded', String(isOpen));
 };
 function setEditorTab(tab) {
   for (const name of ['editor', 'waveform', 'samples', 'json']) {
@@ -108,7 +101,7 @@ $('viewerControls').append(document.querySelector('.scope-controls'));
 for (const name of ['editor', 'waveform', 'samples', 'json']) {
   const tab = viewTabButtons[name];
   if (!tab) continue;
-  tab.setAttribute('role', 'menuitemradio');
+  ARBDRAW_MENU.prepareItem(tab, 'menuitemradio');
   tab.removeAttribute('aria-selected');
   tab.setAttribute('aria-checked', String(name === 'editor'));
   viewPickerMenu.append(tab);
@@ -117,41 +110,26 @@ for (const name of ['editor', 'waveform', 'samples', 'json']) {
     closeViewPicker();
   };
 }
-const viewMenuDivider = document.createElement('div');
-viewMenuDivider.className = 'menu-divider';
-viewMenuDivider.setAttribute('role', 'separator');
-viewPickerMenu.append(viewMenuDivider);
+viewPickerMenu.append(ARBDRAW_MENU.separator());
 
 function openViewSubmenu(name) {
   const item = viewSubmenus.get(name);
   if (!item) return;
   closeViewSubmenus();
-  item.wrapper.classList.add('open');
-  item.trigger.setAttribute('aria-expanded', 'true');
+  ARBDRAW_MENU.setOpen(item.wrapper, item.trigger, true);
 }
 
 function addViewSubmenu(name, label, choices, choose) {
   const wrapper = document.createElement('div');
   wrapper.className = 'view-submenu-item';
-  const trigger = document.createElement('button');
-  trigger.id = `${name}ViewMenuBtn`;
-  trigger.type = 'button';
-  trigger.setAttribute('role', 'menuitem');
+  const trigger = ARBDRAW_MENU.item({ id: `${name}ViewMenuBtn`, text: label });
   trigger.setAttribute('aria-haspopup', 'menu');
   trigger.setAttribute('aria-expanded', 'false');
-  trigger.textContent = label;
-  const submenu = document.createElement('div');
-  submenu.className = 'context-menu file-menu view-submenu menu-surface';
-  submenu.setAttribute('role', 'menu');
-  submenu.setAttribute('aria-label', label);
+  const submenu = ARBDRAW_MENU.create({ label, className: 'file-menu view-submenu' });
   for (const [value, title] of choices) {
-    const option = document.createElement('button');
-    option.type = 'button';
+    const option = ARBDRAW_MENU.item({ text: title, role: 'menuitemcheckbox', checked: false });
     option.dataset.viewChoice = name;
     option.dataset.value = value;
-    option.setAttribute('role', 'menuitemcheckbox');
-    option.setAttribute('aria-checked', 'false');
-    option.textContent = title;
     option.onclick = () => {
       choose(value);
       closeViewPicker();

@@ -37,11 +37,7 @@ helpButton.setAttribute('aria-haspopup', 'menu');
 helpButton.setAttribute('aria-expanded', 'false');
 helpButton.textContent = 'Help ▾';
 
-const helpMenu = document.createElement('div');
-helpMenu.id = 'helpMenu';
-helpMenu.className = 'context-menu file-menu help-menu menu-surface';
-helpMenu.setAttribute('role', 'menu');
-helpMenu.setAttribute('aria-label', 'Help');
+const helpMenu = ARBDRAW_MENU.create({ id: 'helpMenu', label: 'Help', className: 'file-menu help-menu' });
 
 const helpMenuAnchor = document.createElement('span');
 helpMenuAnchor.className = 'help-menu-anchor';
@@ -99,8 +95,7 @@ keyboardShortcuts.forEach((shortcut) => {
 });
 
 function closeHelpMenu() {
-  helpMenu.classList.remove('open');
-  helpButton.setAttribute('aria-expanded', 'false');
+  ARBDRAW_MENU.setOpen(helpMenu, helpButton, false);
 }
 
 function openHelp(item) {
@@ -112,31 +107,24 @@ function openHelp(item) {
 }
 
 helpItems.forEach((item) => {
-  const option = document.createElement(item.href ? 'a' : 'button');
-  option.setAttribute('role', 'menuitem');
-  option.textContent = item.title;
-  if (item.href) {
-    option.href = item.href;
-    option.target = '_blank';
-    option.rel = 'noopener noreferrer';
-  } else {
-    option.type = 'button';
-    option.onclick = () => {
+  const option = ARBDRAW_MENU.item({
+    text: item.title,
+    externalHref: item.href,
+    onClick: item.href ? undefined : () => {
       if (item.action) {
         closeHelpMenu();
         item.action();
       } else {
         openHelp(item);
       }
-    };
-  }
+    },
+  });
   helpMenu.append(option);
 });
 
 helpButton.onclick = (event) => {
   event.stopPropagation();
-  const isOpen = helpMenu.classList.toggle('open');
-  helpButton.setAttribute('aria-expanded', String(isOpen));
+  ARBDRAW_MENU.setOpen(helpMenu, helpButton, !helpMenu.classList.contains('open'));
 };
 $('closeHelpBtn').onclick = () => helpDialog.close();
 $('openHelpPageBtn').onclick = () => {

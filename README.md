@@ -43,7 +43,12 @@ New projects open in **Basic**, where you choose a waveshape and adjust its prop
 
 ## Menu styling
 
-Use `menu-surface` on every custom menu or listbox and give its actions the appropriate `menuitem`, `menuitemradio`, `menuitemcheckbox`, or `option` role. Add `menu-trigger` to labeled menu buttons and `menu-select` to native `<select>` controls. Keep only placement and specialized content layout in feature styles. `includes/menus.css` owns the shared 12 px font size, 16 px line height, item padding, and hover, focus, selected, and disabled states across themes.
+Use `ARBDRAW_MENU` from `js/menus.js` for menus built in JavaScript. `create({ id, label, className })` creates a menu surface, `item({ text, onClick })` creates an action, `item({ text, externalHref })` creates a link that opens in a new window, and `separator()` creates a divider. Use `prepareItem(element, role)` when moving an existing button into a menu, and `setOpen(menu, trigger, open)` to keep visibility and `aria-expanded` together. The helper supplies item roles and button types; callers supply placement and actions. For menus in HTML, use `menu-surface` and semantic roles. `includes/menus.css` styles menu buttons and links even if a role is accidentally omitted. Add `menu-trigger` to labeled menu buttons and `menu-select` to native `<select>` controls.
+
+```js
+const menu = ARBDRAW_MENU.create({ id: 'toolsMenu', label: 'Tools' });
+menu.append(ARBDRAW_MENU.item({ text: 'Refresh', onClick: refreshTools }));
+```
 
 ## ArbDraw Files
 
