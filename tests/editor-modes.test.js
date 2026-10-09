@@ -32,7 +32,7 @@ function createHarness() {
     history: [{ data: [0, 1, 0] }],
     redo: [],
   };
-  const calls = { clear: 0, draw: 0, generate: 0, persist: 0, filtersRendered: 0 };
+  const calls = { clear: 0, draw: 0, generate: 0, persist: 0, filtersRendered: 0, filtersAtGenerate: null };
   const context = vm.createContext({
     $: element,
     state,
@@ -40,7 +40,7 @@ function createHarness() {
     clearEditorSelection() { calls.clear++; },
     setEditorTool(tool) { state.tool = tool; },
     normalizeFilterSettings() { return { enabled: true, noiseEnabled: false, smoothingEnabled: false }; },
-    generate() { calls.generate++; state.data = [state.high, state.high, state.high]; state.samplesEdited = false; },
+    generate() { calls.generate++; calls.filtersAtGenerate = { ...state.filters }; state.data = [state.high, state.high, state.high]; state.samplesEdited = false; },
     pushHistory() { state.history.push({ data: [...state.data] }); },
     renderFilterControls() { calls.filtersRendered++; },
     refreshScopeVertical() {},
@@ -71,7 +71,7 @@ test('a new editor starts in Basic and switching modes preserves waveform data',
   assert.deepEqual(state.data, [0, 1, 0]);
 });
 
-test('switching to Basic asks before discarding Advanced edits and regenerates on approval', () => {
+test('switching to Basic asks before discarding Arbitrary point edits and preserves filters', () => {
   const { calls, context, element, state } = createHarness();
   state.samplesEdited = true;
   state.filters.noiseEnabled = true;
@@ -98,7 +98,8 @@ test('switching to Basic asks before discarding Advanced edits and regenerates o
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
   assert.deepEqual(state.data, [2, 2, 2]);
   assert.equal(state.samplesEdited, false);
-  assert.equal(state.filters.noiseEnabled, false);
+  assert.equal(state.filters.noiseEnabled, true);
+  assert.equal(calls.filtersAtGenerate.noiseEnabled, true);
   assert.equal(state.history.length, 1);
   assert.equal(state.redo.length, 0);
   assert.equal(calls.generate, 1);
@@ -106,14 +107,20 @@ test('switching to Basic asks before discarding Advanced edits and regenerates o
   assert.equal(calls.filtersRendered, 1);
 });
 
-test('opening an unedited project and creating a new project start in Basic', () => {
+test('opening a filtered project and creating a new project start in Basic', () => {
   const { context, element, state } = createHarness();
   context.ARBDRAW_EDITOR_MODES.forOpenedProject();
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
 
   state.filters.smoothingEnabled = true;
   context.ARBDRAW_EDITOR_MODES.forOpenedProject();
-  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
+
+  element('advancedModeBtn').onclick();
+  element('basicModeBtn').onclick();
+  assert.equal(element('basicModeConfirmDialog').open, false);
+  assert.equal(state.filters.smoothingEnabled, true);
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
 
   state.filters.smoothingEnabled = false;
   context.ARBDRAW_EDITOR_MODES.forNewProject();

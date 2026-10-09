@@ -7,8 +7,8 @@
     {
       element: '.editor-mode-switch',
       popover: {
-        title: 'Basic and Advanced editing',
-        description: 'Basic lets you choose a waveshape and adjust its properties. Switch to Advanced when you want to select points, draw edits, or apply filters.',
+        title: 'Basic and Arbitrary editing',
+        description: 'Basic lets you choose a waveshape, adjust its properties, and apply filters. Switch to Arbitrary when you want to select points or draw edits.',
         side: 'bottom',
         align: 'start',
       },

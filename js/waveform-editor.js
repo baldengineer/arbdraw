@@ -1034,13 +1034,3 @@ document.addEventListener('keydown', (event) => {
     redoWaveform();
   }
 });
-$('zoomIn').onclick = () => {
-  state.high *= 0.8;
-  state.low *= 0.8;
-  draw();
-};
-$('zoomOut').onclick = () => {
-  state.high *= 1.25;
-  state.low *= 1.25;
-  draw();
-};

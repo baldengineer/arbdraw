@@ -102,3 +102,21 @@ test('mobile document order places AWG controls after waveform properties', () =
   assert.match(styles, /\.inspector \{[^}]*grid-row:1 \/ span 2/);
   assert.match(styles, /#editorControls\{grid-column:1;grid-row:2\}/);
 });
+
+test('Arbitrary edit tools sit beside the mode switch without zoom buttons', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+  const modeBar = html.slice(html.indexOf('<div class="editor-mode-bar">'), html.indexOf('<div class="editor-waveform-stage">'));
+
+  assert.ok(modeBar.indexOf('id="advancedModeBtn"') < modeBar.indexOf('id="toolrail"'));
+  assert.match(modeBar, /id="advancedModeBtn"[^>]*>Arbitrary<\/button>/);
+  assert.match(modeBar, /id="toolrail"/);
+  assert.doesNotMatch(modeBar, /id="zoomIn"|id="zoomOut"/);
+  for (const tool of ['pointer', 'selection', 'pencil', 'erase'])
+    assert.match(modeBar, new RegExp(`data-tool="${tool}"`));
+  assert.doesNotMatch(modeBar, /editorModeDescription/);
+  assert.match(styles, /\[data-editor-mode="basic"\] \.toolrail/);
+  assert.match(html, /class="section filters-section" data-property-panel="filters"/);
+  assert.doesNotMatch(styles, /\[data-editor-mode="basic"\][^{]*\.filters-section/);
+  assert.match(styles, /\.editor-mode-bar \.toolrail\{[^}]*flex-direction:row/);
+});

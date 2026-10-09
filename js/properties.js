@@ -637,7 +637,7 @@ const inspectorFieldControllers = [];
 document
   .querySelectorAll('.inspector input:not(.switch-input):not(#dutyInput)')
   .forEach((input) => {
-    if (input.closest('.serial-section, .advanced-filters-section')) return;
+    if (input.closest('.serial-section, .filters-section')) return;
     inspectorFieldControllers.push(
       ARBDRAW_FIELDS.attach(
         input,
@@ -708,7 +708,7 @@ $('defaultAllBtn').onclick = () => {
 let contextPropertyInput = null;
 document.querySelectorAll('.inspector input').forEach((input) =>
   input.addEventListener('contextmenu', (event) => {
-    if (input.closest('.serial-section, .advanced-filters-section')) return;
+    if (input.closest('.serial-section, .filters-section')) return;
     event.preventDefault();
     contextPropertyInput = input;
     const menu = $('propertyContextMenu'),

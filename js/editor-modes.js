@@ -1,19 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Basic uses a generated waveform; Advanced can also contain point edits and filters.
+// Basic uses a generated waveform with optional filters; Arbitrary allows point edits.
 let editorMode = null;
 let lastAdvancedTool = state.tool === 'pointer' ? 'pencil' : state.tool;
 
-function hasActiveFilters() {
-  const filters = state.filters || {};
-  return filters.enabled !== false && (
-    filters.noiseEnabled === true ||
-    filters.smoothingEnabled === true
-  );
-}
-
-function hasAdvancedContent() {
-  return state.samplesEdited === true || hasActiveFilters();
+function hasArbitraryEdits() {
+  return state.samplesEdited === true;
 }
 
 function refreshEditorModeHints() {
@@ -28,9 +20,6 @@ function setEditorMode(requestedMode) {
   document.documentElement.dataset.editorMode = nextMode;
   $('basicModeBtn').setAttribute('aria-pressed', String(nextMode === 'basic'));
   $('advancedModeBtn').setAttribute('aria-pressed', String(nextMode === 'advanced'));
-  $('editorModeDescription').textContent = nextMode === 'basic'
-    ? 'Choose a waveshape and adjust its properties.'
-    : 'Select points, draw edits, and apply filters.';
   $('functionSectionTitle').textContent = nextMode === 'basic' ? 'Function' : 'Waveform source';
   if (nextMode === 'basic') {
     clearEditorSelection(false);
@@ -44,7 +33,7 @@ function setEditorMode(requestedMode) {
 }
 
 function requestBasicMode() {
-  if (editorMode !== 'advanced' || !hasAdvancedContent()) {
+  if (editorMode !== 'advanced' || !hasArbitraryEdits()) {
     setEditorMode('basic');
     return;
   }
@@ -54,7 +43,6 @@ function requestBasicMode() {
 function convertToBasic() {
   $('basicModeConfirmDialog').close();
   clearEditorSelection(false);
-  state.filters = normalizeFilterSettings();
   generate(state.type, false, false, false, false);
   state.history = [];
   state.redo = [];
@@ -68,7 +56,7 @@ function convertToBasic() {
 globalThis.ARBDRAW_EDITOR_MODES = {
   isAdvanced: () => editorMode === 'advanced',
   refresh: refreshEditorModeHints,
-  forOpenedProject: () => setEditorMode(hasAdvancedContent() ? 'advanced' : 'basic'),
+  forOpenedProject: () => setEditorMode(hasArbitraryEdits() ? 'advanced' : 'basic'),
   forNewProject: () => setEditorMode('basic'),
 };
 
