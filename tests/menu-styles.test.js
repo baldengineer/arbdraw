@@ -10,7 +10,7 @@ const html = read('index.html');
 const styles = read('includes/menus.css');
 
 test('custom menus and native selectors use the shared menu interface', () => {
-  assert.match(html, /<link rel="stylesheet" href="includes\/menus\.css\?v=2">/);
+  assert.match(html, /<link rel="stylesheet" href="includes\/menus\.css\?v=3">/);
   assert.ok(html.indexOf('src="js/menus.js"') < html.indexOf('src="js/views.js'));
 
   const surfaces = [...html.matchAll(/<[^>]+role="(?:menu|listbox)"[^>]*>/g)].map(([tag]) => tag);

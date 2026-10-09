@@ -57,7 +57,15 @@
 .menu-surface .view-submenu-item > button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+}
+
+.view-picker-menu .view-submenu-item > button::before {
+  flex: 0 0 16px;
+}
+
+.view-picker-menu .view-submenu-item > button::after {
+  margin-left: auto;
 }
 
 .menu-surface.function-select-menu button {
