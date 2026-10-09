@@ -41,6 +41,10 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
 
+## Menu styling
+
+Use `menu-surface` on every custom menu or listbox and give its actions the appropriate `menuitem`, `menuitemradio`, `menuitemcheckbox`, or `option` role. Add `menu-trigger` to labeled menu buttons and `menu-select` to native `<select>` controls. Keep only placement and specialized content layout in feature styles. `includes/menus.css` owns the shared 12 px font size, 16 px line height, item padding, and hover, focus, selected, and disabled states across themes.
+
 ## ArbDraw Files
 
 The editor keeps a versioned `arbdraw.waveform` document in memory as its source of truth.

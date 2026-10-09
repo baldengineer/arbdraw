@@ -10,6 +10,7 @@ const helpItems = [
   { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
   { title: 'Known Issues', href: 'https://github.com/baldengineer/arbdraw/issues' },
+  { title: 'baldengineer.com', href: 'https://www.baldengineer.com/' },
 ];
 const keyboardShortcuts = [
   { keys: ['?'], description: 'Show keyboard shortcuts' },
@@ -30,7 +31,7 @@ const keyboardShortcuts = [
 
 const helpButton = document.createElement('button');
 helpButton.id = 'helpBtn';
-helpButton.className = 'ghost file-button';
+helpButton.className = 'ghost file-button menu-trigger';
 helpButton.type = 'button';
 helpButton.setAttribute('aria-haspopup', 'menu');
 helpButton.setAttribute('aria-expanded', 'false');
@@ -38,7 +39,7 @@ helpButton.textContent = 'Help ▾';
 
 const helpMenu = document.createElement('div');
 helpMenu.id = 'helpMenu';
-helpMenu.className = 'context-menu file-menu help-menu';
+helpMenu.className = 'context-menu file-menu help-menu menu-surface';
 helpMenu.setAttribute('role', 'menu');
 helpMenu.setAttribute('aria-label', 'Help');
 

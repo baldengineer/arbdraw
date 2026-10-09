@@ -272,7 +272,7 @@
     const input = doc.createElement(definition.kind === 'textarea' ? 'textarea' : definition.kind === 'select' ? 'select' : 'input');
     input.id = definition.id || '';
     input.type = definition.kind === 'number' ? 'number' : definition.kind === 'range' ? 'range' : definition.kind === 'checkbox' ? 'checkbox' : 'text';
-    input.className = 'field-input';
+    input.className = definition.kind === 'select' ? 'field-input menu-select' : 'field-input';
     if (definition.attributes) Object.entries(definition.attributes).forEach(([key, value]) => input.setAttribute(key, value));
     if (definition.options) definition.options.forEach(option => input.add(new Option(option.label ?? option, option.value ?? option)));
     host.append(input);

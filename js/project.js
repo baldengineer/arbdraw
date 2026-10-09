@@ -190,6 +190,7 @@ $('saveBtn').textContent = 'Save JSON Waveform';
 exportButton.id = 'exportBtn';
 exportButton.className = 'ghost';
 exportButton.type = 'button';
+exportButton.setAttribute('role', 'menuitem');
 exportButton.setAttribute('aria-haspopup', 'menu');
 exportButton.setAttribute('aria-expanded', 'false');
 exportButton.title = 'CSV, SVG, or WAV';
@@ -199,7 +200,7 @@ $('saveBtn').title = 'JSON';
 $('openBtn').title = 'JSON';
 const exportMenu = document.createElement('div');
 exportMenu.id = 'exportMenu';
-exportMenu.className = 'context-menu';
+exportMenu.className = 'context-menu menu-surface';
 exportMenu.setAttribute('role', 'menu');
 exportMenu.setAttribute('aria-label', 'Export format');
 ['CSV', 'CSV with header'].forEach((label) => {
@@ -407,14 +408,14 @@ const fileButton = $('fileBtn');
 const fileMenu = $('fileMenu');
 const editButton = document.createElement('button');
 editButton.id = 'editBtn';
-editButton.className = 'ghost file-button';
+editButton.className = 'ghost file-button menu-trigger';
 editButton.type = 'button';
 editButton.setAttribute('aria-haspopup', 'menu');
 editButton.setAttribute('aria-expanded', 'false');
 editButton.textContent = 'Edit ▾';
 const editMenu = document.createElement('div');
 editMenu.id = 'editMenu';
-editMenu.className = 'context-menu file-menu edit-menu';
+editMenu.className = 'context-menu file-menu edit-menu menu-surface';
 editMenu.setAttribute('role', 'menu');
 editMenu.setAttribute('aria-label', 'Edit');
 const editMenuAnchor = document.createElement('span');
@@ -422,6 +423,10 @@ editMenuAnchor.className = 'edit-menu-anchor';
 editMenuAnchor.append(editButton, editMenu);
 fileMenu.after(editMenuAnchor);
 editMenu.append($('undoBtn'), $('redoBtn'));
+for (const action of [$('undoBtn'), $('redoBtn')]) {
+  action.classList.replace('icon-btn', 'ghost');
+  action.setAttribute('role', 'menuitem');
+}
 function closeEditMenu() {
   editMenu.classList.remove('open');
   editButton.setAttribute('aria-expanded', 'false');

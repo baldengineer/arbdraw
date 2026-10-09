@@ -49,7 +49,7 @@ viewPicker.removeAttribute('aria-label');
 document.querySelector('#fileMenu').after(viewPicker);
 const viewPickerButton = document.createElement('button');
 viewPickerButton.id = 'viewPickerBtn';
-viewPickerButton.className = 'ghost file-button view-picker-button';
+viewPickerButton.className = 'ghost file-button view-picker-button menu-trigger';
 viewPickerButton.type = 'button';
 viewPickerButton.setAttribute('aria-haspopup', 'menu');
 viewPickerButton.setAttribute('aria-expanded', 'false');
@@ -59,7 +59,7 @@ viewPickerChevron.textContent = '▾';
 viewPickerButton.append('View ', viewPickerChevron);
 const viewPickerMenu = document.createElement('div');
 viewPickerMenu.id = 'viewPickerMenu';
-viewPickerMenu.className = 'context-menu file-menu view-picker-menu';
+viewPickerMenu.className = 'context-menu file-menu view-picker-menu menu-surface';
 viewPickerMenu.setAttribute('role', 'menu');
 viewPickerMenu.setAttribute('aria-label', 'View');
 viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
@@ -141,7 +141,7 @@ function addViewSubmenu(name, label, choices, choose) {
   trigger.setAttribute('aria-expanded', 'false');
   trigger.textContent = label;
   const submenu = document.createElement('div');
-  submenu.className = 'context-menu file-menu view-submenu';
+  submenu.className = 'context-menu file-menu view-submenu menu-surface';
   submenu.setAttribute('role', 'menu');
   submenu.setAttribute('aria-label', label);
   for (const [value, title] of choices) {
