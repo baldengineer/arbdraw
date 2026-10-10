@@ -53,10 +53,7 @@ viewPickerButton.className = 'ghost file-button view-picker-button menu-trigger'
 viewPickerButton.type = 'button';
 viewPickerButton.setAttribute('aria-haspopup', 'menu');
 viewPickerButton.setAttribute('aria-expanded', 'false');
-const viewPickerChevron = document.createElement('span');
-viewPickerChevron.setAttribute('aria-hidden', 'true');
-viewPickerChevron.textContent = '▾';
-viewPickerButton.append('View ', viewPickerChevron);
+viewPickerButton.textContent = 'View';
 const viewPickerMenu = ARBDRAW_MENU.create({ id: 'viewPickerMenu', label: 'View', className: 'file-menu view-picker-menu' });
 viewPicker.replaceChildren(viewPickerButton, viewPickerMenu);
 const viewSubmenus = new Map();

@@ -35,7 +35,7 @@ helpButton.className = 'ghost file-button menu-trigger';
 helpButton.type = 'button';
 helpButton.setAttribute('aria-haspopup', 'menu');
 helpButton.setAttribute('aria-expanded', 'false');
-helpButton.textContent = 'Help ▾';
+helpButton.textContent = 'Help';
 
 const helpMenu = ARBDRAW_MENU.create({ id: 'helpMenu', label: 'Help', className: 'file-menu help-menu' });
 

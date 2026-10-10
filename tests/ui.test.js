@@ -74,11 +74,16 @@ test('View menu follows Edit and retains all project views', () => {
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const views = fs.readFileSync(path.join(__dirname, '../js/views.js'), 'utf8');
   const project = fs.readFileSync(path.join(__dirname, '../js/project.js'), 'utf8');
+  const help = fs.readFileSync(path.join(__dirname, '../js/help.js'), 'utf8');
   const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
 
   assert.match(views, /'#fileMenu'\)\.after\(viewPicker\)/);
   assert.match(project, /fileMenu\.after\(editMenuAnchor\)/);
-  assert.match(views, /viewPickerButton\.append\('View ', viewPickerChevron\)/);
+  assert.match(html, /id="fileBtn"[^>]*>File<\/button>/);
+  assert.match(views, /viewPickerButton\.textContent = 'View'/);
+  assert.match(project, /editButton\.textContent = 'Edit'/);
+  assert.match(help, /helpButton\.textContent = 'Help'/);
+  assert.doesNotMatch(`${html}\n${views}\n${project}\n${help}`, /menu-chevron/);
   assert.match(views, /prepareItem\(tab, 'menuitemradio'\)/);
   assert.match(views, /addViewSubmenu\('theme', 'Theme'/);
   assert.match(views, /addViewSubmenu\('rendering', 'Rendering'/);

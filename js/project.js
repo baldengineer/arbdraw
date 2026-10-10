@@ -379,7 +379,7 @@ editButton.className = 'ghost file-button menu-trigger';
 editButton.type = 'button';
 editButton.setAttribute('aria-haspopup', 'menu');
 editButton.setAttribute('aria-expanded', 'false');
-editButton.textContent = 'Edit ▾';
+editButton.textContent = 'Edit';
 const editMenu = ARBDRAW_MENU.create({ id: 'editMenu', label: 'Edit', className: 'file-menu edit-menu' });
 const editMenuAnchor = document.createElement('span');
 editMenuAnchor.className = 'edit-menu-anchor';
