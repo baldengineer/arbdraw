@@ -10,7 +10,7 @@ const html = read('index.html');
 const styles = read('includes/menus.css');
 
 test('custom menus and native selectors use the shared menu interface', () => {
-  assert.match(html, /<link rel="stylesheet" href="includes\/menus\.css\?v=3">/);
+  assert.match(html, /<link rel="stylesheet" href="includes\/menus\.css\?v=__ARBDRAW_BUILD_SHA__">/);
   assert.ok(html.indexOf('src="js/menus.js"') < html.indexOf('src="js/views.js'));
 
   const surfaces = [...html.matchAll(/<[^>]+role="(?:menu|listbox)"[^>]*>/g)].map(([tag]) => tag);
@@ -30,6 +30,17 @@ test('custom menus and native selectors use the shared menu interface', () => {
   assert.match(read('js/project.js'), /const exportButton = ARBDRAW_MENU\.item\(/);
   assert.doesNotMatch(read('js/project.js'), /exportMenu/);
   assert.match(read('js/fields.js'), /definition\.kind === 'select' \? 'field-input menu-select'/);
+});
+
+test('GitHub Pages versions every local stylesheet and script together', () => {
+  assert.match(html, /^<!doctype html>/);
+  const localAssets = [
+    ...html.matchAll(/<link rel="stylesheet" href="(includes\/[^\"]+\.css[^\"]*)">/g),
+    ...html.matchAll(/<script src="((?:js\/|app\.js)[^\"]*)"><\/script>/g),
+  ].map((match) => match[1]);
+  assert.ok(localAssets.length > 20);
+  for (const url of localAssets)
+    assert.match(url, /\?v=__ARBDRAW_BUILD_SHA__$/, `${url} should use the deployment revision`);
 });
 
 test('menu typography and interaction states have one shared definition', () => {

@@ -10,7 +10,9 @@ Access the GitHub-hosted version at [baldengineer.github.io/arbdraw](https://bal
 
 ## Run
 
-No build step or dependency installation is required.
+No build step or dependency installation is required to open `index.html` directly from disk. The GitHub Pages workflow stamps the published copy's CSS and JavaScript URLs with the deployment commit SHA, so browsers fetch updated assets after each deployment.
+
+For GitHub Pages publication, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The `Publish ArbDraw` workflow builds and deploys the stamped site on each push to `main`.
 
 ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from jsDelivr for its first-run product tour. If the CDN is unavailable, it automatically falls back to the vendored copy, so the tour also works when `index.html` is opened directly from disk. The upstream license is retained in [`vendor/driver.js/1.8.0/LICENSE`](vendor/driver.js/1.8.0/LICENSE).
 
