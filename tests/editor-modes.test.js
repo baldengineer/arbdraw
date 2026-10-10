@@ -71,6 +71,30 @@ test('a new editor starts in Basic and switching modes preserves waveform data',
   assert.deepEqual(state.data, [0, 1, 0]);
 });
 
+test('Arbitrary uses its current default color, not a stale stored color', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../js/waveform-editor.js'), 'utf8');
+  const colorFunction = source.match(/function editorWaveformColor\(\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(colorFunction);
+  const defaultsSource = fs.readFileSync(path.join(__dirname, '../js/defaults.js'), 'utf8');
+  const coreSource = fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8');
+  let savedSettings = JSON.stringify({ arbitraryEditorColor: '#000000' });
+  const context = vm.createContext({
+    document: { documentElement: { dataset: { editorMode: 'basic' } } },
+    localStorage: {
+      getItem() { return savedSettings; },
+      setItem(_key, value) { savedSettings = value; },
+    },
+  });
+  vm.runInContext(defaultsSource, context);
+  vm.runInContext(coreSource, context);
+  vm.runInContext(colorFunction, context);
+
+  assert.equal(vm.runInContext('editorWaveformColor()', context), context.ARBDRAW_DEFAULTS.editorColor);
+  context.document.documentElement.dataset.editorMode = 'advanced';
+  assert.equal(vm.runInContext('editorWaveformColor()', context), context.ARBDRAW_DEFAULTS.arbitraryEditorColor);
+  assert.equal(JSON.parse(savedSettings).arbitraryEditorColor, context.ARBDRAW_DEFAULTS.arbitraryEditorColor);
+});
+
 test('switching to Basic asks before discarding Arbitrary point edits and preserves filters', () => {
   const { calls, context, element, state } = createHarness();
   state.samplesEdited = true;

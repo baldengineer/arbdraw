@@ -61,6 +61,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   serial_debug: false,
   editor_tool: 'Edit',
   editorColor: '#7bffb2',
+  arbitraryEditorColor: '#B8FFD5',
   waveformColor: '#ffe45e',
   waveformVerticalDivisions: 10,
   includeCsvTimestamps: true,

@@ -8,6 +8,12 @@ const editorOverviewContext = editorOverviewCanvas.getContext('2d');
 const editorViewport = { start: 0, pointsPerScreen: null, total: null };
 const editorSelection = { left: null, right: null, origin: null, dragging: null };
 
+function editorWaveformColor() {
+  return document.documentElement.dataset.editorMode === 'advanced'
+    ? DEFAULT_VALUES.arbitraryEditorColor
+    : DEFAULT_VALUES.editorColor;
+}
+
 function normalizeEditorViewport(viewport, totalPoints) {
   const total = Math.max(1, Math.trunc(Number(totalPoints)) || 1),
     minimumPoints = Math.min(2, total),
@@ -408,7 +414,7 @@ function drawEditorOverview() {
   };
   for (let index = 0; index <= lastIndex; index += sampleStep) drawPoint(index);
   if (lastIndex % sampleStep !== 0) drawPoint(lastIndex);
-  editorOverviewContext.strokeStyle = DEFAULT_VALUES.editorColor;
+  editorOverviewContext.strokeStyle = editorWaveformColor();
   editorOverviewContext.globalAlpha = 0.8;
   editorOverviewContext.lineWidth = 1.25 * d;
   editorOverviewContext.stroke();
@@ -462,12 +468,13 @@ function draw() {
     ctx.fillText(pointIndex, px, h - pad.b + 10 * d);
   }
   if (!state.data.length) return;
+  const waveformColor = editorWaveformColor();
   ctx.save();
   ctx.beginPath();
   ctx.rect(pad.l, pad.t, pw, ph);
   ctx.clip();
-  ctx.strokeStyle = DEFAULT_VALUES.editorColor;
-  ctx.shadowColor = DEFAULT_VALUES.editorColor;
+  ctx.strokeStyle = waveformColor;
+  ctx.shadowColor = waveformColor;
   ctx.shadowBlur = 5 * d;
   ctx.lineWidth = 1.5 * d;
   const sampleStep = Math.max(1, Math.floor(view.pointsPerScreen / Math.max(1, (pw / d) * 2)));
@@ -482,7 +489,7 @@ function draw() {
     else ctx.lineTo(x, y);
   };
   if (state.waveformRenderMode === 'dots') {
-    ctx.fillStyle = DEFAULT_VALUES.editorColor;
+    ctx.fillStyle = waveformColor;
     for (let index = view.start; index <= view.end; index += sampleStep)
       drawVisiblePoint(index);
     if ((view.end - view.start) % sampleStep !== 0) drawVisiblePoint(view.end);

@@ -160,6 +160,7 @@ function normalizeDefaults(source = {}) {
       ? source.editor_tool
       : 'Edit',
     editorColor: color('editorColor', '#7bffb2'),
+    arbitraryEditorColor: color('arbitraryEditorColor', globalThis.ARBDRAW_DEFAULTS.arbitraryEditorColor),
     waveformColor: color('waveformColor', '#ffe45e'),
     waveformVerticalDivisions: Math.max(
       2,
@@ -263,6 +264,8 @@ function readUrlSettings() {
 }
 
 const STORED_SETTINGS = readStoredSettings();
+// The Arbitrary tint follows defaults.js, even if an older value was saved locally.
+delete STORED_SETTINGS.arbitraryEditorColor;
 const DEFAULT_VALUES = normalizeDefaults({
   ...globalThis.ARBDRAW_DEFAULTS,
   ...STORED_SETTINGS,
