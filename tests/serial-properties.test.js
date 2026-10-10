@@ -76,3 +76,24 @@ test('post-idle changes resize and regenerate the serial waveform', () => {
   assert.equal(calls.renderFrequency, 1);
   assert.deepEqual(calls.generate, ['serial']);
 });
+
+test('UART emits per-word start, data, parity, and stop bits between idle periods', () => {
+  const { context } = createSerialHarness();
+  Object.assign(context.projectDocument.waveform.serial, {
+    payload: '0x01 0x02', parity: 'even', stopBits: 2, postIdleBits: 2,
+  });
+  assert.deepEqual(Array.from(context.serialBitPattern()), [
+    1, // Pre-idle.
+    0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, // 0x01, LSB first, even parity.
+    0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, // 0x02, LSB first, even parity.
+    1, 1, // Post-idle.
+  ]);
+});
+
+test('serial defaults and imports normalize unsupported protocols to UART', () => {
+  const context = vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/defaults.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
+  assert.equal(context.normalizeDefaults({ serialProtocol: 'unsupported' }).serialProtocol, 'UART');
+  assert.equal(context.normalizeSerialSettings({ protocol: 'unsupported' }).protocol, 'UART');
+});

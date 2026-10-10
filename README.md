@@ -32,7 +32,7 @@ Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](ht
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
 - Optional noise and smoothing filters with checkbox and value controls in Advanced mode Properties
 - Undo and redo for waveform changes
-- Freehand, line, and erase editing
+- Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 - Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
@@ -99,6 +99,19 @@ The file contains one copy of the sample buffer. At 48 kHz, 1,000 points lasts a
 Edit [`js/defaults.js`](js/defaults.js) to change the fallback waveform values used for new projects and incomplete imported projects. 
 
 The defaults use a JavaScript object rather than fetched JSON so that the app also works when `index.html` is opened directly from disk.
+
+## Code structure and checks
+
+`index.html` loads classic scripts in dependency order; `app.js` starts rendering after they load. This keeps the app usable directly from disk without a build step.
+
+- `js/core.js` owns defaults, the project document, and the `state` accessors into that document.
+- `js/waveform-shapes.js` contains pure waveform calculations. `js/waveform-editor.js` handles generation, drawing, selection, and undo history.
+- `js/properties.js`, `js/serial-properties.js`, and `js/filters.js` connect controls to waveform settings. `js/fields.js` provides shared input behavior.
+- `js/project.js` handles current-format project import, save, and export. JSON, CSV, SVG, and WAV downloads share `downloadBlob()`.
+- `js/views.js` and `js/scope-view.js` handle the alternate views; `js/ui.js` and `js/menus.js` provide shared UI behavior.
+- `python_bridge/` provides the optional instrument service; it is independent of browser rendering.
+
+Run the JavaScript regression suite with `node --test tests/*.test.js` and the bridge suite with `python -m unittest discover -s tests -p test_python_bridge.py`.
 
 ## License
 

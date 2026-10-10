@@ -103,7 +103,7 @@ function normalizeDefaults(source = {}) {
     fallTimeUnit,
     sampleRateUnit,
     sampleCountUnit,
-    waveformType: source.waveformType === 'ramp' ? 'triangle' : waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
+    waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
     phaseUnit: String(source.phaseUnit || '°'),
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
@@ -124,7 +124,7 @@ function normalizeDefaults(source = {}) {
       finite('frequencyHz', 750000 / frequencyUnits[frequencyUnit]) * frequencyUnits[frequencyUnit],
     ),
     phaseDegrees: finite('phaseDegrees', 0),
-    symmetryPercent: source.waveformType === 'ramp' ? 100 : Math.min(100, Math.max(0, finite('symmetryPercent', 50))),
+    symmetryPercent: Math.min(100, Math.max(0, finite('symmetryPercent', 50))),
     rcTau: Math.max(0.000001, finite('rcTau', 5)),
     dutyCyclePercent: Math.min(99, Math.max(1, finite('dutyCyclePercent', 50))),
     riseTimeSeconds: Math.max(0, finite('riseTimeSeconds', 0)),
@@ -133,9 +133,7 @@ function normalizeDefaults(source = {}) {
     noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
     noisePercent,
     noisePercentMax,
-    serialProtocol: ['UART', 'I2C'].includes(source.serialProtocol)
-      ? source.serialProtocol
-      : 'UART',
+    serialProtocol: 'UART',
     serialBaud: Math.max(1, Math.round(finite('serialBaud', 115200))),
     serialWordSize: [7, 8].includes(Number(source.serialWordSize))
       ? Number(source.serialWordSize)
@@ -362,12 +360,10 @@ const state = {
     Delete: 'erase',
   }[DEFAULT_VALUES.editor_tool],
   waveformRenderMode: 'vectors',
-  zoom: 1,
   history: [],
   redo: [],
   drawing: false,
   drawingChanged: false,
-  lineStart: null,
 };
 
 const documentFields = {
@@ -414,7 +410,7 @@ const titles = {
 function normalizeSerialSettings(source = {}, fallback = DEFAULT_VALUES) {
   if (!source || typeof source !== 'object') source = {};
   return {
-    protocol: ['UART', 'I2C'].includes(source.protocol) ? source.protocol : fallback.serialProtocol,
+    protocol: 'UART',
     baud:
       Number.isFinite(Number(source.baud)) && Number(source.baud) > 0
         ? Math.round(Number(source.baud))

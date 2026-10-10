@@ -73,9 +73,10 @@ test('removed and unknown waveshape types normalize to sine while preserving edi
   assert.equal(context.normalizeDefaults({ waveformType: 'custom' }).waveformType, 'sine');
   assert.equal(context.normalizeDefaults({ waveformType: 'free' }).waveformType, 'sine');
 
-  for (const type of ['custom', 'free', 'not-a-wave']) {
+  for (const type of ['custom', 'free', 'ramp', 'not-a-wave', 'toString']) {
     const document = context.createDefaultDocument();
     document.waveform.type = type;
+    document.waveform.samplesEdited = true;
     document.AWG.sampleCount = document.waveform.sampleCount = 4;
     document.waveform.values = [0, 0.25, -0.5, 1];
     const imported = context.parseProject(document).waveform;
@@ -98,18 +99,4 @@ test('known generated waveshapes do not become edited when imported', () => {
 
   document.waveform.values = [];
   assert.equal(context.parseProject(document).waveform.samplesEdited, false);
-});
-
-test('legacy low-pass samples remain editable without reviving the removed filter', () => {
-  const context = projectContext();
-  const document = context.createDefaultDocument();
-  document.AWG.sampleCount = document.waveform.sampleCount = 4;
-  document.waveform.values = [0, 0.2, 0.4, 0.6];
-  document.waveform.filters.lowPassEnabled = true;
-  document.waveform.filters.lowPassCutoffHz = 1000;
-
-  const imported = context.parseProject(document).waveform;
-  assert.equal(imported.samplesEdited, true);
-  assert.equal(Object.hasOwn(imported.filters, 'lowPassEnabled'), false);
-  assert.deepEqual(Array.from(imported.values), document.waveform.values);
 });

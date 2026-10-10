@@ -179,7 +179,7 @@ The `noise` waveform generates independent, uniformly distributed samples for wh
 noise passes white samples through a seven-pole approximation of a 1/f spectrum. Both variants are
 centered on the configured offset and scaled to the configured high/low voltage range.
 
-Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values in older files use 50%; imported values are clamped to 0–100. Legacy `ramp` files load as `triangle` with 100% symmetry, preserving saved sample values. The editable default is `symmetryPercent` in `js/defaults.js`.
+Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values use 50%; imported values are clamped to 0–100. The editable default is `symmetryPercent` in `js/defaults.js`.
 
 The `rc` waveform is a capacitor charging curve, `V(t) = Vhigh - (Vhigh - Vlow)e^(-t/τ)`. `waveform.rcTau` sets how many time constants are represented in each cycle; it defaults to 5, which reaches about 99.3% of the high level before the next cycle begins. Here, `τ = R × C`.
 
@@ -187,11 +187,11 @@ The removed values `custom` and `free`, along with unknown values, are imported 
 
 ## Serial settings
 
-When `type` is `serial`, the `serial` object stores the selected protocol and framing metadata:
+When `type` is `serial`, the `serial` object stores UART framing metadata:
 
 | Field | Type | Allowed values | Default |
 | --- | --- | --- | --- |
-| `protocol` | string | `UART`, `I2C` | `UART` |
+| `protocol` | string | `UART` | `UART` |
 | `baud` | integer | Any positive integer | `57600` |
 | `wordSize` | integer | `7`, `8` | `8` |
 | `bitOrder` | string | `LSB`, `MSB` | `LSB` |
@@ -209,9 +209,7 @@ Serial settings to be restored if Serial is selected again.
 
 For UART, ArbDraw emits each payload word in the selected bit order with the enabled start bit and selected number of stop bits,
 and the selected parity bit. Pre Idle and Post Idle add the requested number of high-level bit times
-around the complete sequence. For I2C, words use the selected bit order with an ACK-low slot after each
-word. The enabled start state begins the payload and the selected number of high stop states ends the complete I2C payload. Logic zero
-uses `lowVoltage`; logic one uses `highVoltage`.
+around the complete sequence. Logic zero uses `lowVoltage`; logic one uses `highVoltage`.
 
 When `invertData` is `true`, only payload data bits are emitted with inverted logic. Framing, parity,
 and idle bits retain their documented logic levels. The Binary field shows the final physical bit
@@ -239,13 +237,13 @@ ArbDraw applies the following rules while opening a file:
 
 - `schema`, `version`, and `waveform` must be present and valid or the file is rejected.
 - Numeric metadata fields may be JSON numbers or numeric strings; they are converted with JavaScript's `Number(...)`.
-- `sampleCount` is rounded to an integer and limited to a minimum of 2.
+- `AWG.sampleCount` is rounded to an integer and limited to a minimum of 2. Sample count and sample rate are read from `AWG`, with application defaults for missing values.
 - `cycles` is rounded to an integer and limited to a minimum of 1.
 - `sampleRateMSa` and `frequencyHz` are limited to a minimum of `0.000001`.
 - `dutyCyclePercent` is limited to the range 1 through 99.
 - `riseTimeSeconds` and `fallTimeSeconds` are limited to zero or greater. A transition longer than its available portion of the cycle is capped to that portion during generation.
 - `noiseColor` accepts `white` or `pink`; missing or unrecognized values become `white`.
-- `samplesEdited` is `true` only when explicitly saved as `true`, or when a valid legacy waveform uses a removed or unknown type.
+- `samplesEdited` is `true` only when explicitly saved as `true` and the sample array is valid.
 - `values` must contain exactly `sampleCount` entries.
 - Every `values` entry must already be a finite JSON number. Numeric strings are not accepted in this array.
 - If any sample-array validation fails, the entire `values` array is discarded and ArbDraw regenerates samples from the waveform metadata.

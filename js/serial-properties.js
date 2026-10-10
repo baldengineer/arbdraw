@@ -45,22 +45,6 @@ function serialBitPattern() {
   const pattern = Array(serial.preIdleBits).fill(1);
   const startBits = serial.startBit ? [0] : [];
 
-  if (serial.protocol === 'I2C') {
-    pattern.push(...startBits);
-    for (const word of words) {
-      const dataBits = Array.from({ length: serial.wordSize }, (_, index) =>
-        serial.bitOrder === 'LSB'
-          ? (word >> index) & 1
-          : (word >> (serial.wordSize - index - 1)) & 1,
-      );
-      pattern.push(...dataBits.map((bit) => serial.invertData ? 1 - bit : bit));
-      pattern.push(0);
-    }
-    pattern.push(...Array(serial.stopBits).fill(1));
-    pattern.push(...Array(serial.postIdleBits).fill(1));
-    return pattern.length ? pattern : [0];
-  }
-
   for (const word of words) {
     pattern.push(...startBits);
     const logicalDataBits = Array.from(
@@ -133,7 +117,6 @@ function commitSerialProperties(event, { preview = false } = {}) {
     ? $('serialBinaryPattern').value.replace(/[^01]/g, '')
     : '';
   projectDocument.waveform.serial = normalizeSerialSettings({
-    protocol: $('serialProtocol').value,
     baud: Number($('serialBaud').value),
     wordSize: Number($('serialWordSize').value),
     bitOrder: $('serialBitOrder').value,
@@ -157,7 +140,6 @@ function commitSerialProperties(event, { preview = false } = {}) {
 
 const serialFieldControllers = [];
 for (const id of [
-  'serialProtocol',
   'serialBaud',
   'serialWordSize',
   'serialBitOrder',

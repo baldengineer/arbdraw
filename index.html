@@ -145,7 +145,7 @@
         </details>
         <details id="serialProperties" class="section serial-section" data-property-panel="serial" open hidden>
           <summary class="section-title">Serial</summary>
-          <label>Protocol <div class="unit-input"><select class="menu-select" id="serialProtocol"><option value="UART">UART</option><option value="I2C">I2C</option></select></div></label>
+          <label>Protocol <div class="unit-input"><input id="serialProtocol" value="UART" aria-label="Protocol" readonly></div></label>
           <label>Baud <div class="unit-input"><input id="serialBaud" type="number" min="1" step="1" value="115200" list="serialBaudRates"></div></label>
           <label>Word Size <div class="unit-input"><select class="menu-select" id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
           <label>Bit Order <div class="unit-input"><select class="menu-select" id="serialBitOrder"><option value="LSB" selected>LSB</option><option value="MSB">MSB</option></select></div></label>

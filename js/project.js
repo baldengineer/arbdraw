@@ -19,17 +19,9 @@ function renderDocument() {
   $('noiseColorSelect').value = state.noiseColor;
   renderTransitionTimes();
   renderTiming();
-  document.querySelector('.preset.active')?.classList.remove('active');
-  document.querySelector(`.preset[data-wave="${state.type}"]`)?.classList.add('active');
-  updateDutyAvailability(state.type);
-  updateDcPropertyAvailability(state.type);
-  updateTransitionPropertiesVisibility(state.type);
-  updateNoisePropertiesVisibility(state.type);
-  updateSymmetryVisibility(state.type);
-  updateRcVisibility(state.type);
+  renderWaveformProperties(state.type);
   renderSerialProperties();
   renderFilterControls();
-  updateFunctionSelect(state.type);
   draw();
   ARBDRAW_FIELDS.formatInputs();
 }
@@ -53,19 +45,18 @@ function parseProject(raw) {
       Number.isFinite(Number(sourceAwg[key])) ? Number(sourceAwg[key]) : fallback;
   const sampleCount = Math.max(
       2,
-      Math.round(awgNumber('sampleCount', number('sampleCount', defaults.sampleCount))),
+      Math.round(awgNumber('sampleCount', defaultsDocument.AWG.sampleCount)),
     ),
     sampleRateMSa = Math.max(
       0.000001,
-      awgNumber('sampleRateMSa', number('sampleRateMSa', defaults.sampleRateMSa)),
+      awgNumber('sampleRateMSa', defaultsDocument.AWG.sampleRateMSa),
     );
   const values =
     Array.isArray(source.values) &&
     source.values.length === sampleCount &&
     source.values.every(Number.isFinite)
-      ? source.values.map(Number)
+      ? source.values.slice()
       : [];
-  const importedType = source.type === 'ramp' ? 'triangle' : source.type;
   const durationMs = sampleCount / (sampleRateMSa * 1000),
     cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
     frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
@@ -87,7 +78,7 @@ function parseProject(raw) {
       periodSeconds: cycles / frequencyHz,
     },
     waveform: {
-      type: titles[importedType] ? importedType : 'sine',
+      type: Object.hasOwn(titles, source.type) ? source.type : 'sine',
       highVoltage: number('highVoltage', defaults.highVoltage),
       lowVoltage: number('lowVoltage', defaults.lowVoltage),
       durationMs,
@@ -99,16 +90,14 @@ function parseProject(raw) {
         99,
         Math.max(1, number('dutyCyclePercent', defaults.dutyCyclePercent)),
       ),
-      symmetryPercent: source.type === 'ramp' ? 100 : Math.min(100, Math.max(0, number('symmetryPercent', 50))),
+      symmetryPercent: Math.min(100, Math.max(0, number('symmetryPercent', 50))),
       rcTau: Math.max(0.000001, number('rcTau', defaults.rcTau)),
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
       filters: normalizeFilterSettings(source.filters),
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
-      samplesEdited:
-        values.length > 0 &&
-        (source.samplesEdited === true || source.filters?.lowPassEnabled === true || !titles[importedType]),
+      samplesEdited: values.length > 0 && source.samplesEdited === true,
       sampleCount,
       values,
     },
@@ -220,16 +209,22 @@ $('confirmSaveBtn').onclick = () => {
     projectDocument.name = savedName;
     document.querySelector('.document-name').value = savedName;
   }
-  const json = JSON.stringify(projectDocument, null, 2),
-    blob = new Blob([json], { type: 'application/json' }),
-    a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const json = JSON.stringify(projectDocument, null, 2);
+  downloadBlob(new Blob([json], { type: 'application/json' }), filename);
   $('saveDialog').close();
   showToast('Project JSON downloaded');
 };
+function downloadBlob(blob, filename) {
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  try {
+    link.href = url;
+    link.download = filename;
+    link.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 function buildCsvRows({ values, durationSeconds, metadata = [], includeHeader, includeTimestamps }) {
   const sampleCount = values.length,
     csvValue = (value) => {
@@ -249,12 +244,18 @@ function buildCsvRows({ values, durationSeconds, metadata = [], includeHeader, i
   return rows;
 }
 function downloadCsv(includeHeader, filename, includeTimestamps = true) {
-  const values = state.data.map((value) => Number(value ?? 0)),
-    sampleCount = values.length,
+  const values = state.data.map((value) => Number(value ?? 0));
+  // Iterate instead of spreading samples into Math.min/max: large records exceed
+  // the browser's function-argument limit.
+  let voltageMin = Infinity, voltageMax = -Infinity;
+  for (const value of values) {
+    voltageMin = Math.min(voltageMin, value);
+    voltageMax = Math.max(voltageMax, value);
+  }
+  if (!values.length) voltageMin = voltageMax = 0;
+  const sampleCount = values.length,
     durationSeconds = state.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
-    voltageMin = sampleCount ? Math.min(...values) : 0,
-    voltageMax = sampleCount ? Math.max(...values) : 0,
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
       ['Generated', new Date().toISOString()],
@@ -281,11 +282,7 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
     ],
     rows = buildCsvRows({ values, durationSeconds, metadata, includeHeader, includeTimestamps });
   const blob = new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  downloadBlob(blob, filename);
   showToast(`Waveform exported as ${includeHeader ? 'CSV with header' : 'CSV'}`);
 }
 function downloadSvg(filename) {
@@ -296,11 +293,7 @@ function downloadSvg(filename) {
     durationSeconds: state.duration / 1000,
   });
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  downloadBlob(blob, filename);
   showToast('Waveform exported as SVG');
 }
 function downloadWav(filename) {
@@ -308,11 +301,7 @@ function downloadWav(filename) {
     values: state.data,
     sampleRateHz: state.sampleRate * 1e6,
   });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  downloadBlob(new Blob([buffer], { type: 'audio/wav' }), filename);
   showToast('Waveform exported as WAV');
 }
 function updateExportFormat() {

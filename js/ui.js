@@ -36,22 +36,7 @@ document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn')) closeFunctionSelectMenu();
   if (!event.target.closest?.('#audioVolumeControl')) globalThis.closeAudioVolumeControl?.();
 });
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    closePropertyContextMenu();
-    closeAmplitudeUnitMenu();
-    closeVoltageUnitMenu();
-    closeTimingUnitMenus();
-    closeScopeVoltageUnitMenu();
-    closeScopePositionUnitMenu();
-    closeScopeTimeUnitMenu();
-    closeScopeDivisionMenu();
-    closeScopeZoomMenu();
-    closeFunctionSelectMenu();
-    globalThis.closeAudioVolumeControl?.();
-  }
-});
-window.addEventListener('blur', () => {
+function closePropertyMenus() {
   closePropertyContextMenu();
   closeAmplitudeUnitMenu();
   closeVoltageUnitMenu();
@@ -62,4 +47,11 @@ window.addEventListener('blur', () => {
   closeScopeDivisionMenu();
   closeScopeZoomMenu();
   closeFunctionSelectMenu();
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closePropertyMenus();
+    globalThis.closeAudioVolumeControl?.();
+  }
 });
+window.addEventListener('blur', closePropertyMenus);

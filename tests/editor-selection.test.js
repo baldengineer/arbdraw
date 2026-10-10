@@ -161,7 +161,6 @@ test('direct editing is clipped to the active marker range', () => {
       high: 1,
       low: -1,
       samplesEdited: false,
-      lineStart: null,
     },
     currentEditorSelection: () => ({ left: 2, right: 4 }),
     draw() {},
@@ -177,7 +176,7 @@ test('direct editing is clipped to the active marker range', () => {
   assert.equal(context.state.samplesEdited, true);
 });
 
-test('delete and line edits cannot change samples outside the active marker range', () => {
+test('erase and interpolated pencil edits stay inside the active marker range', () => {
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const helpers = source.slice(
     source.indexOf('function editorEditIndexRange('),
@@ -190,7 +189,6 @@ test('delete and line edits cannot change samples outside the active marker rang
       high: 2,
       low: -2,
       samplesEdited: false,
-      lineStart: null,
     },
     currentEditorSelection: () => ({ left: 2, right: 4 }),
     draw() {},
@@ -198,9 +196,8 @@ test('delete and line edits cannot change samples outside the active marker rang
   vm.runInNewContext(
     `${helpers}
     editAt({ i: 6, v: 9 }, { i: 0, v: 9 });
-    state.tool = 'line';
-    state.lineStart = { i: 0, v: 0 };
-    editAt({ i: 6, v: 6 });`,
+    state.tool = 'pencil';
+    editAt({ i: 6, v: 6 }, { i: 0, v: 0 });`,
     context,
   );
 
@@ -220,7 +217,6 @@ test('an edit entirely outside the marker range leaves the waveform unchanged', 
       high: 1,
       low: -1,
       samplesEdited: false,
-      lineStart: null,
     },
     currentEditorSelection: () => ({ left: 2, right: 3 }),
     draw() {},
@@ -251,6 +247,20 @@ test('generated waveshapes replace only the active selected sample range', () =>
     { left: 2, right: 4, scoped: true },
   );
   assert.deepEqual(Array.from(result.values), [0, 1, 20, 30, 40, 5]);
+});
+
+test('selection generation leaves the original sample buffer intact for undo', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helper = source.slice(source.indexOf('function mergeGeneratedSamples('), source.indexOf('function waveformReplacementNeedsConfirmation('));
+  const context = vm.createContext({});
+  vm.runInContext(helper, context);
+  const original = [0, 1, 2, 3];
+  const generated = [20, 30];
+  const merged = context.mergeGeneratedSamples(original, generated, { left: 1, right: 2, scoped: true }, original.length);
+
+  assert.deepEqual(Array.from(merged), [0, 20, 30, 3]);
+  assert.deepEqual(original, [0, 1, 2, 3]);
+  assert.deepEqual(generated, [20, 30]);
 });
 
 test('waveshape generation spans the selected range and preserves surrounding samples', () => {

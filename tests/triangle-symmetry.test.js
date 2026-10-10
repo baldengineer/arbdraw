@@ -22,12 +22,11 @@ function projectContext() {
   return context;
 }
 
-test('symmetry defaults, saved JSON round trip, and legacy ramp migration', () => {
+test('symmetry defaults and saved JSON round trips', () => {
   const context = projectContext();
   assert.equal(context.createDefaultDocument().waveform.symmetryPercent, 50);
   assert.equal(context.normalizeDefaults({symmetryPercent: 75}).symmetryPercent, 75);
   assert.equal(context.normalizeDefaults({symmetryPercent: 200}).symmetryPercent, 100);
-  assert.equal(context.normalizeDefaults({waveformType: 'ramp'}).waveformType, 'triangle');
   for (const symmetry of [0, 25, 50, 100]) {
     const doc = context.createDefaultDocument();
     doc.waveform.type = 'triangle';
@@ -37,13 +36,6 @@ test('symmetry defaults, saved JSON round trip, and legacy ramp migration', () =
   const doc = context.createDefaultDocument();
   delete doc.waveform.symmetryPercent;
   assert.equal(context.parseProject(doc).waveform.symmetryPercent, 50);
-  doc.waveform.type = 'ramp';
-  doc.AWG.sampleCount = doc.waveform.sampleCount = 3;
-  doc.waveform.values = [-.5, 0, .5];
-  const migrated = context.parseProject(doc).waveform;
-  assert.equal(migrated.type, 'triangle');
-  assert.equal(migrated.symmetryPercent, 100);
-  assert.deepEqual(Array.from(migrated.values), doc.waveform.values);
 });
 
 test('smoothing filter settings survive project JSON round trips', () => {

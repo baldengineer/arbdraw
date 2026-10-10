@@ -137,12 +137,6 @@ const ARBDRAW_FIELD_DEFINITIONS = {
   },
 
   serial: {
-    serialProtocol: {
-      kind: 'select',
-      label: 'Protocol',
-      title: 'Select the serial protocol.\nI2C is not implemented.',
-      behavior: 'commitOnChange',
-    },
     serialBaud: {
       kind: 'number',
       label: 'Baud',

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Waveform generation, editable canvas rendering, presets, and history.
+// Waveform generation, editable canvas rendering, waveshape selection, and history.
 const canvas = document.querySelector('#waveCanvas');
 const ctx = canvas.getContext('2d');
 const editorOverviewCanvas = document.querySelector('#editorOverviewCanvas');
@@ -130,7 +130,7 @@ function waveformGenerationRange(totalPoints, selection, existingPointCount) {
 
 function mergeGeneratedSamples(existingValues, generatedValues, range, totalPoints) {
   if (!range.scoped) return generatedValues;
-  const merged = Array.from(existingValues).slice(0, totalPoints);
+  const merged = existingValues.slice(0, totalPoints);
   for (let offset = 0; offset < generatedValues.length; offset++)
     merged[range.left + offset] = generatedValues[offset];
   return merged;
@@ -162,7 +162,7 @@ function generate(
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   const n = state.samples,
-    existingData = [...state.data],
+    existingData = state.data,
     range = waveformGenerationRange(
       n,
       scopeSelection ? currentEditorSelection() : null,
@@ -201,6 +201,7 @@ function generate(
       case 'sine':
         return mid + amp * Math.sin(2 * Math.PI * state.cycles * t + phase);
       case 'square':
+      case 'pulse':
         return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
           phase: p,
           high: state.high,
@@ -223,16 +224,6 @@ function generate(
           high: state.high,
           low: state.low,
           tau: state.rcTau,
-        });
-      case 'pulse':
-        return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
-          phase: p,
-          high: state.high,
-          low: state.low,
-          dutyPercent: state.duty,
-          frequencyHz: state.frequency,
-          riseTimeSeconds: state.riseTime,
-          fallTimeSeconds: state.fallTime,
         });
       case 'dc':
         return mid;
@@ -575,16 +566,8 @@ function editorEditIndexRange(firstIndex, secondIndex = firstIndex, selection = 
 
 function editAt(pt, last) {
   if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
-  if (state.tool === 'pan') return false;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
-  if (state.tool === 'line' && state.lineStart) {
-    const a = state.lineStart,
-      b = pt,
-      editRange = editorEditIndexRange(a.i, b.i);
-    if (!editRange) return false;
-    for (let i = editRange.lo; i <= editRange.hi; i++)
-      state.data[i] = a.v + ((b.v - a.v) * (i - a.i)) / (b.i - a.i || 1);
-  } else if (last) {
+  if (last) {
     const editRange = editorEditIndexRange(last.i, pt.i);
     if (!editRange) return false;
     for (let i = editRange.lo; i <= editRange.hi; i++)
@@ -648,9 +631,7 @@ $('noiseColorSelect').addEventListener('change', () => {
   if (state.type === 'noise') generate('noise', true, true, true, false);
   else persistCurrentSettings();
 });
-function selectPreset(type) {
-  document.querySelector('.preset.active')?.classList.remove('active');
-  document.querySelector(`.preset[data-wave="${type}"]`)?.classList.add('active');
+function renderWaveformProperties(type) {
   updateDutyAvailability(type);
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
@@ -717,7 +698,7 @@ canvas.addEventListener('pointerdown', (e) => {
   state.drawingChanged = false;
   canvas.setPointerCapture(e.pointerId);
   const p = canvasPoint(e);
-  if (state.high === state.low && state.tool !== 'pan' && editorEditIndexRange(p.i)) {
+  if (state.high === state.low && editorEditIndexRange(p.i)) {
     state.high = Math.max(state.high, p.v);
     state.low = Math.min(state.low, p.v);
     $('highInput').value = displayVoltage('highInput', state.high);
@@ -725,7 +706,6 @@ canvas.addEventListener('pointerdown', (e) => {
     $('amplitudeInput').value = displayAmplitude(state.high - state.low);
     $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
   }
-  state.lineStart = state.tool === 'line' ? p : null;
   state.lastPoint = p;
   state.drawingChanged = editAt(p);
 });
@@ -743,10 +723,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (editorSelection.dragging) {
     moveEditorSelection(e);
   } else if (state.drawing) {
-    const changed = editAt(
-      p,
-      state.tool === 'pencil' || state.tool === 'erase' ? state.lastPoint : null,
-    );
+    const changed = editAt(p, state.lastPoint);
     state.drawingChanged = changed || state.drawingChanged;
     state.lastPoint = p;
   }
@@ -757,12 +734,9 @@ canvas.addEventListener('pointerup', (e) => {
     finishEditorSelection();
     return;
   }
-  if (state.drawing && state.tool === 'line')
-    state.drawingChanged = editAt(canvasPoint(e)) || state.drawingChanged;
   if (state.drawingChanged) pushHistory();
   state.drawing = false;
   state.drawingChanged = false;
-  state.lineStart = null;
 });
 canvas.addEventListener('pointercancel', finishEditorSelection);
 canvas.addEventListener('pointerleave', () => {
@@ -978,11 +952,11 @@ $('functionSelectMenu')
     option.onclick = () => {
       const type = option.dataset.wave;
       if (!generate(type)) {
-        selectPreset(state.type);
+        renderWaveformProperties(state.type);
         closeFunctionSelectMenu();
         return;
       }
-      selectPreset(type);
+      renderWaveformProperties(type);
       refreshScopeTime();
       closeFunctionSelectMenu();
     };

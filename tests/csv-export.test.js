@@ -43,6 +43,34 @@ test('CSV can export only voltage samples', () => {
   assert.deepEqual(Array.from(rows), ['1', '2', '3']);
 });
 
+test('CSV exports a million-point record with accurate extrema and sample order', async () => {
+  const values = new Array(1_000_000).fill(0);
+  values[0] = -4;
+  values[500_000] = 9;
+  values[values.length - 1] = 2;
+  let downloadedBlob;
+  const exportContext = vm.createContext({
+    Blob,
+    state: { data: values, duration: 1000, type: 'sine', high: 9, low: -4, frequency: 1 },
+    titles: { sine: 'Sine wave' },
+    document: { querySelector: () => ({ value: 'Large record' }) },
+    downloadBlob(blob, filename) {
+      downloadedBlob = blob;
+      assert.equal(filename, 'large.csv');
+    },
+    showToast() {},
+  });
+  vm.runInContext(source.slice(source.indexOf('function buildCsvRows('), source.indexOf('function downloadSvg(')), exportContext);
+  exportContext.downloadCsv(true, 'large.csv', false);
+  const csv = await downloadedBlob.text();
+  assert.ok(csv.includes('Voltage min (V),-4\r\nVoltage max (V),9\r\n'));
+  const samples = csv.split('Voltage (V)\r\n')[1].trimEnd().split('\r\n');
+  assert.equal(samples.length, values.length);
+  assert.equal(samples[0], '-4');
+  assert.equal(samples[500_000], '9');
+  assert.equal(samples.at(-1), '2');
+});
+
 test('CSV dialog defaults timestamp column to enabled and hides it for other formats', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 

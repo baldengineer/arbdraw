@@ -265,19 +265,6 @@ function renderAwgTiming() {
   };
   ARBDRAW_FIELDS.formatInputs();
 }
-function formatRate(value) {
-  return value >= 100
-    ? value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-    : value >= 1
-      ? value.toFixed(3)
-      : value.toPrecision(4);
-}
-function formatDuration(value) {
-  if (value < 0.001) return (value * 1e6).toFixed(2) + ' ns';
-  if (value < 1) return (value * 1000).toFixed(3) + ' µs';
-  if (value < 1000) return value.toFixed(3) + ' ms';
-  return (value / 1000).toFixed(3) + ' s';
-}
 function syncInputs() {
   state.high = inputVoltage('highInput');
   state.low = inputVoltage('lowInput');
