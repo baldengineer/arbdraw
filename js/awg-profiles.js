@@ -40,7 +40,8 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
     pid: null,
     sampleRateType: 'Fixed',
     sampleRateMSa: null,
-    sampleDepth: Object.freeze({ default: 1000, max: 128_000 }),
+    // The current CSV-over-VXI-11 adapter must keep WRITEFile below 8,000 bytes.
+    sampleDepth: Object.freeze({ default: 100, max: 240 }),
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
     preferredBackend: 'tekscope-mso2',
   }),

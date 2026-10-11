@@ -33,7 +33,7 @@ test('TekScope profile selects the MSO2 adapter and enforces its arb depth', () 
   const profile = globalThis.ARBDRAW_AWG_PROFILES.tekscopeFiles;
   const instruments = fs.readFileSync(path.join(__dirname, '../js/instruments.js'), 'utf8');
   assert.equal(profile.preferredBackend, 'tekscope-mso2');
-  assert.deepEqual(profile.sampleDepth, { default: 1000, max: 128_000 });
+  assert.deepEqual(profile.sampleDepth, { default: 100, max: 240 });
   assert.match(instruments, /selectedAwgProfile\?\.preferredBackend/);
   assert.match(instruments, /adapterSelect\.value = preferred/);
 });

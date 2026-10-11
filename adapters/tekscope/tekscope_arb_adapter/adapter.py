@@ -10,9 +10,11 @@ from pathlib import PurePosixPath
 from typing import Any, Callable, Iterable
 
 
-# The observed fatal MSO2 boundary is 8,092 kB, with the precise decimal versus
-# binary interpretation still unknown. Stay conservatively below both readings.
-MSO2_SAFE_WRITE_BYTES = 8_000_000
+# MSO22 firmware 2.26.13 rejects larger FILESystem:WRITEFile program messages
+# over VXI-11 with event 161, "Invalid block data; Block too large". Stay below
+# the project's observed 8,092-byte boundary. This is a transport/file-command
+# limit, not the AFG's waveform-memory depth.
+MSO2_SAFE_WRITE_BYTES = 8_000
 MSO2_MODELS = frozenset({"MSO22", "MSO24", "MSO22-EDU", "MSO24-EDU"})
 MSO2_MAX_ARB_POINTS = 128_000
 DEFAULT_DIRECTORY = "C:/baldee"

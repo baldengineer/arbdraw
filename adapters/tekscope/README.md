@@ -18,6 +18,12 @@ Output is disabled before transfer and stays disabled unless ArbDraw sends
 clients can override it with the adapter-specific `directory` and `file_name`
 options.
 
+The current MSO2 CSV-over-VXI-11 transfer path is capped below the observed
+8,092-byte `FILESystem:WRITEFile` boundary. ArbDraw therefore defaults this
+profile to 100 points and limits it to 240 points. Larger arbitrary records
+need a different file format or transfer path; increasing the timeout does not
+bypass the scope's `Block too large` response.
+
 For an authorized live file-transfer check without ArbDraw:
 
 ```powershell

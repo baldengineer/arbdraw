@@ -129,6 +129,15 @@ class TekScopeAdapterTests(unittest.TestCase):
         self.assertIn("\r\nLabels,\r\nTIME,CH1\r\n", text)
         self.assertTrue(text.endswith("5.00000000e-04,-1.00000000e+00\r\n"))
 
+    def test_csv_depths_track_the_vxi11_write_ceiling(self):
+        short_payload = encode_tekscope_csv([-1.0] * 240, 1000)
+        long_payload = encode_tekscope_csv([-1.0] * 245, 1000)
+        thousand_point_payload = encode_tekscope_csv([0.0] * 1000, 1000)
+
+        self.assertLess(len(short_payload), MSO2_SAFE_WRITE_BYTES)
+        self.assertGreaterEqual(len(long_payload), MSO2_SAFE_WRITE_BYTES)
+        self.assertGreaterEqual(len(thousand_point_payload), MSO2_SAFE_WRITE_BYTES)
+
     def test_adapter_options_reject_unknown_and_wrong_channel(self):
         with self.assertRaisesRegex(TekScopeAdapterError, "Unknown TekScope option"):
             AdapterOptions.from_mapping({"mystery": True})

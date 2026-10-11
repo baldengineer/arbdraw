@@ -1,6 +1,6 @@
 ---
 name: tekscope-file-commands
-description: Implement, review, or troubleshoot binary-safe SCPI file transfer for Tektronix scopes with FILESystem:CWD, FILESystem:READFile, and FILESystem:WRITEFile, including the MSO2-specific fatal 8,092 kB write ceiling. Use for bridge adapters and their tests; do not use as a general waveform-acquisition command reference.
+description: Implement, review, or troubleshoot binary-safe SCPI file transfer for Tektronix scopes with FILESystem:CWD, FILESystem:READFile, and FILESystem:WRITEFile, including the MSO2-specific 8,092-byte write ceiling. Use for bridge adapters and their tests; do not use as a general waveform-acquisition command reference.
 ---
 
 # TekScope file commands
@@ -32,15 +32,18 @@ the same file-system behavior.
 Treat the following as a project hardware erratum, not as a claim from the
 programming manual:
 
-- On MSO2 scopes, `FILESystem:WRITEFile` has a fatal data-transfer boundary at
-  8,092 kB. Never send a payload at that boundary or above it.
-- Set the adapter's maximum safe MSO2 write size below 8,092 kB and reject an
+- On MSO2 scopes, `FILESystem:WRITEFile` has a data-transfer boundary at 8,092
+  bytes. Never send a payload at that boundary or above it.
+- Set the adapter's maximum safe MSO2 write size below 8,092 bytes and reject an
   oversized request before opening the VISA resource or changing scope state.
-- Keep the measured unit explicit as `kB`; do not silently relabel it `KiB` or
-  convert it using an unverified convention. The adapter must use a conservative
-  byte ceiling until the exact decimal-versus-binary byte boundary is recorded.
+- Keep the measured unit explicit as bytes. The adapter uses an 8,000-byte
+  conservative ceiling.
 - Do not try to bypass the limit by splitting one file across multiple
   `WRITEFile` calls. Append or continuation semantics are not documented.
+- On MSO22 firmware 2.26.13 over VXI-11, a 3,375-byte definite block succeeded;
+  a 32,177-byte definite block failed with event 161, `Invalid block data; Block
+  too large`, and left the caller waiting until its VISA timeout. The documented
+  `#0` indefinite block form failed with the same `Block too large` condition.
 - This limit is specific to MSO2 `WRITEFile`. Do not apply it globally to other
   TekScope families, which do not have this observed limit. Select write limits
   from the matched model's capabilities.
@@ -222,7 +225,7 @@ Cover these behaviors without hardware:
 - Empty and binary payloads, including NUL, CR, LF, comma, quote, and `#` bytes.
 - Exact raw command bytes for `WRITEFile`.
 - MSO2 writes below the configured safe ceiling are accepted, while writes at
-  the 8,092 kB fatal boundary and above are rejected without instrument I/O.
+  the 8,092-byte boundary and above are rejected without instrument I/O.
 - Other TekScope identities do not inherit the MSO2 write ceiling.
 - MSO2 `READFile` accepts responses larger than the write ceiling.
 - `READFile` using command-write plus raw-read, with no trailing `?` and no text
