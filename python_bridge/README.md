@@ -28,6 +28,10 @@ choose **Start bridge**, **Stop bridge**, **Restart bridge**, or **Exit**. The
 app finds `arbdraw-bridge.exe` in the same Python environment and starts it
 without opening a console window.
 
+The favicon is grey while the bridge is stopped, starting, stopping, or in an
+error state. It changes to the ArbDraw blue when the bridge health check
+confirms that it is running.
+
 The status check uses the configured bridge URL, `http://127.0.0.1:8876` by
 default. It can also stop or restart a compatible bridge that was already
 running when the tray app opened. Exiting the tray app stops a bridge that the

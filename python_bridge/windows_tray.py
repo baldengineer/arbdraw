@@ -47,6 +47,16 @@ class BridgeState(Enum):
     ERROR = "Error"
 
 
+def tray_icon_resource_name(state: BridgeState) -> str:
+    """Use brand blue only while a bridge is confirmed to be running."""
+
+    return (
+        "ArbDraw.ico"
+        if state in (BridgeState.RUNNING, BridgeState.RUNNING_EXTERNAL)
+        else "ArbDraw-gray.ico"
+    )
+
+
 def probe_bridge(base_url: str, timeout: float = 0.3) -> HealthInfo | None:
     """Return bridge identity only when the ArbDraw health contract matches."""
 
@@ -540,8 +550,8 @@ def run_tray(controller: BridgeController) -> int:
     hinstance = kernel32.GetModuleHandleW(None)
     notify_data = NOTIFYICONDATAW()
 
-    def load_brand_icon():
-        resource = importlib.resources.files("python_bridge").joinpath("ArbDraw.ico")
+    def load_brand_icon(resource_name: str):
+        resource = importlib.resources.files("python_bridge").joinpath(resource_name)
         with importlib.resources.as_file(resource) as icon_path:
             icon = user32.LoadImageW(
                 None,
@@ -553,11 +563,15 @@ def run_tray(controller: BridgeController) -> int:
             )
         return (icon, True) if icon else (user32.LoadIconW(None, IDI_APPLICATION), False)
 
-    brand_icon, brand_icon_owned = load_brand_icon()
+    blue_icon, blue_icon_owned = load_brand_icon("ArbDraw.ico")
+    gray_icon, gray_icon_owned = load_brand_icon("ArbDraw-gray.ico")
+
+    def icon_for_state(state: BridgeState):
+        return blue_icon if tray_icon_resource_name(state) == "ArbDraw.ico" else gray_icon
 
     def update_icon(balloon: bool = False) -> None:
         notify_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP
-        notify_data.hIcon = brand_icon
+        notify_data.hIcon = icon_for_state(controller.state)
         notify_data.szTip = (
             f"ArbDraw Bridge {controller.version} — {controller.status_text}"[:127]
         )
@@ -631,8 +645,10 @@ def run_tray(controller: BridgeController) -> int:
             if message == WM_DESTROY:
                 controller.close()
                 shell32.Shell_NotifyIconW(NIM_DELETE, ctypes.byref(notify_data))
-                if brand_icon_owned:
-                    user32.DestroyIcon(brand_icon)
+                if blue_icon_owned:
+                    user32.DestroyIcon(blue_icon)
+                if gray_icon_owned:
+                    user32.DestroyIcon(gray_icon)
                 user32.PostQuitMessage(0)
                 return 0
         except Exception as error:  # Keep exceptions from escaping a native callback.
@@ -645,7 +661,7 @@ def run_tray(controller: BridgeController) -> int:
     window_class = WNDCLASSW()
     window_class.lpfnWndProc = window_proc
     window_class.hInstance = hinstance
-    window_class.hIcon = brand_icon
+    window_class.hIcon = blue_icon
     window_class.lpszClassName = class_name
     if not user32.RegisterClassW(ctypes.byref(window_class)):
         raise ctypes.WinError()
@@ -659,7 +675,7 @@ def run_tray(controller: BridgeController) -> int:
     notify_data.uID = 1
     notify_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP
     notify_data.uCallbackMessage = TRAY_CALLBACK
-    notify_data.hIcon = brand_icon
+    notify_data.hIcon = icon_for_state(controller.state)
     notify_data.szTip = (
         f"ArbDraw Bridge {controller.version} — {controller.status_text}"[:127]
     )

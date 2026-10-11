@@ -11,6 +11,7 @@ from python_bridge.windows_tray import (
     HealthInfo,
     find_bridge_executable,
     probe_bridge,
+    tray_icon_resource_name,
 )
 
 
@@ -173,8 +174,18 @@ class ProbeBridgeTests(unittest.TestCase):
             self.assertIsNone(probe_bridge("http://127.0.0.1:8876"))
 
     def test_favicon_is_packaged_with_the_bridge(self):
-        self.assertTrue(
-            importlib.resources.files("python_bridge").joinpath("ArbDraw.ico").is_file()
+        package = importlib.resources.files("python_bridge")
+        self.assertTrue(package.joinpath("ArbDraw.ico").is_file())
+        self.assertTrue(package.joinpath("ArbDraw-gray.ico").is_file())
+
+    def test_icon_color_tracks_running_state(self):
+        self.assertEqual(tray_icon_resource_name(BridgeState.STOPPED), "ArbDraw-gray.ico")
+        self.assertEqual(tray_icon_resource_name(BridgeState.STARTING), "ArbDraw-gray.ico")
+        self.assertEqual(tray_icon_resource_name(BridgeState.STOPPING), "ArbDraw-gray.ico")
+        self.assertEqual(tray_icon_resource_name(BridgeState.ERROR), "ArbDraw-gray.ico")
+        self.assertEqual(tray_icon_resource_name(BridgeState.RUNNING), "ArbDraw.ico")
+        self.assertEqual(
+            tray_icon_resource_name(BridgeState.RUNNING_EXTERNAL), "ArbDraw.ico"
         )
 
 

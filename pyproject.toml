@@ -47,7 +47,7 @@ version = { attr = "python_bridge.__version__" }
 include = ["python_bridge"]
 
 [tool.setuptools.package-data]
-python_bridge = ["ArbDraw.ico"]
+python_bridge = ["*.ico"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
