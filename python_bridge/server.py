@@ -12,6 +12,7 @@ import importlib.util
 import importlib.metadata
 import json
 import math
+import os
 import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -157,6 +158,8 @@ class BridgeService:
         if method == "GET" and path == "/api/v1/health":
             return HTTPStatus.OK, {
                 "status": "ok",
+                "service": "arbdraw-python-bridge",
+                "pid": os.getpid(),
                 "api_version": API_VERSION,
                 "capabilities": {
                     "visa": importlib.util.find_spec("pyvisa") is not None,

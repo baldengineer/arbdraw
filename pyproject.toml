@@ -31,6 +31,9 @@ pyvisa-py = ["PyVISA-py>=0.7"]
 [project.scripts]
 arbdraw-bridge = "python_bridge.server:main"
 
+[project.gui-scripts]
+arbdraw-bridge-tray = "python_bridge.windows_tray:main"
+
 [project.urls]
 Homepage = "https://baldengineer.github.io/arbdraw/"
 Documentation = "https://github.com/baldengineer/arbdraw/blob/main/python_bridge/README.md"

@@ -20,7 +20,7 @@ ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from 
 
 The **Instruments** button connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
 
-Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. Start it with `python -m python_bridge` (or `arbdraw-bridge.exe` on Windows). See [python_bridge/README.md](python_bridge/README.md) for single-adapter installation, VISA setup, source installation, and API details.
+Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. On Windows, run `arbdraw-bridge-tray.exe` for notification-area Start, Stop, and Restart controls, or run `arbdraw-bridge.exe` directly. On other platforms, use `python -m python_bridge`. See [python_bridge/README.md](python_bridge/README.md) for single-adapter installation, VISA setup, source installation, and API details.
 
 ### TekScope MSO2 and MSO6
 

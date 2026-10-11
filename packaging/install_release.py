@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 
 
@@ -65,7 +66,12 @@ def main() -> None:
         ],
         check=True,
     )
-    print(f"Start the bridge with: {sys.executable} -m python_bridge")
+    if sys.platform == "win32":
+        scripts = Path(sysconfig.get_path("scripts"))
+        print(f"Open the Windows tray controller: {scripts / 'arbdraw-bridge-tray.exe'}")
+        print(f"Or start the bridge directly: {scripts / 'arbdraw-bridge.exe'}")
+    else:
+        print(f"Start the bridge with: {sys.executable} -m python_bridge")
 
 
 if __name__ == "__main__":

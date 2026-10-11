@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import threading
 import time
@@ -75,6 +76,8 @@ class PythonBridgeTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(headers["Access-Control-Allow-Origin"], "null")
         self.assertEqual(body["api_version"], "1")
+        self.assertEqual(body["service"], "arbdraw-python-bridge")
+        self.assertEqual(body["pid"], os.getpid())
 
         _, headers, _ = self.request("/api/v1/health", origin="https://untrusted.example")
         self.assertNotIn("Access-Control-Allow-Origin", headers)

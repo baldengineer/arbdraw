@@ -26,5 +26,6 @@ test('TekScope documentation covers installation, both backends, and current lim
   assert.match(adapterReadme, /install\.py --adapter tekscope/);
   assert.match(adapterReadme, /python -m python_bridge --idn 192\.168\.128\.233/);
   assert.match(bridgeHelp, /TekScope adapter guide/);
+  assert.match(bridgeHelp, /arbdraw-bridge-tray\.exe/);
   assert.match(helpMenu, /title: 'TekScope adapter', source: 'docs\/help\/tekscope-adapter\.html'/);
 });

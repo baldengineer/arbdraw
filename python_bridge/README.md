@@ -19,6 +19,27 @@ On Windows, pip also creates `arbdraw-bridge.exe` in that Python environment's
 installer. If you use a virtual environment, use its `python` executable for
 both installation and startup.
 
+### Windows notification-area app
+
+The same installation also creates `arbdraw-bridge-tray.exe`. Run it to place
+an ArbDraw Bridge icon in the Windows notification area. Click the icon to see
+the current state and choose **Start bridge**, **Stop bridge**, **Restart
+bridge**, or **Exit**. The app finds `arbdraw-bridge.exe` in the same Python
+environment and starts it without opening a console window.
+
+The status check uses the configured bridge URL, `http://127.0.0.1:8876` by
+default. It can also stop or restart a compatible bridge that was already
+running when the tray app opened. Exiting the tray app stops a bridge that the
+app started, but leaves a bridge started elsewhere running. Bridge output is
+written to `%LOCALAPPDATA%\ArbDraw\bridge.log`.
+
+For a non-default executable, URL, or bridge arguments, start the tray app from
+a shortcut or terminal, for example:
+
+```powershell
+arbdraw-bridge-tray.exe --url http://127.0.0.1:9000 -- --port 9000 --visa-library @py
+```
+
 To install only one instrument family, use `python .\install.py --adapter
 owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope`. The TekScope
 package registers separate `tekscope-mso2` and `tekscope-mso6` backends. The release also
