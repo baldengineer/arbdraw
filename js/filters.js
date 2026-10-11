@@ -4,24 +4,41 @@
 const SMOOTHING_INITIAL_WINDOW = 5;
 const SMOOTHING_MAX_WINDOW = 101;
 
-function applyNoiseFilter(values, percentage) {
-  const span = Math.abs(state.high - state.low) * (percentage / 100);
+function applyNoiseFilter(values, percentage, limits = {}) {
+  const high = Number.isFinite(limits.high)
+      ? limits.high
+      : Number.isFinite(state.sourceHigh) ? state.sourceHigh : state.high,
+    low = Number.isFinite(limits.low)
+      ? limits.low
+      : Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
+    span = Math.abs(high - low) * (percentage / 100);
   return values.map((value) => value + (Math.random() * 2 - 1) * span);
 }
 
 function applySmoothingFilter(values, windowPoints) {
+  let low = Infinity,
+    high = -Infinity;
+  for (const value of values) {
+    if (!Number.isFinite(value)) continue;
+    low = Math.min(low, value);
+    high = Math.max(high, value);
+  }
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    low = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low;
+    high = Number.isFinite(state.sourceHigh) ? state.sourceHigh : state.high;
+  }
   return ARBDRAW_WAVEFORM_SHAPES.smoothSamples(values, {
     windowPoints,
-    low: Math.min(state.low, state.high),
-    high: Math.max(state.low, state.high),
+    low,
+    high,
   });
 }
 
-function applyFilters(values) {
+function applyFilters(values, limits = {}) {
   if (!state.filters?.enabled) return values;
   let filtered = values;
   if (state.filters.noiseEnabled && state.filters.noisePercent > 0)
-    filtered = applyNoiseFilter(filtered, state.filters.noisePercent);
+    filtered = applyNoiseFilter(filtered, state.filters.noisePercent, limits);
   if (state.filters.smoothingEnabled)
     filtered = applySmoothingFilter(filtered, state.filters.smoothingWindowPoints);
   return filtered;

@@ -308,6 +308,58 @@ test('waveshape generation spans the selected range and preserves surrounding sa
   assert.equal(context.state.samplesEdited, false);
 });
 
+test('filtered regeneration uses stable source levels and updates final extrema', () => {
+  const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
+  const helpers = source.slice(
+    source.indexOf('function normalizeEditorSelection('),
+    source.indexOf('function currentEditorSelection()'),
+  ) + source.slice(
+    source.indexOf('function waveformGenerationRange('),
+    source.indexOf('function cloneWaveform('),
+  );
+  const appliedLimits = [];
+  const context = {
+    state: {
+      type: 'dc', samples: 4, data: [],
+      high: 6, low: -6, sourceHigh: 5, sourceLow: -5,
+      phase: 0, cycles: 1, frequency: 1, duty: 50, symmetry: 50,
+      rcTau: 5, riseTime: 0, fallTime: 0, noiseColor: 'white',
+      samplesEdited: false,
+      filters: { enabled: true, noiseEnabled: true, noisePercent: 10, smoothingEnabled: false },
+    },
+    currentEditorSelection: () => null,
+    applyFilters(values, limits) {
+      appliedLimits.push({ ...limits });
+      return values.map((_, index) => index % 2 ? limits.high + 1 : limits.low - 1);
+    },
+    waveformDurationMs: () => 1000,
+    serialBitPattern: () => [],
+    serialSettings: () => ({ baud: 1 }),
+    ARBDRAW_WAVEFORM_SHAPES: {},
+    updateFunctionSelect() {},
+    pushHistory() {},
+    draw() {},
+    renderSamples() {},
+    renderVoltageLevels() {},
+    renderAwgTiming() {},
+    persistCurrentSettings() {},
+    $: () => ({ classList: { contains: () => true } }),
+  };
+
+  vm.runInNewContext(`${helpers}\ngenerate('dc', false, false, false, false);\ngenerate('dc', false, false, false, false);`, context);
+
+  assert.deepEqual(appliedLimits, [{ high: 5, low: -5 }, { high: 5, low: -5 }]);
+  assert.equal(context.state.sourceHigh, 5);
+  assert.equal(context.state.sourceLow, -5);
+  assert.equal(context.state.high, 6);
+  assert.equal(context.state.low, -6);
+
+  context.state.filters.noiseEnabled = false;
+  vm.runInNewContext("generate('dc', false, false, false, false);", context);
+  assert.equal(context.state.high, 5);
+  assert.equal(context.state.low, -5);
+});
+
 test('generation falls back to the whole record without a valid selection-sized buffer', () => {
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const helper = source.slice(

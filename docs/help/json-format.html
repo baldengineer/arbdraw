@@ -29,6 +29,8 @@
     "type": "sine",
     "highVoltage": 1,
     "lowVoltage": -1,
+    "sourceHighVoltage": 1,
+    "sourceLowVoltage": -1,
     "sampleRateMSa": 0.001,
     "frequencyHz": 125,
     "cycles": 1,
@@ -47,7 +49,8 @@
     <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
     <tbody>
       <tr><td><code>type</code></td><td>—</td><td><code>sine</code>, <code>square</code>, <code>triangle</code>, <code>rc</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, or <code>serial</code>.</td></tr>
-      <tr><td><code>highVoltage</code>, <code>lowVoltage</code></td><td>V</td><td>Nominal waveform levels.</td></tr>
+      <tr><td><code>highVoltage</code>, <code>lowVoltage</code></td><td>V</td><td>Final waveform levels. With active filters, these are the maximum and minimum saved samples.</td></tr>
+      <tr><td><code>sourceHighVoltage</code>, <code>sourceLowVoltage</code></td><td>V</td><td>Clean waveform levels used for regeneration and percentage-based noise. Older files fall back to <code>highVoltage</code> and <code>lowVoltage</code>.</td></tr>
       <tr><td><code>sampleRateMSa</code></td><td>MSa/s</td><td>Samples per second in millions. <code>1</code> means 1,000,000 samples/second.</td></tr>
       <tr><td><code>frequencyHz</code></td><td>Hz</td><td>Nominal waveform frequency metadata.</td></tr>
       <tr><td><code>rcTau</code></td><td>—</td><td>Unitless RC curve parameter. Default: 5.</td></tr>

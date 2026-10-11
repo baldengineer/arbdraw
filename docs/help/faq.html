@@ -6,7 +6,7 @@
   <h2>What does the Default button do?</h2>
   <p>It clears saved application settings from local storage, and reloads the application using <code>js/defaults.js</code>.</p>
   <h2>How do I add (vertical) noise to a waveform?</h2>
-  <p>Switch the Editor to Advanced. In Properties, check Add noise and enter the amount as a percentage.</p>
+  <p>Switch the Editor to Advanced. In Properties, check Add noise and enter the amount as a percentage of the clean waveform's high-to-low span. ArbDraw keeps the clean source levels for regeneration, then updates the displayed high and low levels from the final samples after noise and smoothing.</p>
   <h2>What happens when I switch between Basic and Advanced?</h2>
   <p>Basic generates a waveform from its waveshape and Properties. Advanced also lets you edit points and apply noise or smoothing filters. Switching to Advanced keeps the waveform. If you have made point edits or enabled filters, switching back to Basic asks you to confirm. Cancel keeps your Advanced work; continuing discards it, regenerates the waveform from its current Properties, and clears the earlier edit history. Without Advanced edits or active filters, the switch needs no confirmation. See <a href="how-to-use.html">How to use ArbDraw</a> for details.</p>
   <h2>What is the difference between the Editor and Waveform views?</h2>

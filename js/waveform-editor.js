@@ -142,6 +142,25 @@ function mergeGeneratedSamples(existingValues, generatedValues, range, totalPoin
   return merged;
 }
 
+function generatedVoltageLevels(values) {
+  const sourceHigh = Number.isFinite(state.sourceHigh) ? state.sourceHigh : state.high,
+    sourceLow = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
+    filters = state.filters || {},
+    filtersActive = filters.enabled !== false &&
+      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled);
+  if (!filtersActive) return { high: sourceHigh, low: sourceLow };
+  let high = -Infinity,
+    low = Infinity;
+  for (const value of values) {
+    if (!Number.isFinite(value)) continue;
+    high = Math.max(high, value);
+    low = Math.min(low, value);
+  }
+  return Number.isFinite(high) && Number.isFinite(low)
+    ? { high, low }
+    : { high: sourceHigh, low: sourceLow };
+}
+
 function waveformReplacementNeedsConfirmation(scopeSelection = true) {
   if (state.samplesEdited !== true) return false;
   return !waveformGenerationRange(
@@ -164,6 +183,7 @@ function generate(
   persist = true,
   scopeSelection = true,
   confirmOverwrite = true,
+  preserveVoltageDraft = false,
 ) {
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
@@ -175,16 +195,18 @@ function generate(
       existingData.length,
     ),
     generatedPointCount = range.right - range.left + 1,
-    mid = (state.high + state.low) / 2,
-    amp = (state.high - state.low) / 2,
+    sourceHigh = Number.isFinite(state.sourceHigh) ? state.sourceHigh : state.high,
+    sourceLow = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
+    mid = (sourceHigh + sourceLow) / 2,
+    amp = (sourceHigh - sourceLow) / 2,
     phase = (state.phase * Math.PI) / 180,
     serialBits = type === 'serial' ? serialBitPattern() : null,
     serialBaud = type === 'serial' ? serialSettings().baud : null,
     serialVoltage = type === 'serial' ? ARBDRAW_WAVEFORM_SHAPES.createSerialVoltage({
       bits: serialBits,
       baud: serialBaud,
-      high: state.high,
-      low: state.low,
+      high: sourceHigh,
+      low: sourceLow,
       riseTimeSeconds: state.riseTime,
       fallTimeSeconds: state.fallTime,
     }) : null,
@@ -192,8 +214,8 @@ function generate(
       type === 'noise'
         ? ARBDRAW_WAVEFORM_SHAPES.generateNoiseSamples({
             count: generatedPointCount,
-            high: state.high,
-            low: state.low,
+            high: sourceHigh,
+            low: sourceLow,
             color: state.noiseColor,
           })
         : null,
@@ -210,8 +232,8 @@ function generate(
       case 'pulse':
         return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
           phase: p,
-          high: state.high,
-          low: state.low,
+          high: sourceHigh,
+          low: sourceLow,
           dutyPercent: state.duty,
           frequencyHz: state.frequency,
           riseTimeSeconds: state.riseTime,
@@ -220,15 +242,15 @@ function generate(
       case 'triangle':
         return ARBDRAW_WAVEFORM_SHAPES.triangleVoltage({
           phase: p,
-          high: state.high,
-          low: state.low,
+          high: sourceHigh,
+          low: sourceLow,
           symmetryPercent: state.symmetry,
         });
       case 'rc':
         return ARBDRAW_WAVEFORM_SHAPES.rcVoltage({
           phase: p,
-          high: state.high,
-          low: state.low,
+          high: sourceHigh,
+          low: sourceLow,
           tau: state.rcTau,
         });
       case 'dc':
@@ -244,7 +266,18 @@ function generate(
         return mid;
     }
   });
-  state.data = mergeGeneratedSamples(existingData, applyFilters(generatedData), range, n);
+  state.data = mergeGeneratedSamples(
+    existingData,
+    applyFilters(generatedData, { high: sourceHigh, low: sourceLow }),
+    range,
+    n,
+  );
+  const levels = generatedVoltageLevels(state.data);
+  state.high = levels.high;
+  state.low = levels.low;
+  if (typeof renderVoltageLevels === 'function')
+    renderVoltageLevels({ preserveActiveDraft: preserveVoltageDraft });
+  if (typeof renderAwgTiming === 'function') renderAwgTiming();
   state.samplesEdited = range.scoped;
   globalThis.ARBDRAW_EDITOR_MODES?.refresh();
   if (type === 'triangle') updateFunctionSelect(type);

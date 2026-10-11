@@ -33,6 +33,8 @@ The current format identifier is:
     "type": "sine",
     "highVoltage": 1,
     "lowVoltage": -1,
+    "sourceHighVoltage": 1,
+    "sourceLowVoltage": -1,
     "durationMs": 8,
     "sampleRateMSa": 0.001,
     "frequencyHz": 125,
@@ -84,8 +86,10 @@ Unknown top-level fields are ignored.
 | Field | Type | Unit | Description |
 | --- | --- | --- | --- |
 | `type` | string | — | Waveform classification. See **Waveform types** below. |
-| `highVoltage` | number | V | Nominal high level. |
-| `lowVoltage` | number | V | Nominal low level. |
+| `highVoltage` | number | V | Final high level. When a filter is active, this is the maximum saved sample. |
+| `lowVoltage` | number | V | Final low level. When a filter is active, this is the minimum saved sample. |
+| `sourceHighVoltage` | number | V | Clean waveform high level used when regenerating and calculating percentage-based noise. Missing values fall back to `highVoltage`. |
+| `sourceLowVoltage` | number | V | Clean waveform low level used when regenerating and calculating percentage-based noise. Missing values fall back to `lowVoltage`. |
 | `durationMs` | number | ms | Derived record duration. ArbDraw recalculates this during import. |
 | `sampleRateMSa` | number | MSa/s | Sample rate in millions of samples per second. `1` means 1,000,000 samples/second. |
 | `frequencyHz` | number | Hz | Nominal waveform frequency. |
@@ -107,7 +111,9 @@ All waveform numbers use canonical units. UI display prefixes such as mV, kHz, a
 
 The `filters` object contains `enabled`, `noiseEnabled`, `noisePercent`,
 `smoothingEnabled`, and `smoothingWindowPoints`. Smoothing uses a centered,
-odd-sized moving-average window and preserves the configured voltage limits.
+odd-sized moving-average window. After the complete filter chain, `highVoltage`
+and `lowVoltage` are recalculated from the final samples. The source levels remain
+unchanged so repeated regeneration does not compound noise or smoothing changes.
 
 ## AWG fields
 

@@ -115,13 +115,15 @@ awgProfileSelect?.addEventListener('keydown', (event) => {
 });
 
 function persistCurrentSettings() {
-  const toolNames = { pointer: 'Pointer', selection: 'Select', pencil: 'Edit', erase: 'Delete' },
+  const sourceHigh = Number.isFinite(state.sourceHigh) ? state.sourceHigh : state.high,
+    sourceLow = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
+    toolNames = { pointer: 'Pointer', selection: 'Select', pencil: 'Edit', erase: 'Delete' },
     serial = typeof serialSettings === 'function' ? serialSettings() : {};
   persistSettings({
-    highLevelV: state.high / voltageUnitScales.highInput,
-    lowLevelV: state.low / voltageUnitScales.lowInput,
-    offsetV: ((state.high + state.low) / 2) / voltageUnitScales.offsetInput,
-    amplitudeVpp: (state.high - state.low) / amplitudeUnitScale,
+    highLevelV: sourceHigh / voltageUnitScales.highInput,
+    lowLevelV: sourceLow / voltageUnitScales.lowInput,
+    offsetV: ((sourceHigh + sourceLow) / 2) / voltageUnitScales.offsetInput,
+    amplitudeVpp: (sourceHigh - sourceLow) / amplitudeUnitScale,
     highLevelUnit: $('highInput').closest('label').querySelector('.voltage-unit-button').textContent,
     lowLevelUnit: $('lowInput').closest('label').querySelector('.voltage-unit-button').textContent,
     offsetUnit: $('offsetInput').closest('label').querySelector('.voltage-unit-button').textContent,
@@ -275,10 +277,26 @@ function renderAwgTiming() {
   };
   ARBDRAW_FIELDS.formatInputs();
 }
-function syncInputs() {
-  state.high = inputVoltage('highInput');
-  state.low = inputVoltage('lowInput');
-  if (state.high < state.low) [state.high, state.low] = [state.low, state.high];
+function renderVoltageLevels({ preserveActiveDraft = false } = {}) {
+  if (
+    preserveActiveDraft &&
+    ['highInput', 'lowInput', 'amplitudeInput', 'offsetInput'].includes(document.activeElement?.id)
+  )
+    return;
+  $('highInput').value = displayVoltage('highInput', state.high);
+  $('lowInput').value = displayVoltage('lowInput', state.low);
+  $('amplitudeInput').value = displayAmplitude(state.high - state.low);
+  $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
+}
+function syncInputs(updateSourceLevels = false) {
+  if (updateSourceLevels) {
+    state.sourceHigh = inputVoltage('highInput');
+    state.sourceLow = inputVoltage('lowInput');
+    if (state.sourceHigh < state.sourceLow)
+      [state.sourceHigh, state.sourceLow] = [state.sourceLow, state.sourceHigh];
+    state.high = state.sourceHigh;
+    state.low = state.sourceLow;
+  }
   state.cycles = Math.max(1, Math.round(+$('cyclesInput').value));
   state.frequency = Math.max(0.000001, inputFrequency());
   state.phase = +$('phaseInput').value;
@@ -287,10 +305,7 @@ function syncInputs() {
   state.rcTau = Math.max(0.000001, +$('rcTauInput').value);
   state.riseTime = Math.max(0, inputTransitionTime('riseTimeInput'));
   state.fallTime = Math.max(0, inputTransitionTime('fallTimeInput'));
-  $('highInput').value = displayVoltage('highInput', state.high);
-  $('lowInput').value = displayVoltage('lowInput', state.low);
-  $('amplitudeInput').value = displayAmplitude(state.high - state.low);
-  $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
+  renderVoltageLevels();
   $('cyclesInput').value = state.cycles;
   $('dutyValue').textContent = state.duty + '%';
   renderTransitionTimes();
@@ -552,7 +567,7 @@ function applyProperties({ preview = false } = {}) {
     }
   }
   if (preview && differs) beginWaveformPreview();
-  syncInputs();
+  syncInputs(amplitudeChanged);
   if (waveformChanged) {
     generate(
       state.type,
@@ -560,6 +575,7 @@ function applyProperties({ preview = false } = {}) {
       !preview && !waveformPreviewTransaction,
       true,
       false,
+      preview,
     );
     if (amplitudeChanged) refreshScopeTime();
     else refreshScopeVertical();

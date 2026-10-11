@@ -93,3 +93,32 @@ test('declining replacement restores filter controls without changing settings',
   assert.equal(element('noiseFilterInput').disabled, true);
   assert.equal(calls.generate, 0);
 });
+
+test('noise magnitude uses source levels instead of expanded final levels', () => {
+  const { context, state } = createHarness();
+  state.sourceHigh = 5;
+  state.sourceLow = -5;
+  state.high = 6;
+  state.low = -6;
+  const originalRandom = context.Math?.random;
+  vm.runInContext('Math.random = () => 1', context);
+  const filtered = context.applyNoiseFilter([0], 10);
+  assert.deepEqual(Array.from(filtered), [1]);
+  if (originalRandom) context.Math.random = originalRandom;
+});
+
+test('smoothing preserves noisy input extrema instead of clipping to source levels', () => {
+  const { context, state } = createHarness();
+  state.sourceHigh = 5;
+  state.sourceLow = -5;
+  state.high = 6;
+  state.low = -6;
+  let limits;
+  context.ARBDRAW_WAVEFORM_SHAPES.smoothSamples = (values, options) => {
+    limits = options;
+    return values;
+  };
+  context.applySmoothingFilter([-6, 0, 6], 3);
+  assert.equal(limits.low, -6);
+  assert.equal(limits.high, 6);
+});

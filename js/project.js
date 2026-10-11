@@ -57,11 +57,32 @@ function parseProject(raw) {
     source.values.every(Number.isFinite)
       ? source.values.slice()
       : [];
-  const highVoltage = number('highVoltage', defaults.highVoltage),
-    lowVoltage = number('lowVoltage', defaults.lowVoltage),
+  const declaredHighVoltage = number('highVoltage', defaults.highVoltage),
+    declaredLowVoltage = number('lowVoltage', defaults.lowVoltage),
+    sourceHighVoltage = Math.max(
+      number('sourceHighVoltage', declaredHighVoltage),
+      number('sourceLowVoltage', declaredLowVoltage),
+    ),
+    sourceLowVoltage = Math.min(
+      number('sourceHighVoltage', declaredHighVoltage),
+      number('sourceLowVoltage', declaredLowVoltage),
+    ),
     durationMs = sampleCount / (sampleRateMSa * 1000),
     cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
-    frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
+    frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz)),
+    filters = normalizeFilterSettings(source.filters),
+    filtersActive = filters.enabled !== false &&
+      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled);
+  let highVoltage = Math.max(declaredHighVoltage, declaredLowVoltage),
+    lowVoltage = Math.min(declaredHighVoltage, declaredLowVoltage);
+  if (filtersActive && values.length) {
+    highVoltage = -Infinity;
+    lowVoltage = Infinity;
+    for (const value of values) {
+      highVoltage = Math.max(highVoltage, value);
+      lowVoltage = Math.min(lowVoltage, value);
+    }
+  }
   return {
     schema: 'arbdraw.waveform',
     version: 1,
@@ -85,6 +106,8 @@ function parseProject(raw) {
       type: Object.hasOwn(titles, source.type) ? source.type : 'sine',
       highVoltage,
       lowVoltage,
+      sourceHighVoltage,
+      sourceLowVoltage,
       durationMs,
       sampleRateMSa,
       frequencyHz,
@@ -99,7 +122,7 @@ function parseProject(raw) {
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
-      filters: normalizeFilterSettings(source.filters),
+      filters,
       serial: normalizeSerialSettings(source.serial, DEFAULT_VALUES),
       samplesEdited: values.length > 0 && source.samplesEdited === true,
       sampleCount,

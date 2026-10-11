@@ -100,3 +100,34 @@ test('known generated waveshapes do not become edited when imported', () => {
   document.waveform.values = [];
   assert.equal(context.parseProject(document).waveform.samplesEdited, false);
 });
+
+test('source voltage levels survive filtering and project JSON round trips', () => {
+  const context = projectContext();
+  const document = context.createDefaultDocument();
+  document.waveform.sourceHighVoltage = 5;
+  document.waveform.sourceLowVoltage = -5;
+  document.waveform.highVoltage = 5.8;
+  document.waveform.lowVoltage = -5.6;
+  document.waveform.filters.noiseEnabled = true;
+  document.AWG.sampleCount = document.waveform.sampleCount = 4;
+  document.waveform.values = [-5.6, -1, 2, 5.8];
+
+  const imported = context.parseProject(JSON.parse(JSON.stringify(document))).waveform;
+  assert.equal(imported.sourceHighVoltage, 5);
+  assert.equal(imported.sourceLowVoltage, -5);
+  assert.equal(imported.highVoltage, 5.8);
+  assert.equal(imported.lowVoltage, -5.6);
+});
+
+test('legacy projects use their declared levels as filter source levels', () => {
+  const context = projectContext();
+  const document = context.createDefaultDocument();
+  delete document.waveform.sourceHighVoltage;
+  delete document.waveform.sourceLowVoltage;
+  document.waveform.highVoltage = 5;
+  document.waveform.lowVoltage = -5;
+
+  const imported = context.parseProject(document).waveform;
+  assert.equal(imported.sourceHighVoltage, 5);
+  assert.equal(imported.sourceLowVoltage, -5);
+});
