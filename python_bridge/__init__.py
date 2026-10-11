@@ -2,6 +2,6 @@
 
 from .server import BridgeService, PyVisaBackend, create_server
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = ["BridgeService", "PyVisaBackend", "__version__", "create_server"]

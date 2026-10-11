@@ -1,5 +1,11 @@
-This release adds the TekScope MSO2 and MSO6 adapters to the downloadable
-Python bridge bundle.
+This release updates the bundled TekScope MSO6 adapter to match the AFG's
+documented limits: 131,072 arbitrary-waveform points, 250 MS/s, and repetition
+rates from 0.1 Hz to 25 MHz. It validates the sample-count/rate relationship
+and the load-dependent amplitude and offset ranges before opening a VISA
+session. The ArbDraw MSO6 profile exposes the same limits.
+
+The downloadable Python bridge bundle includes the TekScope MSO2 and MSO6
+adapters introduced in version 0.1.3.
 
 It also adds profile-configured PyVISA session options for instrument
 identity queries and waveform transfers. The bundled Rigol DG1022 adapter now
