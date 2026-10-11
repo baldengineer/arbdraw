@@ -100,6 +100,19 @@ test('instrument resource field explains that an IP address is accepted', () => 
   assert.match(html, />VISA resource \(or IP\)<\/label>/);
 });
 
+test('sample rate and TS resolution remain visible but disabled', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+
+  for (const fieldId of ['sampleRateField', 'tsResolutionField'])
+    assert.match(html, new RegExp(`id="${fieldId}"[^>]*aria-disabled="true"`));
+  for (const inputId of ['rateEdit', 'tsResolutionEdit'])
+    assert.match(html, new RegExp(`id="${inputId}"[^>]*disabled`));
+  for (const buttonId of ['sampleRateUnitBtn', 'tsResolutionUnitBtn'])
+    assert.match(html, new RegExp(`id="${buttonId}"[^>]*disabled`));
+  assert.match(styles, /\.status-timing-field\[aria-disabled="true"\]\{opacity:/);
+});
+
 test('mobile document order places AWG controls after waveform properties', () => {
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
