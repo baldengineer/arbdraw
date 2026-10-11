@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="help.css">
+<article>
+  <h1>TekScope adapter</h1>
+  <p>The TekScope adapter sends the current ArbDraw waveform to the built-in AFG on supported Tektronix MSO2 and MSO6 scopes. It transfers a Tek waveform CSV to the scope, selects that file as the arbitrary source, and applies frequency, amplitude, offset, load, and output state.</p>
+
+  <h2>Supported backends</h2>
+  <table>
+    <thead><tr><th>ArbDraw profile</th><th>Bridge backend</th><th>Accepted models</th></tr></thead>
+    <tbody>
+      <tr><td>TekScope MSO2 (files)</td><td><code>tekscope-mso2</code></td><td>MSO22, MSO24, MSO22-EDU, MSO24-EDU</td></tr>
+      <tr><td>TekScope MSO6 (files)</td><td><code>tekscope-mso6</code></td><td>MSO64, MSO66, MSO68, and their B variants</td></tr>
+    </tbody>
+  </table>
+  <p>The scope must have its AFG capability available, be reachable from the bridge computer, and be visible through a VISA implementation such as NI-VISA. The adapter currently writes into <code>C:/baldee</code>; create that folder on the scope before the first transfer.</p>
+
+  <h2>Install the bridge and adapter</h2>
+  <ol>
+    <li>Install Python 3.11 or newer and a VISA implementation.</li>
+    <li>Download and extract <code>arbdraw-bridge-with-adapters.zip</code> from the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">latest ArbDraw release</a>.</li>
+    <li>Open a terminal in the extracted folder and install only the shared TekScope package, or omit <code>--adapter tekscope</code> to install every bundled adapter.</li>
+  </ol>
+  <pre><code>python install.py --adapter tekscope</code></pre>
+  <p>One TekScope package registers both model-specific bridge backends. Always use the same Python interpreter to install and start the bridge.</p>
+
+  <h2>Verify VISA before starting ArbDraw</h2>
+  <pre><code>python -m python_bridge --list-resources
+python -m python_bridge --idn 192.168.128.233</code></pre>
+  <p>A bare IPv4 address is accepted and becomes a VXI-11 resource such as <code>TCPIP0::192.168.128.233::INSTR</code>. Replace the example address with your scope's address. Then start the bridge and leave the terminal open:</p>
+  <pre><code>python -m python_bridge</code></pre>
+
+  <h2>Send a waveform from ArbDraw</h2>
+  <ol>
+    <li>Select <strong>TekScope MSO2 (files)</strong> or <strong>TekScope MSO6 (files)</strong> in <strong>AWG Profile</strong>.</li>
+    <li>Create the waveform and choose its sample count, frequency, and voltage levels.</li>
+    <li>Choose <strong>File → Instruments</strong> and connect to <code>http://127.0.0.1:8876</code>.</li>
+    <li>Select a discovered VISA resource, or enter the scope's IP address directly.</li>
+    <li>Select <strong>Identify (*IDN?)</strong> and confirm the returned model matches the chosen profile.</li>
+    <li>Confirm the waveform backend automatically selected <code>tekscope-mso2</code> or <code>tekscope-mso6</code>.</li>
+    <li>Use channel 1. Select <strong>Enable output</strong> only when the AFG should turn on after a successful transfer.</li>
+    <li>Select <strong>Send waveform</strong> and wait for the verified success message.</li>
+  </ol>
+  <p>The adapter disables AFG output before writing the file. It reads the file back, selects it, applies the requested settings, and only then restores output to the requested state. The destination filename is derived from the ArbDraw project name. Sending the same name again overwrites that file; the adapter does not delete files.</p>
+
+  <h2>MSO2 transfer limit</h2>
+  <p>Tested MSO2 firmware rejects a <code>FILESystem:WRITEFile</code> payload near 8,092 bytes. The adapter conservatively rejects encoded files of 8,000 bytes or more before changing AFG state. This is a firmware file-transfer issue, not the scope's advertised waveform-memory depth. A 100-point waveform is known to work; larger records can exceed the byte limit even when their point count is valid.</p>
+
+  <h2>MSO6 validation status</h2>
+  <p>The MSO6 backend accepts up to 100,000 points and does not inherit the MSO2 byte limit. Its command set is documentation-grounded, but CSV loading and raw file readback still require validation on live MSO6 hardware.</p>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Bridge offline:</strong> Keep <code>python -m python_bridge</code> running and use the default loopback URL.</li>
+    <li><strong>No TekScope backend:</strong> Run <code>python install.py --adapter tekscope</code> with the same interpreter that starts the bridge, then restart it.</li>
+    <li><strong>No VISA resource:</strong> Check the scope's LAN settings, ping its address, and verify NI-VISA or your chosen VISA implementation can see it. You can still type a bare IP address into ArbDraw.</li>
+    <li><strong>Unsupported instrument:</strong> Match the MSO2/MSO6 profile and backend to the model returned by <code>*IDN?</code>.</li>
+    <li><strong>Scope path error:</strong> Confirm <code>C:/baldee</code> exists on the scope.</li>
+    <li><strong>MSO2 instrument limit exceeded:</strong> Reduce the sample count; increasing the timeout does not bypass the firmware's block-size failure.</li>
+  </ul>
+
+  <p>For source installation, adapter options, and the live-test CLI, see the <a href="https://github.com/baldengineer/arbdraw/blob/main/adapters/tekscope/README.md" target="_blank" rel="noopener noreferrer">complete TekScope adapter README</a>.</p>
+</article>

@@ -7,6 +7,7 @@ const helpItems = [
   { title: 'How to use', source: 'docs/help/how-to-use.html' },
   { title: 'Editor navigation', source: 'docs/help/editor-navigation.html' },
   { title: 'Python bridge', source: 'docs/help/python-bridge.html' },
+  { title: 'TekScope adapter', source: 'docs/help/tekscope-adapter.html' },
   { title: 'JSON format', source: 'docs/help/json-format.html' },
   { title: 'FAQ', source: 'docs/help/faq.html' },
   { title: 'Known Issues', href: 'https://github.com/baldengineer/arbdraw/issues' },

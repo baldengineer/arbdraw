@@ -22,6 +22,26 @@ The **Instruments** button connects ArbDraw to a local Python REST service. From
 
 Download `arbdraw-bridge-with-adapters.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. Start it with `python -m python_bridge` (or `arbdraw-bridge.exe` on Windows). See [python_bridge/README.md](python_bridge/README.md) for single-adapter installation, VISA setup, source installation, and API details.
 
+### TekScope MSO2 and MSO6
+
+The shared TekScope package registers separate `tekscope-mso2` and
+`tekscope-mso6` waveform backends. To install only that package from the release
+bundle, run:
+
+```powershell
+python .\install.py --adapter tekscope
+python -m python_bridge --idn 192.168.128.233
+python -m python_bridge
+```
+
+Replace the example IP with the scope's address. In ArbDraw, select the matching
+**TekScope MSO2 (files)** or **TekScope MSO6 (files)** AWG profile, then use
+**File → Instruments** to identify the scope and send the waveform. The MSO2
+backend includes a firmware-specific file-write limit; MSO6 hardware validation
+is still pending. See the [TekScope adapter guide](adapters/tekscope/README.md)
+for supported models, VISA setup, file behavior, limitations, and
+troubleshooting.
+
 
 ## Features
 

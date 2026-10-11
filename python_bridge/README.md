@@ -40,7 +40,7 @@ distributions intended mainly for developers and packaging tools.
 
 ## Install from source
 
-From an ArbDraw source checkout, install and start the bridge with:
+From an ArbDraw source checkout, install and start the generic bridge with:
 
 ```powershell
 python -m pip install -e .
@@ -48,6 +48,15 @@ python -m python_bridge
 ```
 
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
+
+Instrument waveform sending also requires the corresponding adapter package.
+For TekScope development, install the included package into the same Python
+environment before starting the bridge:
+
+```powershell
+python -m pip install -e .\adapters\tekscope
+python -m python_bridge --serve-app .
+```
 
 ## One-shot VISA commands
 
@@ -76,6 +85,39 @@ The bridge listens only on `http://127.0.0.1:8876` by default.
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
 
 Keep the default loopback host unless you deliberately want to expose instrument control to another machine. Browser access is limited to local/file origins and the ArbDraw GitHub Pages origin. Use repeatable `--allow-origin https://example.test` arguments for another trusted deployment.
+
+## TekScope quick start
+
+The TekScope package registers two bridge backends from one wheel:
+
+- `tekscope-mso2` for MSO22, MSO24, MSO22-EDU, and MSO24-EDU.
+- `tekscope-mso6` for MSO64, MSO66, MSO68, and their B variants.
+
+Verify VISA access and identity before starting the long-running bridge:
+
+```powershell
+python -m python_bridge --list-resources
+python -m python_bridge --idn 192.168.128.233
+python -m python_bridge
+```
+
+A bare IPv4 address is normalized to a VXI-11
+`TCPIP0::<address>::INSTR` resource. In ArbDraw, select the matching TekScope AWG
+profile before opening **File → Instruments**. Connect, identify the scope,
+confirm the matching backend, select channel 1, choose the desired output state,
+and send the waveform.
+
+The adapter currently stores files in `C:/baldee`; that folder must exist on
+the scope. It disables output during transfer, verifies file readback, selects
+the arbitrary source, applies frequency and voltage settings, and enables
+output only when requested. Sending the same project name overwrites that file;
+the adapter does not delete scope files.
+
+MSO2 firmware has an observed `FILESystem:WRITEFile` failure near 8,092 bytes,
+so the adapter rejects encoded payloads of 8,000 bytes or more. This is separate
+from the profile's point-memory limit. The MSO6 backend does not inherit this
+cap, but live MSO6 CSV and readback behavior still requires validation. See the
+[complete TekScope adapter guide](../adapters/tekscope/README.md).
 
 ## Install and manage adapters
 
@@ -189,6 +231,10 @@ It uploads a Tek waveform CSV into the scope filesystem, reads it back for
 verification, selects it as the built-in AFG arbitrary source, and applies
 frequency, amplitude, offset, load, and output settings. Output remains off
 unless ArbDraw's **Enable output after send** option is selected.
+
+See [the adapter README](../adapters/tekscope/README.md) for the model matrix,
+release installation, scope-directory requirement, CLI workflow, MSO2 firmware
+limit, MSO6 validation status, and troubleshooting.
 
 ### Remove an adapter
 
