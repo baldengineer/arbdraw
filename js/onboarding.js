@@ -51,7 +51,7 @@
     },
   ];
 
-  // Instruments Dialog Guide
+  // Send to AWG Dialog Guide
   const instrumentSteps = [
     {
       element: '.bridge-connection-row',

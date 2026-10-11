@@ -105,7 +105,7 @@ bridge server.
 
 ## Connect ArbDraw
 
-Open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Instruments**.
+Open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Send to AWG**.
 The bridge listens only on `http://127.0.0.1:8876` by default.
 
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
@@ -129,7 +129,7 @@ python -m python_bridge
 
 A bare IPv4 address is normalized to a VXI-11
 `TCPIP0::<address>::INSTR` resource. In ArbDraw, select the matching TekScope AWG
-profile before opening **File → Instruments**. Connect, identify the scope,
+profile before opening **File → Send to AWG**. Connect, identify the scope,
 confirm the matching backend, select channel 1, choose the desired output state,
 and send the waveform.
 
@@ -227,7 +227,7 @@ These tests validate document parsing, encoding, options, packaged defaults, and
     --port 8876
 ```
 
-The bridge discovers installed adapters registered in the `arbdraw.instrument_adapters` entry-point group. Open **File → Instruments** in ArbDraw to see the available waveform backends and select one before sending. The generic bridge remains usable for health checks, VISA discovery, identity queries, and SCPI queries when no adapter is installed.
+The bridge discovers installed adapters registered in the `arbdraw.instrument_adapters` entry-point group. Open **File → Send to AWG** in ArbDraw to see the available waveform backends and select one before sending. The generic bridge remains usable for health checks, VISA discovery, identity queries, and SCPI queries when no adapter is installed.
 
 The bridge is safe for multiple ArbDraw browser clients. Instrument-facing operations are serialized inside the bridge, including VISA discovery, queries, and adapter waveform transfers. This prevents concurrent clients or adapters from using the VISA stack at the same time. Non-instrument HTTP requests remain independently serviceable.
 

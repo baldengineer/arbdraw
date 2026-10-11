@@ -30,7 +30,7 @@ This is useful when testing a trigger or decoder against something closer to a c
 
 ## 3. Send samples with the Python bridge
 
-When the instrument has a supported adapter, the optional Python bridge removes the file-export-and-import shuffle. Install and start the bridge on the computer connected to the instrument. Then open **File → Instruments**, connect to the local bridge, select the waveform backend and VISA resource, identify the instrument, and send the waveform. Check the channel and **Enable output** setting before you send it.
+When the instrument has a supported adapter, the optional Python bridge removes the file-export-and-import shuffle. Install and start the bridge on the computer connected to the instrument. Then open **File → Send to AWG**, connect to the local bridge, select the waveform backend and VISA resource, identify the instrument, and send the waveform. Check the channel and **Enable output** setting before you send it.
 
 The bridge itself handles local VISA communication; an instrument-specific adapter handles the actual waveform transfer. The supported list is short today. If your instrument is missing, the [adapter guide](https://github.com/baldengineer/arbdraw/blob/main/python_bridge/ADAPTERS.md) explains how to build and register a bridge adapter. The editor and file exports still work without one.
 

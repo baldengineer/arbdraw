@@ -12,7 +12,7 @@ Download **`arbdraw-bridge-with-adapters-0.1.5.zip`**, extract it, and run
 OWON XDG3000 / Multicomp MP750290, Rigol DG1022, and TekScope MSO2/MSO6
 adapters in the same Python environment. On Windows, run
 `arbdraw-bridge-tray.exe`; on other platforms, run `python -m python_bridge`.
-Then open **File → Instruments** in ArbDraw.
+Then open **File → Send to AWG** in ArbDraw.
 
 Use `python install.py --adapter owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope` if you need only one adapter package. The TekScope package registers both model-specific backends. Individual wheels and source distributions are also attached for manual installation and development. To add an adapter to an existing bridge installation, install its wheel with the same Python interpreter that installed `arbdraw-bridge.exe`.
 

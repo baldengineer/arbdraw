@@ -10,14 +10,15 @@ function updateAudioPlaybackButton() {
   const button = $('playWaveformBtn'),
     playing = ARBDRAW_AUDIO_PLAYBACK.playing,
     audioProfileSelected = $('awgProfileSelect')?.value === 'audio';
-  button.textContent = playing ? '■ Stop' : '▶ Play';
+  button.textContent = playing ? '■ Stop' : audioProfileSelected ? '▶ Play' : 'Send';
   button.classList.toggle('playing', playing);
-  button.disabled = !playing && !audioProfileSelected;
+  button.classList.toggle('send', !playing && !audioProfileSelected);
+  button.disabled = false;
   button.title = playing
     ? 'Stop browser audio playback'
     : audioProfileSelected
       ? 'Play waveform through browser audio'
-      : 'Select the Audio AWG profile to enable playback';
+      : 'Send waveform to AWG';
   button.setAttribute('aria-pressed', String(playing));
 }
 
@@ -48,7 +49,7 @@ $('playWaveformBtn').onclick = async () => {
     return;
   }
   if ($('awgProfileSelect')?.value !== 'audio') {
-    updateAudioPlaybackButton();
+    globalThis.openSendToAwgDialog?.();
     return;
   }
   try {

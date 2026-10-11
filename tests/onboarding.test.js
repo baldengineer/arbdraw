@@ -100,7 +100,7 @@ test('onboarding defines the starter tour through Driver.js', () => {
   const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
   const starterTourSource = source.slice(
     source.indexOf('const steps = ['),
-    source.indexOf('// Instruments Dialog Guide'),
+    source.indexOf('// Send to AWG Dialog Guide'),
   );
   const starterTourTargets = [...starterTourSource.matchAll(/element: '([^']+)'/g)]
     .map((match) => match[1]);
@@ -130,7 +130,7 @@ test('onboarding starter targets and referenced AWG outputs exist in the UI', ()
   const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
   const starterTourSource = source.slice(
     source.indexOf('const steps = ['),
-    source.indexOf('// Instruments Dialog Guide'),
+    source.indexOf('// Send to AWG Dialog Guide'),
   );
   const starterTourTargets = [...starterTourSource.matchAll(/element: '([^']+)'/g)]
     .map((match) => match[1]);
@@ -160,7 +160,7 @@ test('Help menu provides a permanent way to restart onboarding', () => {
   assert.match(editorNavigationHelp, /Full Record/);
 });
 
-test('Instruments dialog provides a Driver.js guide', () => {
+test('Send to AWG dialog provides a Driver.js guide', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
   const instruments = fs.readFileSync(path.join(root, 'js/instruments.js'), 'utf8');

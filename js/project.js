@@ -24,6 +24,7 @@ function renderDocument() {
   renderFilterControls();
   draw();
   ARBDRAW_FIELDS.formatInputs();
+  globalThis.updateAudioPlaybackButton?.();
 }
 const defaultIncludeCsvTimestamps = globalThis.ARBDRAW_DEFAULTS?.includeCsvTimestamps !== false;
 let includeCsvTimestampsPreference = DEFAULT_VALUES.includeCsvTimestamps;

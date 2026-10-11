@@ -18,7 +18,7 @@ ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from 
 
 ## Python instrument bridge
 
-The **Instruments** button connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
+The **Send to AWG** command connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
 
 Download `arbdraw-bridge-with-adapters-<version>.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. On Windows, run `arbdraw-bridge-tray.exe` for notification-area Start, Stop, and Restart controls, or run `arbdraw-bridge.exe` directly. The tray menu reports the bridge version and available adapters. Its ArbDraw favicon is grey while the bridge is inactive and changes to blue when the health check confirms it is running. On other platforms, use `python -m python_bridge`. See [python_bridge/README.md](python_bridge/README.md) for single-adapter installation, VISA setup, source installation, and API details.
 
@@ -36,7 +36,7 @@ python -m python_bridge
 
 Replace the example IP with the scope's address. In ArbDraw, select the matching
 **TekScope MSO2 (files)** or **TekScope MSO6 (files)** AWG profile, then use
-**File → Instruments** to identify the scope and send the waveform. The MSO2
+**File → Send to AWG** to identify the scope and send the waveform. The MSO2
 backend includes a firmware-specific file-write limit; the MSO6 backend has
 been verified with waveforms up to 100,000 points. See the [TekScope adapter guide](adapters/tekscope/README.md)
 for supported models, VISA setup, file behavior, limitations, and

@@ -6,8 +6,10 @@ const vm = require('node:vm');
 
 function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
   const elements = new Map();
+  const classes = new Map();
   const element = (id) => {
     if (!elements.has(id)) {
+      classes.set(id, new Set());
       elements.set(id, {
         value: id === 'awgProfileSelect' ? profileId : '',
         hidden: id === 'audioVolumePanel',
@@ -16,8 +18,11 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
         title: '',
         attributes: {},
         classList: {
-          contains: () => true,
-          toggle() {},
+          contains: (name) => classes.get(id).has(name),
+          toggle(name, force) {
+            if (force) classes.get(id).add(name);
+            else classes.get(id).delete(name);
+          },
         },
         setAttribute(name, value) {
           this.attributes[name] = value;
@@ -27,7 +32,7 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
     }
     return elements.get(id);
   };
-  const calls = { play: 0, stop: 0 };
+  const calls = { play: 0, stop: 0, openSendToAwgDialog: 0 };
   const playback = {
     playing,
     volume: 1,
@@ -60,22 +65,27 @@ function createHarness({ profileId = 'owon-xdg3000', playing = false } = {}) {
     generate() {},
     ensureSerialPeriodCoversPayload() {},
     showToast() {},
+    openSendToAwgDialog() { calls.openSendToAwgDialog++; },
   });
   const source = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
   vm.runInContext(source, context);
   return { button: element('playWaveformBtn'), calls, context, element, playback };
 }
 
-test('Play is disabled unless the Audio AWG profile is selected', () => {
+test('the action is an orange Send button unless the Audio AWG profile is selected', () => {
   const { button, context, element } = createHarness();
 
   context.updateAudioPlaybackButton();
-  assert.equal(button.disabled, true);
-  assert.match(button.title, /Audio AWG profile/);
+  assert.equal(button.disabled, false);
+  assert.equal(button.textContent, 'Send');
+  assert.equal(button.classList.contains('send'), true);
+  assert.match(button.title, /Send waveform to AWG/);
 
   element('awgProfileSelect').value = 'audio';
   context.updateAudioPlaybackButton();
   assert.equal(button.disabled, false);
+  assert.equal(button.textContent, '▶ Play');
+  assert.equal(button.classList.contains('send'), false);
 });
 
 test('Stop remains enabled and stops playback regardless of profile', async () => {
@@ -90,12 +100,20 @@ test('Stop remains enabled and stops playback regardless of profile', async () =
   assert.equal(playback.playing, false);
 });
 
-test('the click handler refuses playback outside the Audio profile', async () => {
+test('the Send button opens the Send to AWG dialog outside the Audio profile', async () => {
   const { button, calls } = createHarness();
 
   await button.onclick();
   assert.equal(calls.play, 0);
-  assert.equal(button.disabled, true);
+  assert.equal(calls.openSendToAwgDialog, 1);
+});
+
+test('loading a project refreshes the Play or Send action for its AWG profile', () => {
+  const projectSource = fs.readFileSync(path.join(__dirname, '../js/project.js'), 'utf8');
+  const renderDocumentSource = projectSource.match(/function renderDocument\(\) \{[\s\S]*?\n\}/)?.[0];
+
+  assert.ok(renderDocumentSource);
+  assert.match(renderDocumentSource, /updateAudioPlaybackButton\?\.\(\)/);
 });
 
 test('the volume control maps its percentage to browser audio volume', () => {

@@ -100,6 +100,14 @@ test('instrument resource field explains that an IP address is accepted', () => 
   assert.match(html, />VISA resource \(or IP\)<\/label>/);
 });
 
+test('File menu and bridge dialog use the Send to AWG name', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');
+  assert.match(html, /id="instrumentsBtn"[^>]*>Send to AWG<\/button>/);
+  assert.match(html, /<h2>Send to AWG<\/h2>/);
+  assert.match(styles, /\.audio-play-button\.send\{background:var\(--orange\)\}/);
+});
+
 test('sample rate and TS resolution remain visible but disabled', () => {
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const styles = fs.readFileSync(path.join(__dirname, '../includes/styles.css'), 'utf8');

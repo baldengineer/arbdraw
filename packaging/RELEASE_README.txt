@@ -26,7 +26,7 @@ arbdraw-bridge.exe directly. The tray menu shows the bridge version and
 available adapters. Its ArbDraw favicon is grey while the bridge is inactive
 and changes to blue when its health check confirms the bridge is running. If
 you use a virtual environment, run its Python executable for installation and
-use the launchers from that environment. Open ArbDraw's File > Instruments
+use the launchers from that environment. Open ArbDraw's File > Send to AWG
 dialog to connect.
 
 The adapter code is distributed as separate wheels in this ZIP. It can also be

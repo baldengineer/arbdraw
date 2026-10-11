@@ -97,7 +97,7 @@ The list should contain `tekscope-mso2` and `tekscope-mso6`.
 1. Select **TekScope MSO2 (files)** or **TekScope MSO6 (files)** in
    **AWG Profile** before creating or resizing the waveform.
 2. Set the sample count, frequency, high voltage, and low voltage.
-3. Choose **File → Instruments** and connect to
+3. Choose **File → Send to AWG** and connect to
    `http://127.0.0.1:8876`.
 4. Select a discovered VISA resource or enter a bare scope IP address.
 5. Select **Identify (*IDN?)** and check that the model matches the profile.

@@ -203,11 +203,14 @@
     }
   }
 
-  $('instrumentsBtn').addEventListener('click', () => {
+  function openSendToAwgDialog() {
     closeFileMenu();
     bridgeDialog.showModal();
     if (!bridgeOnline) runBridgeAction(connect);
-  });
+  }
+
+  globalThis.openSendToAwgDialog = openSendToAwgDialog;
+  $('instrumentsBtn').addEventListener('click', openSendToAwgDialog);
 
   connectButton.addEventListener('click', () => runBridgeAction(connect));
   $('awgProfileSelect')?.addEventListener('change', () => selectPreferredAdapter());
