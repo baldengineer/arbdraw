@@ -23,7 +23,20 @@ def copy_source(source: Path, destination: Path) -> None:
         source,
         destination,
         ignore=shutil.ignore_patterns(
-            ".git", ".venv", "__pycache__", "*.egg-info", "dist", "build", ".pytest_cache"
+            ".git",
+            ".venv",
+            ".agents",
+            ".aws",
+            ".codex*",
+            "__pycache__",
+            "*.egg-info",
+            "arbdraw_python_bridge-*",
+            "dist",
+            "build",
+            "ignore",
+            "local_adapters",
+            "node_modules",
+            ".pytest_cache",
         ),
     )
 
@@ -51,8 +64,10 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as temporary:
         staging = Path(temporary)
+        bridge = staging / "bridge"
         owon = staging / "owon"
         rigol = staging / "rigol"
+        copy_source(ROOT, bridge)
         copy_source(args.owon_source.resolve(), owon)
         copy_source(args.rigol_source.resolve(), rigol)
 
@@ -64,10 +79,10 @@ def main() -> None:
         if ENTRY_POINT.strip() not in contents:
             raise SystemExit("OWON source has an unexpected adapter entry point.")
 
-        build(ROOT, output, args.no_isolation)
+        build(bridge, output, args.no_isolation)
         build(owon, output, args.no_isolation)
         build(rigol, output, args.no_isolation)
-        build(ROOT / "adapters" / "tekscope", output, args.no_isolation)
+        build(bridge / "adapters" / "tekscope", output, args.no_isolation)
 
     wheels = sorted(output.glob("*.whl"))
     if len(wheels) != 4:

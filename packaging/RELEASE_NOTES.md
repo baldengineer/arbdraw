@@ -1,4 +1,7 @@
-This release adds profile-configured PyVISA session options for instrument
+This release adds the TekScope MSO2 and MSO6 adapters to the downloadable
+Python bridge bundle.
+
+It also adds profile-configured PyVISA session options for instrument
 identity queries and waveform transfers. The bundled Rigol DG1022 adapter now
 accepts `read_termination`, `write_termination`, `query_delay`, and `send_end`
 from ArbDraw instead of hard-coding instrument-specific values. The hosted
