@@ -67,10 +67,11 @@ def main() -> None:
         build(ROOT, output, args.no_isolation)
         build(owon, output, args.no_isolation)
         build(rigol, output, args.no_isolation)
+        build(ROOT / "adapters" / "tekscope", output, args.no_isolation)
 
     wheels = sorted(output.glob("*.whl"))
-    if len(wheels) != 3:
-        raise SystemExit(f"Expected three wheels; found {[wheel.name for wheel in wheels]}")
+    if len(wheels) != 4:
+        raise SystemExit(f"Expected four wheels; found {[wheel.name for wheel in wheels]}")
     bundle = output / "arbdraw-bridge-with-adapters.zip"
     with ZipFile(bundle, "w", compression=ZIP_DEFLATED) as archive:
         archive.write(ROOT / "packaging" / "install_release.py", "install.py")

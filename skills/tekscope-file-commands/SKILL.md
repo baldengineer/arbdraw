@@ -129,6 +129,63 @@ Only remove a wrapper if behavior for the exact model, firmware, and transport
 has been established by a focused hardware test. Never decode a binary file to
 text as part of the transport layer.
 
+### Verified MSO22 VXI-11 readback framing
+
+An MSO22 running firmware `2.26.13-release.58`, read over the VXI-11
+`TCPIP::...::INSTR` resource, returned the exact stored file bytes followed by
+one transport LF byte. A 2,037-byte CSV ending in CRLF therefore produced a
+2,038-byte `read_raw()` result ending in `CR LF LF`.
+
+For byte-for-byte verification on this model/transport, accept either the exact
+payload or exactly `payload + b"\n"`. Do not call `rstrip()`, normalize line
+endings, or remove more than that one established transport byte; those actions
+can hide real corruption in a binary file.
+
+Drain the raw file response before sending any status query. A live test that
+sent `*ESR?` immediately after `FILESystem:READFile` but before a separate raw
+read interrupted the pending file response and produced ESR bit 4 / event 410
+(`Query INTERRUPTED`). The safe order is command write, raw read to completion,
+then status/error queries.
+
+## MSO2 built-in AFG CSV requirements
+
+`AFG:ARBitrary:SOUrce` accepts `.csv`, but a plain one-value-per-line file is
+not sufficient on the tested MSO22. The file transferred and read back exactly,
+then the AFG parser reported event 104 (`Data type error`) for that path. The
+same values loaded successfully after they were wrapped in the Tek waveform CSV
+shape produced by `SAVe:WAVEform CH1,"...csv"`:
+
+```csv
+Model,MSO22
+Label,
+Waveform Type,ANALOG
+Horizontal Units,s
+Sample Interval,1.00000000e-05
+Record Length,100
+Zero Index,49.00000000
+Vertical Units,V
+
+Labels,
+TIME,CH1
+-4.90000000e-04,1.25000000e-01
+```
+
+Use CRLF line endings and include one `TIME,<value>` row per point. For an
+N-point waveform requested at frequency `f`, the tested encoder uses sample
+interval `1 / (f * N)`, zero index `floor(N / 2) - 1`, and
+`time[i] = (i - zero_index) * sample_interval`. Frequency is still programmed
+explicitly with `AFG:FREQuency`; the file's time column does not replace that
+setting.
+
+On MSO22 firmware `2.26.13-release.58`, a generated 100-point file in this
+shape loaded successfully, queried back as the selected arbitrary source, and
+produced an on-scope CH1 frequency measurement of 1000.0000000019 Hz when the
+AFG was set to 1 kHz. The configured 1 Vpp output measured 1.014 Vpp on CH1.
+
+Source parsing can finish after the `AFG:ARBitrary:SOUrce` write returns. Poll
+`*OPC?` to `1`, then check ESR/event status before applying later AFG settings;
+otherwise an invalid-file error can surface on an unrelated subsequent command.
+
 ## Adapter workflow and safety
 
 1. Validate the resource, path, payload size, overwrite policy, and all options

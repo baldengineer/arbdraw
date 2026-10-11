@@ -5,11 +5,12 @@ Extract this ZIP, open a terminal in the extracted directory, then run:
 
     python install.py
 
-This installs the bridge and both supported instrument adapters into that
+This installs the bridge and all supported instrument adapters into that
 Python interpreter. To install only one adapter, use either:
 
     python install.py --adapter owon-xdg3000
     python install.py --adapter rigol-dg1022
+    python install.py --adapter tekscope-mso2
 
 Start the bridge with the same interpreter:
 

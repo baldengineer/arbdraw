@@ -12,6 +12,7 @@ WHEEL_PREFIXES = {
     "bridge": "arbdraw_python_bridge-",
     "owon-xdg3000": "owon_multicomp_awg_python_waveform_importer-",
     "rigol-dg1022": "rigol_dg1022_arbdraw_adapter-",
+    "tekscope-mso2": "tekscope_arbdraw_adapter-",
 }
 
 
@@ -26,9 +27,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--adapter",
-        choices=("all", "owon-xdg3000", "rigol-dg1022"),
+        choices=("all", "owon-xdg3000", "rigol-dg1022", "tekscope-mso2"),
         default="all",
-        help="Install both supported adapters (default) or one instrument family.",
+        help="Install all supported adapters (default) or one instrument family.",
     )
     args = parser.parse_args()
     if sys.version_info < (3, 11):
@@ -36,7 +37,7 @@ def main() -> None:
 
     wheels = Path(__file__).resolve().parent / "wheels"
     selected = (
-        ("owon-xdg3000", "rigol-dg1022")
+        ("owon-xdg3000", "rigol-dg1022", "tekscope-mso2")
         if args.adapter == "all"
         else (args.adapter,)
     )

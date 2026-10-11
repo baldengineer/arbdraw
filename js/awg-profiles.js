@@ -40,9 +40,9 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
     pid: null,
     sampleRateType: 'Fixed',
     sampleRateMSa: null,
-    sampleDepth: Object.freeze({ default: 1000, max: null }),
+    sampleDepth: Object.freeze({ default: 1000, max: 128_000 }),
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
-    preferredBackend: 'file',
+    preferredBackend: 'tekscope-mso2',
   }),
   audio: Object.freeze({
     id: 'audio',

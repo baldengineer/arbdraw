@@ -59,6 +59,9 @@ jobs:
       - name: Test bridge
         run: python -m unittest discover -s tests -p "test_python_bridge.py"
 
+      - name: Test TekScope adapter
+        run: python -m unittest discover -s adapters/tekscope/tests -p "test_*.py"
+
       - name: Build bridge and adapter distributions
         run: >-
           python packaging/build_release.py

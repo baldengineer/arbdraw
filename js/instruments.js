@@ -145,6 +145,16 @@
     }
     adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
     adapterSelect.disabled = false;
+    selectPreferredAdapter(adapters);
+  }
+
+  function selectPreferredAdapter(adapters = null) {
+    const preferred = selectedAwgProfile?.preferredBackend;
+    if (!preferred) return;
+    const available = adapters
+      ? adapters.some((adapter) => adapter.id === preferred)
+      : Array.from(adapterSelect.options).some((option) => option.value === preferred);
+    if (available) adapterSelect.value = preferred;
   }
 
   async function connect() {
@@ -200,6 +210,7 @@
   });
 
   connectButton.addEventListener('click', () => runBridgeAction(connect));
+  $('awgProfileSelect')?.addEventListener('change', () => selectPreferredAdapter());
   refreshButton.addEventListener('click', () => runBridgeAction(loadResources));
   resourceInput.addEventListener('input', () => {
     setResult('');

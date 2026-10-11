@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tekscope-arbdraw-adapter"
+version = "0.1.0"
+description = "ArbDraw adapter for TekScope-based oscilloscopes with a built-in AFG"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+  "PyVISA>=1.13",
+]
+
+[project.entry-points."arbdraw.instrument_adapters"]
+tekscope-mso2 = "tekscope_arb_adapter:send_waveform"
+
+[project.scripts]
+arbdraw-tekscope = "tekscope_arb_adapter.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["tekscope_arb_adapter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
