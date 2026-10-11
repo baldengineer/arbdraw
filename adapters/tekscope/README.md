@@ -131,14 +131,15 @@ On the tested MSO22 firmware `2.26.13-release.58` over VXI-11, readback adds one
 transport LF byte after the exact stored file. The adapter accepts only the
 exact payload or that specific one-byte framing variant during verification.
 
-## MSO6 validation status
+## MSO6 hardware validation
 
 The MSO6 backend does not inherit the MSO2 8,000-byte write ceiling. The
 MSO4/5/6/7 command references support the file-system and AFG commands used by
-the adapter, but the generated CSV header, raw readback framing, practical
-transfer size, and AFG output behavior have not yet been validated on live MSO6
-hardware. Treat the 100,000-point setting as the current ArbDraw profile limit,
-not a completed hardware qualification result.
+the adapter. End-to-end ArbDraw transfers have now been verified on MSO6
+hardware through the profile maximum of 100,000 points, including upload,
+readback verification, arbitrary-source selection, and AFG configuration. The
+exact scope model, firmware revision, VISA implementation, and any transport
+framing details should be recorded during the next qualification run.
 
 ## Authorized CLI transfer test
 

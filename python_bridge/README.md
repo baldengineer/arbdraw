@@ -116,7 +116,7 @@ the adapter does not delete scope files.
 MSO2 firmware has an observed `FILESystem:WRITEFile` failure near 8,092 bytes,
 so the adapter rejects encoded payloads of 8,000 bytes or more. This is separate
 from the profile's point-memory limit. The MSO6 backend does not inherit this
-cap, but live MSO6 CSV and readback behavior still requires validation. See the
+cap and has been verified end-to-end through 100,000 points. See the
 [complete TekScope adapter guide](../adapters/tekscope/README.md).
 
 ## Install and manage adapters
@@ -234,7 +234,7 @@ unless ArbDraw's **Enable output after send** option is selected.
 
 See [the adapter README](../adapters/tekscope/README.md) for the model matrix,
 release installation, scope-directory requirement, CLI workflow, MSO2 firmware
-limit, MSO6 validation status, and troubleshooting.
+limit, MSO6 hardware validation, and troubleshooting.
 
 ### Remove an adapter
 

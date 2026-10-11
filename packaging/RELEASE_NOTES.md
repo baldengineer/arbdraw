@@ -11,6 +11,7 @@ waveform CSV to the scope, verifies the bytes by reading the file back, selects
 the file as the arbitrary source, and configures frequency, amplitude, offset,
 load, and output state. The MSO2 backend retains its observed VXI-11 write-size
 workaround; the MSO6 backend does not inherit that firmware-specific limit.
+The MSO6 path has been verified end-to-end with waveforms up to 100,000 points.
 
 The bridge also now prints its discovered waveform adapters at startup and
 provides one-shot `--list-resources` and repeatable `--idn RESOURCE` commands.

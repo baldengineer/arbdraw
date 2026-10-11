@@ -67,12 +67,13 @@ family confirm `FILESystem:READFile`, `FILESystem:WRITEFile`, `FILESystem:CWD`,
 `AFG:ARBitrary:SOUrce`, `AFG:FREQuency`, `AFG:AMPLitude`, `AFG:OFFSet`,
 `AFG:OUTPut:LOAd:IMPEDance`, and `AFG:OUTPut:STATE`.
 
-ArbDraw currently exposes a 100,000-point MSO6 profile. Do not apply the MSO2
-8,000-byte conservative write ceiling to this backend. The MSO6 CSV header,
-raw `READFile` framing, maximum practical transfer size, and live AFG behavior
-have not yet been validated on hardware; keep that distinction explicit in
-code comments and user-facing documentation until an authorized live test
-records the model, firmware, transport, byte count, and readback result.
+ArbDraw exposes a 100,000-point MSO6 profile. Do not apply the MSO2 8,000-byte
+conservative write ceiling to this backend. End-to-end ArbDraw transfers have
+been verified on MSO6 hardware through 100,000 points, including upload,
+readback verification, arbitrary-source selection, and AFG configuration. The
+exact model, firmware revision, VISA implementation, and transport framing
+details were not captured with that result; record them during the next focused
+qualification run instead of inferring them.
 
 ## Command contract
 

@@ -37,8 +37,8 @@ python -m python_bridge
 Replace the example IP with the scope's address. In ArbDraw, select the matching
 **TekScope MSO2 (files)** or **TekScope MSO6 (files)** AWG profile, then use
 **File → Instruments** to identify the scope and send the waveform. The MSO2
-backend includes a firmware-specific file-write limit; MSO6 hardware validation
-is still pending. See the [TekScope adapter guide](adapters/tekscope/README.md)
+backend includes a firmware-specific file-write limit; the MSO6 backend has
+been verified with waveforms up to 100,000 points. See the [TekScope adapter guide](adapters/tekscope/README.md)
 for supported models, VISA setup, file behavior, limitations, and
 troubleshooting.
 
