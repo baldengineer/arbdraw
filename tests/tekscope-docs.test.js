@@ -18,6 +18,9 @@ test('TekScope documentation covers installation, both backends, and current lim
     assert.match(source, /C:\/baldee/);
     assert.match(source, /8,000 bytes/);
     assert.match(source, /MSO6[\s\S]*hardware validation/i);
+    assert.match(source, /131,072 points/i);
+    assert.match(source, /250 MS\/s/i);
+    assert.match(source, /25 MHz/i);
     assert.match(source, /verified[\s\S]*100,000(?:-point| points)/i);
   }
   assert.match(adapterReadme, /install\.py --adapter tekscope/);

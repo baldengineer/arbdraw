@@ -12,6 +12,10 @@ sys.path.insert(0, str(PACKAGE_ROOT))
 from tekscope_arb_adapter import (  # noqa: E402
     MSO2_SAFE_WRITE_BYTES,
     MSO6_BACKEND,
+    MSO6_MAX_ARB_POINTS,
+    MSO6_MAX_FREQUENCY_HZ,
+    MSO6_MAX_SAMPLE_RATE_SA,
+    MSO6_MIN_FREQUENCY_HZ,
     AdapterOptions,
     TekScopeAdapterError,
     definite_block,
@@ -193,6 +197,92 @@ class TekScopeAdapterTests(unittest.TestCase):
         self.assertEqual(result["model"], "MSO64")
         self.assertEqual(instrument.files["C:/baldee/large.csv"], payload)
 
+    def test_mso6_backend_limits_match_the_documented_specification(self):
+        self.assertEqual(MSO6_MAX_ARB_POINTS, 131_072)
+        self.assertEqual(MSO6_BACKEND.max_arb_points, 131_072)
+        self.assertEqual(
+            MSO6_BACKEND.frequency_hz,
+            (MSO6_MIN_FREQUENCY_HZ, MSO6_MAX_FREQUENCY_HZ),
+        )
+        self.assertEqual(MSO6_BACKEND.max_sample_rate_sa, MSO6_MAX_SAMPLE_RATE_SA)
+        self.assertEqual(MSO6_BACKEND.highz_limits.amplitude_vpp, (0.02, 5.0))
+        self.assertEqual(MSO6_BACKEND.highz_limits.offset_voltage, (-2.5, 2.5))
+        self.assertEqual(MSO6_BACKEND.fifty_ohm_limits.amplitude_vpp, (0.01, 2.5))
+        self.assertEqual(MSO6_BACKEND.fifty_ohm_limits.offset_voltage, (-1.25, 1.25))
+
+    def test_mso6_limits_are_rejected_before_instrument_io(self):
+        cases = (
+            {"frequency_hz": 0.099, "amplitude_vpp": 1, "offset_voltage": 0},
+            {"frequency_hz": 25_000_001, "amplitude_vpp": 1, "offset_voltage": 0},
+            {"frequency_hz": 1000, "amplitude_vpp": 0.019, "offset_voltage": 0},
+            {"frequency_hz": 1000, "amplitude_vpp": 5.001, "offset_voltage": 0},
+            {"frequency_hz": 1000, "amplitude_vpp": 1, "offset_voltage": 2.501},
+            {
+                "frequency_hz": 1000,
+                "amplitude_vpp": 0.009,
+                "offset_voltage": 0,
+                "load_impedance": "FIFTY",
+            },
+            {
+                "frequency_hz": 1000,
+                "amplitude_vpp": 2.501,
+                "offset_voltage": 0,
+                "load_impedance": "FIFTY",
+            },
+            {
+                "frequency_hz": 1000,
+                "amplitude_vpp": 1,
+                "offset_voltage": 1.251,
+                "load_impedance": "FIFTY",
+            },
+            {
+                "frequency_hz": 25_000_000,
+                "amplitude_vpp": 1,
+                "offset_voltage": 0,
+                "sample_count": 11,
+            },
+        )
+        for settings in cases:
+            called = False
+
+            def fail_if_called():
+                nonlocal called
+                called = True
+                return FakeManager(FakeInstrument(identity="TEKTRONIX,MSO64,SN6,1.0"))
+
+            with self.subTest(settings=settings), self.assertRaises(
+                TekScopeAdapterError
+            ) as context:
+                upload_file_and_configure(
+                    "TCPIP0::scope6::INSTR",
+                    b"0\n1\n",
+                    "C:/baldee/limits.csv",
+                    manager_factory=fail_if_called,
+                    backend=MSO6_BACKEND,
+                    **settings,
+                )
+            self.assertEqual(context.exception.code, "instrument_limit_exceeded")
+            self.assertFalse(called)
+
+    def test_mso6_accepts_documented_frequency_voltage_and_sample_rate_boundaries(self):
+        instrument = FakeInstrument(identity="TEKTRONIX,MSO64B,SN6,1.0")
+        result = upload_file_and_configure(
+            "TCPIP0::scope6::INSTR",
+            b"0\n1\n",
+            "C:/baldee/boundaries.csv",
+            frequency_hz=25_000_000,
+            amplitude_vpp=2.5,
+            offset_voltage=1.25,
+            load_impedance="FIFTY",
+            sample_count=10,
+            manager_factory=lambda: FakeManager(instrument),
+            backend=MSO6_BACKEND,
+        )
+        self.assertEqual(result["frequency_hz"], 25_000_000)
+        self.assertEqual(result["amplitude_vpp"], 2.5)
+        self.assertEqual(result["offset_voltage"], 1.25)
+        self.assertEqual(result["load_impedance"], "FIFTY")
+
     def test_live_sequence_writes_reads_back_configures_and_keeps_output_off(self):
         instrument = FakeInstrument(read_suffix=b"\n")
         manager = FakeManager(instrument)
@@ -308,6 +398,38 @@ class TekScopeAdapterTests(unittest.TestCase):
         self.assertEqual(result["adapter"], "tekscope-mso6")
         self.assertEqual(result["model"], "MSO68B")
         self.assertTrue(instrument.files[result["remote_path"]].startswith(b"Model,MSO68B\r\n"))
+
+    def test_mso6_uses_the_awg_repeat_rate_for_sample_rate_validation(self):
+        instrument = FakeInstrument(identity="TEKTRONIX,MSO68B,SN6,1.0")
+        manager = FakeManager(instrument)
+        request = {
+            "resource": "TCPIP0::scope6::INSTR",
+            "waveform": {
+                "schema": "arbdraw.waveform",
+                "version": 1,
+                "name": "Ten-cycle sine",
+                "AWG": {"frequencyHz": 1000},
+                "waveform": {
+                    "sampleCount": 1000,
+                    "values": [0.0] * 1000,
+                    "frequencyHz": 1_000_000,
+                    "highVoltage": 1,
+                    "lowVoltage": -1,
+                },
+            },
+        }
+
+        import tekscope_arb_adapter.adapter as adapter
+
+        original = adapter._open_manager
+        adapter._open_manager = lambda _library=None: manager
+        try:
+            result = send_waveform_mso6(request)
+        finally:
+            adapter._open_manager = original
+
+        self.assertEqual(result["frequency_hz"], 1000)
+        self.assertIn(b"Sample Interval,1.00000000e-06\r\n", instrument.files[result["remote_path"]])
 
     def test_bridge_dispatches_the_registered_tekscope_adapter(self):
         from python_bridge.server import BridgeService
@@ -448,7 +570,7 @@ class TekScopeAdapterTests(unittest.TestCase):
 
         adapter._open_manager = fail_if_called
         try:
-            with self.assertRaisesRegex(TekScopeAdapterError, "100000 points"):
+            with self.assertRaisesRegex(TekScopeAdapterError, "131072 points"):
                 send_waveform_mso6(request)
         finally:
             adapter._open_manager = original

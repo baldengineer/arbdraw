@@ -6,7 +6,7 @@ on supported Tektronix MSO2 and MSO6 scopes. It registers two bridge backends:
 | ArbDraw profile | Bridge backend | Accepted `*IDN?` models | Profile limit |
 | --- | --- | --- | --- |
 | TekScope MSO2 (files) | `tekscope-mso2` | MSO22, MSO24, MSO22-EDU, MSO24-EDU | 128,000 points |
-| TekScope MSO6 (files) | `tekscope-mso6` | MSO64, MSO66, MSO68, MSO64B, MSO66B, MSO68B | 100,000 points |
+| TekScope MSO6 (files) | `tekscope-mso6` | MSO64, MSO66, MSO68, MSO64B, MSO66B, MSO68B | 131,072 points |
 
 Both backends are installed from one `tekscope-arbdraw-adapter` Python package.
 The selected backend checks the instrument identity before it writes a file, so
@@ -135,11 +135,18 @@ exact payload or that specific one-byte framing variant during verification.
 
 The MSO6 backend does not inherit the MSO2 8,000-byte write ceiling. The
 MSO4/5/6/7 command references support the file-system and AFG commands used by
-the adapter. End-to-end ArbDraw transfers have now been verified on MSO6
-hardware through the profile maximum of 100,000 points, including upload,
-readback verification, arbitrary-source selection, and AFG configuration. The
-exact scope model, firmware revision, VISA implementation, and any transport
-framing details should be recorded during the next qualification run.
+the adapter. The MSO6/MSO6B arbitrary-waveform limits are 131,072 points,
+250 MS/s, and 0.1 Hz to 25 MHz repetition rate, subject to
+`points * repetition rate <= 250 MS/s`. Into High Z, arbitrary amplitude is
+20 mVpp to 5 Vpp with -2.5 V to +2.5 V offset. Into 50 ohms, it is 10 mVpp to
+2.5 Vpp with -1.25 V to +1.25 V offset. The backend validates these limits
+before instrument I/O.
+
+End-to-end ArbDraw transfers have been verified on MSO6 hardware through
+100,000 points, including upload, readback verification, arbitrary-source
+selection, and AFG configuration. The exact scope model, firmware revision,
+VISA implementation, and any transport framing details should be recorded
+during the next qualification run.
 
 ## Authorized CLI transfer test
 

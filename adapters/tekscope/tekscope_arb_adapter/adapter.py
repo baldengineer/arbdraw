@@ -18,7 +18,10 @@ MSO2_SAFE_WRITE_BYTES = 8_000
 MSO2_MODELS = frozenset({"MSO22", "MSO24", "MSO22-EDU", "MSO24-EDU"})
 MSO2_MAX_ARB_POINTS = 128_000
 MSO6_MODELS = frozenset({"MSO64", "MSO66", "MSO68", "MSO64B", "MSO66B", "MSO68B"})
-MSO6_MAX_ARB_POINTS = 100_000
+MSO6_MAX_ARB_POINTS = 128 * 1024
+MSO6_MIN_FREQUENCY_HZ = 0.1
+MSO6_MAX_FREQUENCY_HZ = 25_000_000.0
+MSO6_MAX_SAMPLE_RATE_SA = 250_000_000.0
 DEFAULT_DIRECTORY = "C:/baldee"
 SCPI_ERROR_MASK = 32 | 16 | 8 | 4
 _RESOURCE_LOCKS: dict[str, threading.RLock] = {}
@@ -34,12 +37,22 @@ class TekScopeAdapterError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class TekScopeLoadLimits:
+    amplitude_vpp: tuple[float, float]
+    offset_voltage: tuple[float, float]
+
+
+@dataclass(frozen=True)
 class TekScopeBackend:
     id: str
     family_name: str
     models: frozenset[str]
     max_arb_points: int
     safe_write_bytes: int | None = None
+    frequency_hz: tuple[float, float] | None = None
+    max_sample_rate_sa: float | None = None
+    highz_limits: TekScopeLoadLimits | None = None
+    fifty_ohm_limits: TekScopeLoadLimits | None = None
 
 
 MSO2_BACKEND = TekScopeBackend(
@@ -54,6 +67,16 @@ MSO6_BACKEND = TekScopeBackend(
     family_name="Tektronix 6 Series MSO",
     models=MSO6_MODELS,
     max_arb_points=MSO6_MAX_ARB_POINTS,
+    frequency_hz=(MSO6_MIN_FREQUENCY_HZ, MSO6_MAX_FREQUENCY_HZ),
+    max_sample_rate_sa=MSO6_MAX_SAMPLE_RATE_SA,
+    highz_limits=TekScopeLoadLimits(
+        amplitude_vpp=(0.02, 5.0),
+        offset_voltage=(-2.5, 2.5),
+    ),
+    fifty_ohm_limits=TekScopeLoadLimits(
+        amplitude_vpp=(0.01, 2.5),
+        offset_voltage=(-1.25, 1.25),
+    ),
 )
 BACKENDS_BY_ID = {backend.id: backend for backend in (MSO2_BACKEND, MSO6_BACKEND)}
 
@@ -176,6 +199,60 @@ def _optional_finite(value: Any, name: str) -> float | None:
     if not math.isfinite(result):
         raise TekScopeAdapterError("invalid_adapter_options", f"{name} must be finite.")
     return result
+
+
+def _validate_afg_limits(
+    backend: TekScopeBackend,
+    *,
+    frequency_hz: float,
+    amplitude_vpp: float,
+    offset_voltage: float,
+    load_impedance: str,
+    sample_count: int | None = None,
+) -> None:
+    if backend.frequency_hz is not None:
+        minimum, maximum = backend.frequency_hz
+        if not minimum <= frequency_hz <= maximum:
+            raise TekScopeAdapterError(
+                "instrument_limit_exceeded",
+                f"{backend.family_name} arbitrary repetition rate must be between "
+                f"{minimum:g} Hz and {maximum:g} Hz.",
+            )
+
+    load_limits = (
+        backend.highz_limits if load_impedance == "HIGHZ" else backend.fifty_ohm_limits
+    )
+    if load_limits is not None:
+        amplitude_minimum, amplitude_maximum = load_limits.amplitude_vpp
+        if not amplitude_minimum <= amplitude_vpp <= amplitude_maximum:
+            raise TekScopeAdapterError(
+                "instrument_limit_exceeded",
+                f"{backend.family_name} amplitude into {load_impedance} must be between "
+                f"{amplitude_minimum:g} Vpp and {amplitude_maximum:g} Vpp.",
+            )
+        offset_minimum, offset_maximum = load_limits.offset_voltage
+        if not offset_minimum <= offset_voltage <= offset_maximum:
+            raise TekScopeAdapterError(
+                "instrument_limit_exceeded",
+                f"{backend.family_name} offset into {load_impedance} must be between "
+                f"{offset_minimum:g} V and {offset_maximum:g} V.",
+            )
+
+    if sample_count is not None and backend.max_sample_rate_sa is not None:
+        if isinstance(sample_count, bool) or not isinstance(sample_count, int) or sample_count < 1:
+            raise TekScopeAdapterError(
+                "invalid_request", "sample_count must be a positive integer or null."
+            )
+        required_sample_rate = sample_count * frequency_hz
+        if required_sample_rate > backend.max_sample_rate_sa:
+            maximum_frequency = backend.max_sample_rate_sa / sample_count
+            raise TekScopeAdapterError(
+                "instrument_limit_exceeded",
+                f"{backend.family_name} requires {required_sample_rate:g} Sa/s for "
+                f"{sample_count} points at {frequency_hz:g} Hz; its maximum is "
+                f"{backend.max_sample_rate_sa:g} Sa/s, so this record is limited to "
+                f"{maximum_frequency:g} Hz.",
+            )
 
 
 def validate_scope_path(path: str, *, require_file: bool = True) -> str:
@@ -443,6 +520,7 @@ def upload_file_and_configure(
     manager_factory: Callable[[], Any] | None = None,
     backend: TekScopeBackend = MSO2_BACKEND,
     payload_factory: Callable[[str], bytes] | None = None,
+    sample_count: int | None = None,
 ) -> dict[str, Any]:
     """Upload one CSV, select it as the TekScope AFG source, and query settings back."""
     if not isinstance(resource, str) or not resource.strip():
@@ -466,6 +544,15 @@ def upload_file_and_configure(
         raise TekScopeAdapterError(
             "invalid_adapter_options", "enable_output and verify_readback must be boolean."
         )
+    assert frequency is not None and amplitude is not None and offset is not None
+    _validate_afg_limits(
+        backend,
+        frequency_hz=frequency,
+        amplitude_vpp=amplitude,
+        offset_voltage=offset,
+        load_impedance=load,
+        sample_count=sample_count,
+    )
     session_options = dict(pyvisa_options or {})
     manager = None
     instrument = None
@@ -596,7 +683,8 @@ def _send_waveform(request: dict[str, Any], backend: TekScopeBackend) -> dict[st
     resource = request.get("resource")
     if not isinstance(resource, str) or not resource.strip():
         raise TekScopeAdapterError("invalid_request", "resource must be a non-empty string.")
-    waveform, raw_values = _project_waveform(request.get("waveform"))
+    project = request.get("waveform")
+    waveform, raw_values = _project_waveform(project)
     values = _validated_values(
         raw_values,
         max_points=backend.max_arb_points,
@@ -607,7 +695,11 @@ def _send_waveform(request: dict[str, Any], backend: TekScopeBackend) -> dict[st
     remote_path = str(PurePosixPath(options.directory) / name)
     frequency_hz = options.frequency_hz
     if frequency_hz is None:
-        frequency_hz = _optional_positive(waveform.get("frequencyHz"), "waveform.frequencyHz")
+        awg = project.get("AWG") if isinstance(project, dict) else None
+        if isinstance(awg, dict) and awg.get("frequencyHz") is not None:
+            frequency_hz = _optional_positive(awg.get("frequencyHz"), "AWG.frequencyHz")
+        else:
+            frequency_hz = _optional_positive(waveform.get("frequencyHz"), "waveform.frequencyHz")
     assert frequency_hz is not None
     high = _optional_finite(waveform.get("highVoltage"), "waveform.highVoltage")
     low = _optional_finite(waveform.get("lowVoltage"), "waveform.lowVoltage")
@@ -632,6 +724,7 @@ def _send_waveform(request: dict[str, Any], backend: TekScopeBackend) -> dict[st
         verify_readback=options.verify_readback,
         pyvisa_options=request.get("pyvisa_options"),
         backend=backend,
+        sample_count=len(values),
         payload_factory=lambda model: encode_tekscope_csv(
             values,
             frequency_hz,

@@ -77,6 +77,7 @@ def main() -> None:
         verify_readback=not arguments.no_readback,
         visa_library=arguments.visa_library,
         backend=backend,
+        sample_count=len(values) if values is not None else None,
         payload_factory=(
             (
                 lambda model: encode_tekscope_csv(

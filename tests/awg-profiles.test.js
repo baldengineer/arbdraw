@@ -41,7 +41,18 @@ test('TekScope profiles select model-specific adapters and arb depths', () => {
   assert.deepEqual(mso2.sampleDepth, { default: 100, max: 128_000 });
   assert.equal(mso6.id, 'tekscope-mso6');
   assert.equal(mso6.preferredBackend, 'tekscope-mso6');
-  assert.deepEqual(mso6.sampleDepth, { default: 1000, max: 100_000 });
+  assert.equal(mso6.sampleRateType, 'Variable');
+  assert.equal(mso6.sampleRateMSa, 250);
+  assert.deepEqual(mso6.sampleDepth, { default: 1000, max: 131_072 });
+  assert.deepEqual(mso6.frequencyHz, { min: 0.1, max: 25_000_000 });
+  assert.deepEqual(mso6.amplitudeVppByLoad, {
+    HIGHZ: { min: 0.02, max: 5 },
+    FIFTY: { min: 0.01, max: 2.5 },
+  });
+  assert.deepEqual(mso6.offsetVoltageByLoad, {
+    HIGHZ: { min: -2.5, max: 2.5 },
+    FIFTY: { min: -1.25, max: 1.25 },
+  });
   assert.match(instruments, /selectedAwgProfile\?\.preferredBackend/);
   assert.match(instruments, /adapterSelect\.value = preferred/);
   assert.match(core, /profile\.legacyIds\?\.includes\(preferred\)/);

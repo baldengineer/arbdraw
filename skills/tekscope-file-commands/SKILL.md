@@ -67,13 +67,33 @@ family confirm `FILESystem:READFile`, `FILESystem:WRITEFile`, `FILESystem:CWD`,
 `AFG:ARBitrary:SOUrce`, `AFG:FREQuency`, `AFG:AMPLitude`, `AFG:OFFSet`,
 `AFG:OUTPut:LOAd:IMPEDance`, and `AFG:OUTPut:STATE`.
 
-ArbDraw exposes a 100,000-point MSO6 profile. Do not apply the MSO2 8,000-byte
-conservative write ceiling to this backend. End-to-end ArbDraw transfers have
-been verified on MSO6 hardware through 100,000 points, including upload,
-readback verification, arbitrary-source selection, and AFG configuration. The
-exact model, firmware revision, VISA implementation, and transport framing
-details were not captured with that result; record them during the next focused
-qualification run instead of inferring them.
+The Tektronix [6 Series B MSO datasheet](https://www.tek.com/en/datasheet/6series-b-mso-mixed-signal-oscilloscope-datasheet)
+gives these arbitrary-waveform limits for the built-in AFG. Treat `128 K` as
+131,072 samples, as clarified by Tektronix's 4/5/6 Series AFG training
+material.
+
+- Record length: 1 to 131,072 samples. ArbDraw still requires at least two
+  samples to describe a waveform.
+- Maximum sample rate: 250 MS/s.
+- Repetition rate: 0.1 Hz to 25 MHz. Also require
+  `sample_count * repetition_rate <= 250e6`; therefore a long record has a
+  lower maximum repetition rate.
+- Arbitrary amplitude into High Z: 20 mVpp to 5 Vpp. DC offset range:
+  -2.5 V to +2.5 V.
+- Arbitrary amplitude into 50 ohms: 10 mVpp to 2.5 Vpp. DC offset range:
+  -1.25 V to +1.25 V.
+- Load choices are `HIGHZ` and `FIFTy`. Set load before amplitude so the
+  programmed voltage uses the intended load convention.
+
+Validate these model-specific limits before opening VISA or changing instrument
+state. Do not apply the MSO2 8,000-byte conservative write ceiling to the MSO6
+backend. End-to-end ArbDraw transfers have been verified on MSO6 hardware
+through 100,000 points, including upload, readback verification,
+arbitrary-source selection, and AFG configuration. That hardware result does
+not reduce the documented 131,072-point capability. The exact model, firmware
+revision, VISA implementation, and transport framing details were not captured
+with that result; record them during the next focused qualification run instead
+of inferring them.
 
 ## Command contract
 
@@ -248,6 +268,9 @@ Cover these behaviors without hardware:
   before AFG state changes or raw file I/O.
 - MSO6 identities do not inherit the MSO2 write ceiling, and each backend
   rejects identities from the other family before raw file I/O.
+- MSO6 rejects records above 131,072 points, repetition rates outside 0.1 Hz to
+  25 MHz, point/rate combinations above 250 MS/s, and load-specific amplitude
+  or offset violations before instrument I/O.
 - MSO2 `READFile` accepts responses larger than the write ceiling.
 - `READFile` using command-write plus raw-read, with no trailing `?` and no text
   decoding.

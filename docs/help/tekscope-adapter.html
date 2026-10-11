@@ -45,7 +45,7 @@ python -m python_bridge --idn 192.168.128.233</code></pre>
   <p>Tested MSO2 firmware rejects a <code>FILESystem:WRITEFile</code> payload near 8,092 bytes. The adapter conservatively rejects encoded files of 8,000 bytes or more before changing AFG state. This is a firmware file-transfer issue, not the scope's advertised waveform-memory depth. A 100-point waveform is known to work; larger records can exceed the byte limit even when their point count is valid.</p>
 
   <h2>MSO6 hardware validation</h2>
-  <p>The MSO6 backend does not inherit the MSO2 byte limit. End-to-end ArbDraw transfers have been verified on MSO6 hardware through the 100,000-point profile maximum, including upload, readback verification, arbitrary-source selection, and AFG configuration. The exact model, firmware revision, VISA implementation, and transport framing details have not yet been recorded.</p>
+  <p>The MSO6 backend does not inherit the MSO2 byte limit. Its arbitrary-waveform profile supports up to 131,072 points at a maximum 250 MS/s, with a 0.1 Hz to 25 MHz repetition-rate range subject to the sample-rate limit. End-to-end ArbDraw transfers have been verified on MSO6 hardware through 100,000 points, including upload, readback verification, arbitrary-source selection, and AFG configuration. The exact model, firmware revision, VISA implementation, and transport framing details have not yet been recorded.</p>
 
   <h2>Troubleshooting</h2>
   <ul>
