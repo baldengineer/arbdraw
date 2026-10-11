@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import importlib.metadata
+import importlib.resources
 import json
 import os
 import shutil
@@ -32,6 +34,8 @@ class HealthInfo:
     """Identity returned by a healthy ArbDraw bridge."""
 
     pid: int
+    version: str = "Unknown"
+    adapters: tuple[str, ...] = ()
 
 
 class BridgeState(Enum):
@@ -57,7 +61,39 @@ def probe_bridge(base_url: str, timeout: float = 0.3) -> HealthInfo | None:
     pid = payload.get("pid")
     if payload.get("service") != SERVICE_NAME or not isinstance(pid, int) or pid <= 0:
         return None
-    return HealthInfo(pid=pid)
+    version = payload.get("version")
+    if not isinstance(version, str) or not version.strip():
+        version = "Unknown"
+    adapters = payload.get("adapters")
+    if not isinstance(adapters, list):
+        adapters = []
+    adapter_names = tuple(
+        sorted(
+            {name.strip() for name in adapters if isinstance(name, str) and name.strip()},
+            key=str.casefold,
+        )
+    )
+    return HealthInfo(pid=pid, version=version.strip(), adapters=adapter_names)
+
+
+def installed_bridge_version() -> str:
+    try:
+        return importlib.metadata.version("arbdraw-python-bridge")
+    except importlib.metadata.PackageNotFoundError:
+        return "Unknown"
+
+
+def installed_adapter_names() -> tuple[str, ...]:
+    try:
+        entry_points = importlib.metadata.entry_points()
+        selected = (
+            entry_points.select(group="arbdraw.instrument_adapters")
+            if hasattr(entry_points, "select")
+            else entry_points.get("arbdraw.instrument_adapters", ())
+        )
+        return tuple(sorted({entry_point.name for entry_point in selected}, key=str.casefold))
+    except (AttributeError, TypeError):
+        return ()
 
 
 def find_bridge_executable(explicit: str | None = None) -> Path:
@@ -108,6 +144,8 @@ class BridgeController:
         pid_terminator: Callable[[int], None] | None = None,
         clock: Callable[[], float] = time.monotonic,
         log_opener: Callable[[], object] | None = None,
+        installed_version: str | None = None,
+        installed_adapters: Sequence[str] | None = None,
     ):
         self.bridge_url = bridge_url
         self.executable = executable
@@ -123,6 +161,13 @@ class BridgeController:
         self._external_pid: int | None = None
         self._started_at = 0.0
         self._restart_pending = False
+        self.version = installed_version or installed_bridge_version()
+        self.adapters = tuple(
+            sorted(
+                installed_adapters if installed_adapters is not None else installed_adapter_names(),
+                key=str.casefold,
+            )
+        )
         self.state = BridgeState.STOPPED
         self.detail = "Bridge is not running."
 
@@ -152,6 +197,9 @@ class BridgeController:
 
     def refresh(self) -> BridgeState:
         health = self._health_probe()
+        if health is not None:
+            self.version = health.version
+            self.adapters = health.adapters
         process = self._process
         if process is not None and process.poll() is None:
             self._managed_pid = process.pid
@@ -207,6 +255,8 @@ class BridgeController:
     def start(self) -> bool:
         health = self._health_probe()
         if health is not None:
+            self.version = health.version
+            self.adapters = health.adapters
             self._external_pid = health.pid
             self.state = BridgeState.RUNNING_EXTERNAL
             self.detail = f"Bridge is already running (PID {health.pid})."
@@ -318,7 +368,9 @@ def run_tray(controller: BridgeController) -> int:
     NIF_MESSAGE, NIF_ICON, NIF_TIP, NIF_INFO = 1, 2, 4, 0x10
     MF_STRING, MF_GRAYED, MF_SEPARATOR = 0, 1, 0x800
     TPM_RIGHTBUTTON, TPM_RETURNCMD = 2, 0x100
-    IDI_APPLICATION, IDI_ERROR, IDI_INFORMATION = 32512, 32513, 32516
+    IDI_APPLICATION = 32512
+    IMAGE_ICON = 1
+    LR_DEFAULTSIZE, LR_LOADFROMFILE = 0x40, 0x10
     CMD_START, CMD_STOP, CMD_RESTART, CMD_EXIT = 1001, 1002, 1003, 1099
     ERROR_ALREADY_EXISTS = 183
 
@@ -384,6 +436,17 @@ def run_tray(controller: BridgeController) -> int:
     kernel32.CloseHandle.restype = wintypes.BOOL
     user32.LoadIconW.argtypes = [wintypes.HINSTANCE, ctypes.c_void_p]
     user32.LoadIconW.restype = wintypes.HICON
+    user32.LoadImageW.argtypes = [
+        wintypes.HINSTANCE,
+        wintypes.LPCWSTR,
+        wintypes.UINT,
+        ctypes.c_int,
+        ctypes.c_int,
+        wintypes.UINT,
+    ]
+    user32.LoadImageW.restype = wintypes.HANDLE
+    user32.DestroyIcon.argtypes = [wintypes.HICON]
+    user32.DestroyIcon.restype = wintypes.BOOL
     user32.CreatePopupMenu.restype = wintypes.HMENU
     user32.RegisterClassW.argtypes = [ctypes.POINTER(WNDCLASSW)]
     user32.RegisterClassW.restype = wintypes.ATOM
@@ -477,16 +540,27 @@ def run_tray(controller: BridgeController) -> int:
     hinstance = kernel32.GetModuleHandleW(None)
     notify_data = NOTIFYICONDATAW()
 
-    def icon_for_state(state: BridgeState):
-        icon_id = IDI_INFORMATION if state in (BridgeState.RUNNING, BridgeState.RUNNING_EXTERNAL) else IDI_APPLICATION
-        if state == BridgeState.ERROR:
-            icon_id = IDI_ERROR
-        return user32.LoadIconW(None, icon_id)
+    def load_brand_icon():
+        resource = importlib.resources.files("python_bridge").joinpath("ArbDraw.ico")
+        with importlib.resources.as_file(resource) as icon_path:
+            icon = user32.LoadImageW(
+                None,
+                str(icon_path),
+                IMAGE_ICON,
+                0,
+                0,
+                LR_DEFAULTSIZE | LR_LOADFROMFILE,
+            )
+        return (icon, True) if icon else (user32.LoadIconW(None, IDI_APPLICATION), False)
+
+    brand_icon, brand_icon_owned = load_brand_icon()
 
     def update_icon(balloon: bool = False) -> None:
         notify_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP
-        notify_data.hIcon = icon_for_state(controller.state)
-        notify_data.szTip = f"ArbDraw Bridge — {controller.status_text}"[:127]
+        notify_data.hIcon = brand_icon
+        notify_data.szTip = (
+            f"ArbDraw Bridge {controller.version} — {controller.status_text}"[:127]
+        )
         if balloon:
             notify_data.uFlags |= NIF_INFO
             notify_data.szInfoTitle = "ArbDraw Bridge"
@@ -510,6 +584,13 @@ def run_tray(controller: BridgeController) -> int:
         menu = user32.CreatePopupMenu()
         try:
             user32.AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, f"Status: {controller.status_text}")
+            user32.AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, f"Version: {controller.version}")
+            user32.AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, "Available adapters:")
+            if controller.adapters:
+                for adapter in controller.adapters:
+                    user32.AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, f"  {adapter}")
+            else:
+                user32.AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, "  None detected")
             user32.AppendMenuW(menu, MF_SEPARATOR, 0, None)
             user32.AppendMenuW(menu, MF_STRING | (0 if controller.can_start else MF_GRAYED), CMD_START, "Start bridge")
             user32.AppendMenuW(menu, MF_STRING | (0 if controller.can_stop else MF_GRAYED), CMD_STOP, "Stop bridge")
@@ -550,6 +631,8 @@ def run_tray(controller: BridgeController) -> int:
             if message == WM_DESTROY:
                 controller.close()
                 shell32.Shell_NotifyIconW(NIM_DELETE, ctypes.byref(notify_data))
+                if brand_icon_owned:
+                    user32.DestroyIcon(brand_icon)
                 user32.PostQuitMessage(0)
                 return 0
         except Exception as error:  # Keep exceptions from escaping a native callback.
@@ -562,6 +645,7 @@ def run_tray(controller: BridgeController) -> int:
     window_class = WNDCLASSW()
     window_class.lpfnWndProc = window_proc
     window_class.hInstance = hinstance
+    window_class.hIcon = brand_icon
     window_class.lpszClassName = class_name
     if not user32.RegisterClassW(ctypes.byref(window_class)):
         raise ctypes.WinError()
@@ -575,8 +659,10 @@ def run_tray(controller: BridgeController) -> int:
     notify_data.uID = 1
     notify_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP
     notify_data.uCallbackMessage = TRAY_CALLBACK
-    notify_data.hIcon = icon_for_state(controller.state)
-    notify_data.szTip = f"ArbDraw Bridge — {controller.status_text}"[:127]
+    notify_data.hIcon = brand_icon
+    notify_data.szTip = (
+        f"ArbDraw Bridge {controller.version} — {controller.status_text}"[:127]
+    )
     if not shell32.Shell_NotifyIconW(NIM_ADD, ctypes.byref(notify_data)):
         raise ctypes.WinError()
     user32.SetTimer(hwnd, 1, 1000, None)

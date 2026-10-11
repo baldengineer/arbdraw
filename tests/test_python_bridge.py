@@ -78,6 +78,8 @@ class PythonBridgeTests(unittest.TestCase):
         self.assertEqual(body["api_version"], "1")
         self.assertEqual(body["service"], "arbdraw-python-bridge")
         self.assertEqual(body["pid"], os.getpid())
+        self.assertEqual(body["version"], "0.1.4")
+        self.assertEqual(body["adapters"], ["default"])
 
         _, headers, _ = self.request("/api/v1/health", origin="https://untrusted.example")
         self.assertNotIn("Access-Control-Allow-Origin", headers)

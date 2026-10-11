@@ -21,6 +21,7 @@ from typing import Any, Callable, Protocol
 from urllib.parse import urlsplit
 
 API_VERSION = "1"
+BRIDGE_VERSION = "0.1.4"
 MAX_REQUEST_BYTES = 64 * 1024 * 1024
 
 
@@ -160,6 +161,8 @@ class BridgeService:
                 "status": "ok",
                 "service": "arbdraw-python-bridge",
                 "pid": os.getpid(),
+                "version": BRIDGE_VERSION,
+                "adapters": sorted(self.adapters, key=str.casefold),
                 "api_version": API_VERSION,
                 "capabilities": {
                     "visa": importlib.util.find_spec("pyvisa") is not None,

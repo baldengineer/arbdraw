@@ -23,9 +23,10 @@ both installation and startup.
 
 The same installation also creates `arbdraw-bridge-tray.exe`. Run it to place
 an ArbDraw Bridge icon in the Windows notification area. Click the icon to see
-the current state and choose **Start bridge**, **Stop bridge**, **Restart
-bridge**, or **Exit**. The app finds `arbdraw-bridge.exe` in the same Python
-environment and starts it without opening a console window.
+the ArbDraw favicon, current state, bridge version, and installed adapters, then
+choose **Start bridge**, **Stop bridge**, **Restart bridge**, or **Exit**. The
+app finds `arbdraw-bridge.exe` in the same Python environment and starts it
+without opening a console window.
 
 The status check uses the configured bridge URL, `http://127.0.0.1:8876` by
 default. It can also stop or restart a compatible bridge that was already

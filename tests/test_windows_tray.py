@@ -1,3 +1,4 @@
+import importlib.resources
 import io
 import json
 import unittest
@@ -56,6 +57,8 @@ class WindowsTrayControllerTests(unittest.TestCase):
             pid_terminator=self.terminated_pids.append,
             clock=lambda: self.clock_value,
             log_opener=lambda: io.BytesIO(),
+            installed_version="0.1.4",
+            installed_adapters=("tekscope-mso6", "owon-xdg3000"),
         )
 
     def test_starts_sibling_executable_without_a_console(self):
@@ -65,9 +68,15 @@ class WindowsTrayControllerTests(unittest.TestCase):
         self.assertEqual(command, [str(self.executable), "--port", "8876"])
         self.assertEqual(options["cwd"], str(self.root))
 
-        self.health = HealthInfo(pid=self.factory.processes[0].pid)
+        self.health = HealthInfo(
+            pid=self.factory.processes[0].pid,
+            version="0.1.5",
+            adapters=("rigol-dg1022",),
+        )
         self.assertEqual(self.controller.refresh(), BridgeState.RUNNING)
         self.assertTrue(self.controller.can_stop)
+        self.assertEqual(self.controller.version, "0.1.5")
+        self.assertEqual(self.controller.adapters, ("rigol-dg1022",))
 
     def test_stop_and_restart_managed_process(self):
         self.controller.start()
@@ -143,15 +152,30 @@ class ProbeBridgeTests(unittest.TestCase):
 
         with patch(
             "python_bridge.windows_tray.urlopen",
-            return_value=Response({"service": "arbdraw-python-bridge", "pid": 42}),
+            return_value=Response(
+                {
+                    "service": "arbdraw-python-bridge",
+                    "pid": 42,
+                    "version": "0.1.4",
+                    "adapters": ["tekscope-mso6", "owon-xdg3000"],
+                }
+            ),
         ):
-            self.assertEqual(probe_bridge("http://127.0.0.1:8876"), HealthInfo(42))
+            self.assertEqual(
+                probe_bridge("http://127.0.0.1:8876"),
+                HealthInfo(42, "0.1.4", ("owon-xdg3000", "tekscope-mso6")),
+            )
 
         with patch(
             "python_bridge.windows_tray.urlopen",
             return_value=Response({"service": "something-else", "pid": 42}),
         ):
             self.assertIsNone(probe_bridge("http://127.0.0.1:8876"))
+
+    def test_favicon_is_packaged_with_the_bridge(self):
+        self.assertTrue(
+            importlib.resources.files("python_bridge").joinpath("ArbDraw.ico").is_file()
+        )
 
 
 if __name__ == "__main__":
