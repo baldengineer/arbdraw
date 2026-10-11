@@ -239,6 +239,48 @@ class TekScopeAdapterTests(unittest.TestCase):
         self.assertEqual(result["amplitude_vpp"], 2)
         self.assertEqual(result["offset_voltage"], 0.25)
 
+    def test_bridge_dispatches_the_registered_tekscope_adapter(self):
+        from python_bridge.server import BridgeService
+
+        instrument = FakeInstrument(read_suffix=b"\n")
+        manager = FakeManager(instrument)
+        request = {
+            "adapter": "tekscope-mso2",
+            "resource": "TCPIP0::scope::INSTR",
+            "waveform": {
+                "schema": "arbdraw.waveform",
+                "version": 1,
+                "name": "Bridge sine",
+                "waveform": {
+                    "sampleCount": 4,
+                    "values": [0, 0.5, 0, -0.5],
+                    "frequencyHz": 2000,
+                    "highVoltage": 0.5,
+                    "lowVoltage": -0.5,
+                },
+            },
+            "options": {"enable_output": True},
+        }
+
+        import tekscope_arb_adapter.adapter as adapter
+
+        original = adapter._open_manager
+        adapter._open_manager = lambda _library=None: manager
+        try:
+            status, result = BridgeService(
+                adapters={"tekscope-mso2": send_waveform}
+            ).dispatch("POST", "/api/v1/waveforms/send", request)
+        finally:
+            adapter._open_manager = original
+
+        self.assertEqual(status, 200)
+        self.assertEqual(result["adapter"], "tekscope-mso2")
+        self.assertEqual(result["remote_path"], "C:/baldee/Bridge sine.csv")
+        self.assertEqual(result["frequency_hz"], 2000)
+        self.assertEqual(result["amplitude_vpp"], 1)
+        self.assertTrue(result["output_enabled"])
+        self.assertIn("C:/baldee/Bridge sine.csv", instrument.files)
+
     def test_rejects_non_mso2_identity_before_raw_write(self):
         instrument = FakeInstrument(identity="TEKTRONIX,MSO64,SN1,1.0")
         with self.assertRaisesRegex(TekScopeAdapterError, "2 Series"):
