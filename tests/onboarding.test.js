@@ -115,11 +115,32 @@ test('onboarding defines the starter tour through Driver.js', () => {
   ]);
   assert.match(source, /title: 'Navigate the memory record'/);
   assert.match(source, /Use Points \/ Screen, Position, or Full Record/);
+  assert.match(source, /Press Space or choose Arbitrary/);
+  assert.match(source, /title: 'Review the AWG output'/);
+  assert.match(source, /high and low voltage, frequency, and period/);
   assert.match(source, /showProgress: true/);
   assert.match(source, /localStorage\.setItem\(storageKey, 'complete'\)/);
   assert.match(source, /get\('onboard'\)/);
   assert.match(source, /matchMedia\?\.\('\(max-width: 900px\)'\)\.matches/);
   assert.match(source, /urlOverride !== false && !compactViewport/);
+});
+
+test('onboarding starter targets and referenced AWG outputs exist in the UI', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const source = fs.readFileSync(path.join(root, 'js/onboarding.js'), 'utf8');
+  const starterTourSource = source.slice(
+    source.indexOf('const steps = ['),
+    source.indexOf('// Instruments Dialog Guide'),
+  );
+  const starterTourTargets = [...starterTourSource.matchAll(/element: '([^']+)'/g)]
+    .map((match) => match[1]);
+
+  for (const target of starterTourTargets) {
+    if (target.startsWith('#')) assert.match(html, new RegExp(`id="${target.slice(1)}"`));
+    else assert.match(html, new RegExp(`class="[^"]*${target.slice(1)}(?:\\s|\")`));
+  }
+  for (const id of ['awgHighEdit', 'awgLowEdit', 'awgFrequencyEdit', 'awgPeriodEdit'])
+    assert.match(html, new RegExp(`id="${id}"`));
 });
 
 test('Help menu provides a permanent way to restart onboarding', () => {

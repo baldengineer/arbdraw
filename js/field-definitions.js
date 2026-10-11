@@ -95,6 +95,18 @@ const ARBDRAW_FIELD_DEFINITIONS = {
       label: 'TS resolution',
       title: 'Inverse of sample rate.\nTS means timestamps.\nSome AWGs ignore this value.',
     },
+    awgHighEdit: {
+      kind: 'text',
+      label: 'AWG high voltage',
+      title: 'Set AWG high voltage to this value',
+      readonly: true,
+    },
+    awgLowEdit: {
+      kind: 'text',
+      label: 'AWG low voltage',
+      title: 'Set AWG low voltage to this value',
+      readonly: true,
+    },
     awgFrequencyEdit: {
       kind: 'text',
       label: 'AWG frequency',

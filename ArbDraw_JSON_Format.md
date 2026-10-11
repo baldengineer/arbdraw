@@ -24,6 +24,8 @@ The current format identifier is:
     "sampleRateMSa": 0.001,
     "sampleCount": 8,
     "tsResolutionSeconds": 0.000001,
+    "highVoltage": 1,
+    "lowVoltage": -1,
     "frequencyHz": 125,
     "periodSeconds": 0.008
   },
@@ -118,6 +120,8 @@ The top-level `AWG` object stores the selected profile and the AWG settings show
 | `sampleRateMSa` | number | MSa/s | Sample rate saved with the project. |
 | `sampleCount` | integer | samples | Sample count saved with the project. |
 | `tsResolutionSeconds` | number | s | Timestamp resolution derived from the saved sample rate and sample count. |
+| `highVoltage` | number | V | AWG high level linked to `waveform.highVoltage`. |
+| `lowVoltage` | number | V | AWG low level linked to `waveform.lowVoltage`. |
 | `frequencyHz` | number | Hz | Frequency to set on the AWG. |
 | `periodSeconds` | number | s | Period to set on the AWG, equal to `1 / frequencyHz`. |
 

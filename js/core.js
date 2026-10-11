@@ -307,6 +307,8 @@ function createDefaultDocument() {
       sampleRateMSa: DEFAULT_VALUES.sampleRateMSa,
       sampleCount: DEFAULT_VALUES.sampleCount,
       tsResolutionSeconds: durationMs / 1000 / Math.max(1, DEFAULT_VALUES.sampleCount - 1),
+      highVoltage: DEFAULT_VALUES.highLevelV,
+      lowVoltage: DEFAULT_VALUES.lowLevelV,
       frequencyHz: DEFAULT_VALUES.frequencyHz / Math.max(1, DEFAULT_VALUES.nCycles),
       periodSeconds: Math.max(1, DEFAULT_VALUES.nCycles) / DEFAULT_VALUES.frequencyHz,
     },

@@ -57,7 +57,9 @@ function parseProject(raw) {
     source.values.every(Number.isFinite)
       ? source.values.slice()
       : [];
-  const durationMs = sampleCount / (sampleRateMSa * 1000),
+  const highVoltage = number('highVoltage', defaults.highVoltage),
+    lowVoltage = number('lowVoltage', defaults.lowVoltage),
+    durationMs = sampleCount / (sampleRateMSa * 1000),
     cycles = Math.max(1, Math.round(number('cycles', defaults.cycles))),
     frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz));
   return {
@@ -74,13 +76,15 @@ function parseProject(raw) {
       sampleCount,
       tsResolutionSeconds:
         sampleCount > 1 ? durationMs / 1000 / (sampleCount - 1) : null,
+      highVoltage,
+      lowVoltage,
       frequencyHz: frequencyHz / cycles,
       periodSeconds: cycles / frequencyHz,
     },
     waveform: {
       type: Object.hasOwn(titles, source.type) ? source.type : 'sine',
-      highVoltage: number('highVoltage', defaults.highVoltage),
-      lowVoltage: number('lowVoltage', defaults.lowVoltage),
+      highVoltage,
+      lowVoltage,
       durationMs,
       sampleRateMSa,
       frequencyHz,

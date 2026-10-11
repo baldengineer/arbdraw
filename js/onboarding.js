@@ -8,7 +8,7 @@
       element: '.editor-mode-switch',
       popover: {
         title: 'Basic and Arbitrary editing',
-        description: 'Basic lets you choose a waveshape, adjust its properties, and apply filters. Switch to Arbitrary when you want to select points or draw edits.',
+        description: 'Basic lets you choose a waveshape and adjust its properties. Press Space or choose Arbitrary when you want to select points, draw edits, or apply filters.',
         side: 'bottom',
         align: 'start',
       },
@@ -26,7 +26,7 @@
       element: '.inspector',
       popover: {
         title: 'Shape the signal',
-        description: 'Use the Properties panel to adjust amplitude, offset, timing, phase, duty cycle, and waveform-specific settings.',
+        description: 'Use the Properties panel to adjust amplitude, offset, frequency or period, phase, duty cycle, cycle count, and waveform-specific settings.',
         side: 'left',
         align: 'center',
       },
@@ -34,8 +34,8 @@
     {
       element: '#editorControls',
       popover: {
-        title: 'Configure the generator',
-        description: 'Select an AWG profile and review the sample rate, sample count, timing resolution, frequency, and period before exporting or sending the waveform.',
+        title: 'Review the AWG output',
+        description: 'Select an AWG profile, then verify the sample rate, sample count, timing resolution, high and low voltage, frequency, and period before exporting or sending the waveform.',
         side: 'top',
         align: 'center',
       },

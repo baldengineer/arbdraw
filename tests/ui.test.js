@@ -125,3 +125,12 @@ test('Arbitrary edit tools sit beside the mode switch without zoom buttons', () 
   assert.doesNotMatch(styles, /\[data-editor-mode="basic"\][^{]*\.filters-section/);
   assert.match(styles, /\.editor-mode-bar \.toolrail\{[^}]*flex-direction:row/);
 });
+
+test('N Cycles follows Duty cycle in Timing properties', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const timingStart = html.indexOf('data-property-panel="timing"');
+  const timingEnd = html.indexOf('</details>', timingStart);
+  const timingProperties = html.slice(timingStart, timingEnd);
+
+  assert.ok(timingProperties.indexOf('id="dutyInput"') < timingProperties.indexOf('id="cyclesInput"'));
+});

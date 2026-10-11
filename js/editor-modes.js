@@ -32,6 +32,25 @@ function setEditorMode(requestedMode) {
   draw();
 }
 
+function handleEditorModeShortcut(event) {
+  const interactive = event.target?.matches?.(
+    'input, textarea, select, button, a, [contenteditable="true"]',
+  );
+  if (
+    event.key !== ' ' ||
+    interactive ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    event.shiftKey ||
+    event.repeat
+  )
+    return false;
+  event.preventDefault();
+  setEditorMode('advanced');
+  return true;
+}
+
 function requestBasicMode() {
   if (editorMode !== 'advanced' || !hasArbitraryEdits()) {
     setEditorMode('basic');
@@ -64,4 +83,5 @@ $('basicModeBtn').onclick = requestBasicMode;
 $('advancedModeBtn').onclick = () => setEditorMode('advanced');
 $('confirmBasicModeBtn').onclick = convertToBasic;
 $('advancedSamplesBtn').onclick = () => setEditorMode('advanced');
+document.addEventListener('keydown', handleEditorModeShortcut);
 setEditorMode('basic');

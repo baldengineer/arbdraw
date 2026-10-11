@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 function createHarness() {
   const elements = new Map();
+  const listeners = {};
   const element = (id) => {
     if (!elements.has(id)) {
       const attributes = {};
@@ -36,7 +37,10 @@ function createHarness() {
   const context = vm.createContext({
     $: element,
     state,
-    document: { documentElement: { dataset: {} } },
+    document: {
+      documentElement: { dataset: {} },
+      addEventListener(type, listener) { listeners[type] = listener; },
+    },
     clearEditorSelection() { calls.clear++; },
     setEditorTool(tool) { state.tool = tool; },
     normalizeFilterSettings() { return { enabled: true, noiseEnabled: false, smoothingEnabled: false }; },
@@ -50,7 +54,7 @@ function createHarness() {
   });
   const source = fs.readFileSync(path.join(__dirname, '../js/editor-modes.js'), 'utf8');
   vm.runInContext(source, context);
-  return { calls, context, element, state };
+  return { calls, context, element, listeners, state };
 }
 
 test('a new editor starts in Basic and switching modes preserves waveform data', () => {
@@ -69,6 +73,29 @@ test('a new editor starts in Basic and switching modes preserves waveform data',
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
   assert.equal(state.data, data);
   assert.deepEqual(state.data, [0, 1, 0]);
+});
+
+test('Space switches to Arbitrary mode outside interactive controls', () => {
+  const { context, listeners } = createHarness();
+  let prevented = 0;
+  const target = { matches: () => false };
+
+  listeners.keydown({ key: ' ', target, preventDefault() { prevented++; } });
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
+  assert.equal(prevented, 1);
+});
+
+test('the Arbitrary shortcut preserves native Space behavior in controls and with modifiers', () => {
+  const { context, listeners } = createHarness();
+  let prevented = 0;
+  const preventDefault = () => { prevented++; };
+
+  listeners.keydown({ key: ' ', target: { matches: () => true }, preventDefault });
+  listeners.keydown({ key: ' ', target: { matches: () => false }, ctrlKey: true, preventDefault });
+  listeners.keydown({ key: ' ', target: { matches: () => false }, repeat: true, preventDefault });
+
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
+  assert.equal(prevented, 0);
 });
 
 test('Arbitrary uses its current default color, not a stale stored color', () => {

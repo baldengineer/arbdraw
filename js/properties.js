@@ -247,8 +247,14 @@ function renderAwgTiming() {
   if (!$('awgFrequencyEdit') || !Number.isFinite(state.frequency) || state.frequency <= 0) return;
   const awgFrequency = state.frequency / Math.max(1, state.cycles),
     awgPeriod = 1 / awgFrequency,
+    highUnit = displayVoltageUnitFor(state.high),
+    lowUnit = displayVoltageUnitFor(state.low),
     frequencyUnit = displayUnitFor(awgFrequency, frequencyDisplayUnits),
     periodUnit = displayUnitFor(awgPeriod, periodDisplayUnits);
+  $('awgHighEdit').value = Number((state.high / highUnit.scale).toPrecision(10));
+  $('awgHighUnit').textContent = highUnit.label;
+  $('awgLowEdit').value = Number((state.low / lowUnit.scale).toPrecision(10));
+  $('awgLowUnit').textContent = lowUnit.label;
   $('awgFrequencyEdit').value = Number((awgFrequency / frequencyUnit.scale).toPrecision(10));
   $('awgFrequencyUnit').textContent = frequencyUnit.label;
   $('awgPeriodEdit').value = Number((awgPeriod / periodUnit.scale).toPrecision(10));
@@ -260,6 +266,8 @@ function renderAwgTiming() {
     sampleRateMSa: state.sampleRate,
     sampleCount: state.samples,
     tsResolutionSeconds: state.duration / 1000 / Math.max(1, state.samples - 1),
+    highVoltage: state.high,
+    lowVoltage: state.low,
     frequencyHz: awgFrequency,
     periodSeconds: awgPeriod,
   };
@@ -447,7 +455,7 @@ for (const kind of ['rate', 'samples', 'tsResolution']) {
     ),
   );
 }
-for (const id of ['awgFrequencyEdit', 'awgPeriodEdit']) {
+for (const id of ['awgHighEdit', 'awgLowEdit', 'awgFrequencyEdit', 'awgPeriodEdit']) {
   ARBDRAW_FIELDS.applyDefinition($(id), {
     ...(ARBDRAW_FIELD_DEFINITIONS.timing[id] || {}),
     id,
@@ -871,6 +879,12 @@ const frequencyDisplayUnits = [
   { scale: 0.001, label: 'mHz' },
 ];
 
+const voltageDisplayUnits = [
+  { scale: 1, label: 'V' },
+  { scale: 0.001, label: 'mV' },
+  { scale: 0.000001, label: 'µV' },
+];
+
 const periodDisplayUnits = [
   { scale: 1e6, label: 'Ms' },
   { scale: 1, label: 's' },
@@ -881,6 +895,12 @@ const periodDisplayUnits = [
 
 function displayUnitFor(value, units) {
   return units.find((unit) => value >= unit.scale) || units.at(-1);
+}
+
+function displayVoltageUnitFor(value) {
+  return value === 0
+    ? voltageDisplayUnits[0]
+    : displayUnitFor(Math.abs(value), voltageDisplayUnits);
 }
 
 function selectTimingUnit(kind, scale, label) {
