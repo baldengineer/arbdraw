@@ -69,6 +69,13 @@ def main() -> None:
         )
         if not tray.is_file():
             raise SystemExit(f"Missing tray launcher: {tray}")
+        menu_bar = environment / (
+            "Scripts/arbdraw-bridge-menubar.exe"
+            if sys.platform == "win32"
+            else "bin/arbdraw-bridge-menubar"
+        )
+        if not menu_bar.is_file():
+            raise SystemExit(f"Missing menu bar launcher: {menu_bar}")
         subprocess.run([str(python), "-c", VERIFY], check=True)
         subprocess.run([str(python), "-m", "python_bridge", "--help"], check=True, stdout=subprocess.DEVNULL)
 

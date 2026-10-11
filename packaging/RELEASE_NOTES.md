@@ -1,18 +1,20 @@
-This release adds `arbdraw-bridge-tray.exe`, a Windows notification-area app
-for starting, stopping, and restarting the ArbDraw Python bridge without a
-console window. Its context menu shows the installed bridge version and the
+This release adds `arbdraw-bridge-menubar`, a native macOS menu bar utility for
+starting, stopping, and restarting the ArbDraw Python bridge without a Dock
+window. It complements the existing `arbdraw-bridge-tray.exe` Windows
+notification-area app. Both menus show the installed bridge version and the
 available instrument adapters.
 
-The tray icon is grey while the bridge is inactive and changes to the blue
-ArbDraw favicon after the health check confirms that the bridge is running.
-Both icon resources are included in the bridge wheel.
+The status icon is grey while the bridge is inactive and changes to blue after
+the health check confirms that the bridge is running. The Windows favicon
+resources are included in the bridge wheel; macOS uses a native system symbol.
 
 Download **`arbdraw-bridge-with-adapters-0.1.5.zip`**, extract it, and run
 `python install.py` with Python 3.11 or newer. This installs the bridge plus the
 OWON XDG3000 / Multicomp MP750290, Rigol DG1022, and TekScope MSO2/MSO6
 adapters in the same Python environment. On Windows, run
-`arbdraw-bridge-tray.exe`; on other platforms, run `python -m python_bridge`.
-Then open **File → Send to AWG** in ArbDraw.
+`arbdraw-bridge-tray.exe`; on macOS, run `arbdraw-bridge-menubar`; on other
+platforms, run `python -m python_bridge`. Then open **File → Send to AWG** in
+ArbDraw.
 
 Use `python install.py --adapter owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope` if you need only one adapter package. The TekScope package registers both model-specific backends. Individual wheels and source distributions are also attached for manual installation and development. To add an adapter to an existing bridge installation, install its wheel with the same Python interpreter that installed `arbdraw-bridge.exe`.
 

@@ -45,6 +45,43 @@ a shortcut or terminal, for example:
 arbdraw-bridge-tray.exe --url http://127.0.0.1:9000 -- --port 9000 --visa-library @py
 ```
 
+### macOS menu bar app
+
+On macOS, the installation also creates `arbdraw-bridge-menubar` and installs
+its native AppKit dependency. Run it from Terminal to add ArbDraw Bridge to the
+menu bar without opening a Dock window:
+
+```bash
+arbdraw-bridge-menubar
+```
+
+Click the waveform status item to see the current state, bridge version,
+available adapters, and bridge log. The menu provides **Start Bridge**, **Stop
+Bridge**, **Restart Bridge**, **Open Bridge Log**, and **Quit ArbDraw Bridge**.
+The status item is blue only after the health check confirms a running bridge;
+otherwise it is grey.
+
+The menu bar app finds `arbdraw-bridge` beside its own launcher. If the launcher
+is not on `PATH`, use the full path shown by the installer, or run it from the
+same environment as `python -m python_bridge.macos_menu_bar`. Only one menu bar
+instance can run for a macOS user at a time.
+
+As on Windows, the app can control a compatible bridge that was already
+running. Quitting stops only a bridge process started by the menu bar app and
+leaves an externally started bridge alone. Bridge output is written to
+`~/Library/Logs/ArbDraw/bridge.log`.
+
+Non-default URLs and bridge arguments use the same `--` separator as the
+Windows utility:
+
+```bash
+arbdraw-bridge-menubar --url http://127.0.0.1:9000 -- --port 9000 --visa-library @py
+```
+
+To launch it when you sign in, add the full `arbdraw-bridge-menubar` executable
+path from your Python environment in **System Settings → General → Login
+Items**. Keep that environment installed at the same path.
+
 To install only one instrument family, use `python .\install.py --adapter
 owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope`. The TekScope
 package registers separate `tekscope-mso2` and `tekscope-mso6` backends. The release also
@@ -72,6 +109,10 @@ From an ArbDraw source checkout, install and start the generic bridge with:
 python -m pip install -e .
 python -m python_bridge
 ```
+
+On macOS, that editable install also installs the Cocoa dependency and menu bar
+launcher. Start it with `arbdraw-bridge-menubar` instead of the second command
+when you want the menu bar controller.
 
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
 
