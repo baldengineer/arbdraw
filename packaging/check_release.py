@@ -18,7 +18,7 @@ from urllib.request import urlopen
 from python_bridge.server import BridgeService, create_server, discover_adapters
 
 adapters = discover_adapters()
-expected = {'owon-xdg3000', 'rigol-dg1022', 'tekscope-mso2'}
+expected = {'owon-xdg3000', 'rigol-dg1022', 'tekscope-mso2', 'tekscope-mso6'}
 assert expected <= adapters.keys(), f'Missing adapters: {expected - adapters.keys()}'
 assert all(callable(adapters[name]) for name in expected)
 for package, resource in (

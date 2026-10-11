@@ -20,7 +20,8 @@ installer. If you use a virtual environment, use its `python` executable for
 both installation and startup.
 
 To install only one instrument family, use `python .\install.py --adapter
-owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope-mso2`. The release also
+owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope`. The TekScope
+package registers separate `tekscope-mso2` and `tekscope-mso6` backends. The release also
 contains individual `.whl` assets. For an existing bridge installation, install
 the desired adapter wheel with **the same interpreter** that installed the
 bridge, for example:
@@ -81,7 +82,8 @@ Keep the default loopback host unless you deliberately want to expose instrument
 See [ADAPTERS.md](ADAPTERS.md) for the complete adapter-authoring guide, including validation, safety, packaging, testing, registry direction, and an OWON XDG3000 / Multicomp MP750290 example.
 
 The release ZIP contains separate adapter wheels for OWON XDG3000 / Multicomp
-MP750290, Rigol DG1022, and Tektronix 2 Series MSO. The ZIP installer installs
+MP750290, Rigol DG1022, and TekScope instruments. The TekScope wheel provides
+model-specific MSO2 and MSO6 bridge backends. The ZIP installer installs
 them alongside the bridge wheel and verifies that all appear in the adapter registry. ArbDraw's
 HTML/JavaScript editor works without them. Installing an adapter affects only
 the Python environment used to run the bridge.
@@ -173,10 +175,10 @@ git -C .\local_adapters\owon-multicomp-awg-python-waveform-importer pull --ff-on
 
 Restart the bridge to load updated Python code. Run the editable install command again if `pyproject.toml` or dependencies changed.
 
-### Develop the included TekScope adapter
+### Develop the included TekScope adapters
 
-The TekScope MSO2 adapter lives in this repository and can be registered in the
-bridge environment directly:
+The shared TekScope package lives in this repository and registers separate
+MSO2 and MSO6 backends in the bridge environment:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e .\adapters\tekscope

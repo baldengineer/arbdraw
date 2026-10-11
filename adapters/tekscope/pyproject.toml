@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [project.entry-points."arbdraw.instrument_adapters"]
-tekscope-mso2 = "tekscope_arb_adapter:send_waveform"
+tekscope-mso2 = "tekscope_arb_adapter:send_waveform_mso2"
+tekscope-mso6 = "tekscope_arb_adapter:send_waveform_mso6"
 
 [project.scripts]
 arbdraw-tekscope = "tekscope_arb_adapter.cli:main"

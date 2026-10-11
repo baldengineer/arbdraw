@@ -206,7 +206,9 @@ function resetStoredSettings() {
 
 function resolveDefaultAwgProfileId(preferred = DEFAULT_VALUES?.awgProfileId) {
   const profiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {}),
-    requested = profiles.find((profile) => profile.id === preferred),
+    requested = profiles.find(
+      (profile) => profile.id === preferred || profile.legacyIds?.includes(preferred),
+    ),
     audio = profiles.find((profile) => profile.id === 'audio' || profile.name === 'Audio'),
     other = profiles.find((profile) => profile.id === 'other' || profile.name === 'Other');
   return requested?.id || audio?.id || other?.id || 'other';

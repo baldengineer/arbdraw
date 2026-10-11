@@ -1,4 +1,4 @@
-"""Binary-safe TekScope file transfer and MSO2 AFG configuration."""
+"""Binary-safe TekScope file transfer and model-specific AFG configuration."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ from typing import Any, Callable, Iterable
 MSO2_SAFE_WRITE_BYTES = 8_000
 MSO2_MODELS = frozenset({"MSO22", "MSO24", "MSO22-EDU", "MSO24-EDU"})
 MSO2_MAX_ARB_POINTS = 128_000
+MSO6_MODELS = frozenset({"MSO64", "MSO66", "MSO68", "MSO64B", "MSO66B", "MSO68B"})
+MSO6_MAX_ARB_POINTS = 100_000
 DEFAULT_DIRECTORY = "C:/baldee"
 SCPI_ERROR_MASK = 32 | 16 | 8 | 4
 _RESOURCE_LOCKS: dict[str, threading.RLock] = {}
@@ -29,6 +31,31 @@ class TekScopeAdapterError(RuntimeError):
     def __init__(self, code: str, message: str):
         super().__init__(message)
         self.code = code
+
+
+@dataclass(frozen=True)
+class TekScopeBackend:
+    id: str
+    family_name: str
+    models: frozenset[str]
+    max_arb_points: int
+    safe_write_bytes: int | None = None
+
+
+MSO2_BACKEND = TekScopeBackend(
+    id="tekscope-mso2",
+    family_name="Tektronix 2 Series MSO",
+    models=MSO2_MODELS,
+    max_arb_points=MSO2_MAX_ARB_POINTS,
+    safe_write_bytes=MSO2_SAFE_WRITE_BYTES,
+)
+MSO6_BACKEND = TekScopeBackend(
+    id="tekscope-mso6",
+    family_name="Tektronix 6 Series MSO",
+    models=MSO6_MODELS,
+    max_arb_points=MSO6_MAX_ARB_POINTS,
+)
+BACKENDS_BY_ID = {backend.id: backend for backend in (MSO2_BACKEND, MSO6_BACKEND)}
 
 
 @dataclass(frozen=True)
@@ -71,7 +98,7 @@ class AdapterOptions:
         channel = value.get("channel", 1)
         if isinstance(channel, bool) or channel != 1:
             raise TekScopeAdapterError(
-                "invalid_adapter_options", "The MSO2 built-in AFG uses channel 1."
+                "invalid_adapter_options", "The TekScope built-in AFG uses channel 1."
             )
         directory = value.get("directory", DEFAULT_DIRECTORY)
         if not isinstance(directory, str):
@@ -200,7 +227,12 @@ def encode_csv(values: Iterable[float]) -> bytes:
     )
 
 
-def _validated_values(values: Iterable[float]) -> list[float]:
+def _validated_values(
+    values: Iterable[float],
+    *,
+    max_points: int = MSO2_MAX_ARB_POINTS,
+    family_name: str = "TekScope",
+) -> list[float]:
     numbers: list[float] = []
     for index, value in enumerate(values):
         if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -215,10 +247,10 @@ def _validated_values(values: Iterable[float]) -> list[float]:
         numbers.append(number)
     if len(numbers) < 2:
         raise TekScopeAdapterError("invalid_waveform", "At least two waveform samples are required.")
-    if len(numbers) > MSO2_MAX_ARB_POINTS:
+    if len(numbers) > max_points:
         raise TekScopeAdapterError(
             "instrument_limit_exceeded",
-            f"MSO2 arbitrary waveforms support at most {MSO2_MAX_ARB_POINTS} points.",
+            f"{family_name} arbitrary waveforms support at most {max_points} points.",
         )
     return numbers
 
@@ -229,13 +261,16 @@ def encode_tekscope_csv(
     *,
     model: str = "MSO22",
     label: str = "",
+    max_points: int = MSO2_MAX_ARB_POINTS,
 ) -> bytes:
-    """Encode the Tek waveform CSV shape accepted by the MSO2 built-in AFG."""
-    numbers = _validated_values(values)
+    """Encode the Tek waveform CSV shape accepted by supported TekScope AFGs."""
+    numbers = _validated_values(values, max_points=max_points)
     frequency = _optional_positive(frequency_hz, "frequency_hz")
     assert frequency is not None
-    if not isinstance(model, str) or model.upper() not in MSO2_MODELS:
-        raise TekScopeAdapterError("invalid_waveform", "CSV model must be an MSO22 or MSO24 variant.")
+    if not isinstance(model, str) or model.upper() not in MSO2_MODELS | MSO6_MODELS:
+        raise TekScopeAdapterError(
+            "invalid_waveform", "CSV model must be a supported MSO2 or MSO6 model."
+        )
     if not isinstance(label, str) or any(character in label for character in "\r\n,"):
         raise TekScopeAdapterError(
             "invalid_waveform", "CSV label must be text without commas or line breaks."
@@ -307,16 +342,16 @@ def _resource_lock(resource: str) -> threading.RLock:
         return _RESOURCE_LOCKS.setdefault(resource, threading.RLock())
 
 
-def _parse_identity(identity: str) -> tuple[str, str]:
+def _parse_identity(identity: str, backend: TekScopeBackend) -> tuple[str, str]:
     fields = [field.strip() for field in identity.split(",")]
     if len(fields) < 2:
         raise TekScopeAdapterError(
             "unsupported_instrument", f"Unrecognized *IDN? response: {identity!r}"
         )
     manufacturer, model = fields[:2]
-    if manufacturer.upper() != "TEKTRONIX" or model.upper() not in MSO2_MODELS:
+    if manufacturer.upper() != "TEKTRONIX" or model.upper() not in backend.models:
         raise TekScopeAdapterError(
-            "unsupported_instrument", f"Expected a Tektronix 2 Series MSO, received {identity!r}."
+            "unsupported_instrument", f"Expected a {backend.family_name}, received {identity!r}."
         )
     return manufacturer, model.upper()
 
@@ -393,7 +428,7 @@ def _open_manager(visa_library: str | None = None) -> Any:
 
 def upload_file_and_configure(
     resource: str,
-    local_payload: bytes,
+    local_payload: bytes | None,
     remote_path: str,
     *,
     frequency_hz: float,
@@ -406,18 +441,20 @@ def upload_file_and_configure(
     pyvisa_options: dict[str, Any] | None = None,
     visa_library: str | None = None,
     manager_factory: Callable[[], Any] | None = None,
+    backend: TekScopeBackend = MSO2_BACKEND,
+    payload_factory: Callable[[str], bytes] | None = None,
 ) -> dict[str, Any]:
-    """Upload one CSV, select it as the MSO2 AFG source, and query settings back."""
+    """Upload one CSV, select it as the TekScope AFG source, and query settings back."""
     if not isinstance(resource, str) or not resource.strip():
         raise TekScopeAdapterError("invalid_request", "resource must be a non-empty string.")
     path = validate_scope_path(remote_path)
-    if not isinstance(local_payload, bytes):
+    if not isinstance(backend, TekScopeBackend):
+        raise TekScopeAdapterError("invalid_request", "backend must be a TekScopeBackend.")
+    if payload_factory is None and not isinstance(local_payload, bytes):
         raise TekScopeAdapterError("invalid_request", "local_payload must be bytes.")
-    if len(local_payload) >= MSO2_SAFE_WRITE_BYTES:
+    if payload_factory is not None and local_payload is not None:
         raise TekScopeAdapterError(
-            "instrument_limit_exceeded",
-            f"MSO2 write is {len(local_payload)} bytes; the configured safe maximum is "
-            f"{MSO2_SAFE_WRITE_BYTES - 1} bytes.",
+            "invalid_request", "Provide local_payload or payload_factory, not both."
         )
     frequency = _optional_positive(frequency_hz, "frequency_hz")
     amplitude = _optional_positive(amplitude_vpp, "amplitude_vpp")
@@ -433,30 +470,41 @@ def upload_file_and_configure(
     manager = None
     instrument = None
     identity = ""
+    payload = b""
+    received: bytes | None = None
     with _resource_lock(resource.strip()):
         try:
             manager = manager_factory() if manager_factory is not None else _open_manager(visa_library)
             instrument = manager.open_resource(resource.strip())
             _configure_session(instrument, timeout_ms, session_options)
             identity = _query_text(instrument, "*IDN?")
-            _, model = _parse_identity(identity)
+            _, model = _parse_identity(identity, backend)
+            payload = payload_factory(model) if payload_factory is not None else local_payload
+            if not isinstance(payload, bytes):
+                raise TekScopeAdapterError("invalid_request", "Payload factory must return bytes.")
+            if backend.safe_write_bytes is not None and len(payload) >= backend.safe_write_bytes:
+                raise TekScopeAdapterError(
+                    "instrument_limit_exceeded",
+                    f"{backend.family_name} write is {len(payload)} bytes; the configured safe "
+                    f"maximum is {backend.safe_write_bytes - 1} bytes.",
+                )
 
             # Drain pre-existing status only after identity succeeds. Do not begin a
             # session with *CLS; power-on events are not attributable to this upload.
             _consume_status(instrument)
             _write_checked(instrument, "AFG:OUTPut:STATE OFF", "disabling AFG output")
-            _write_scope_file(instrument, path, local_payload)
+            _write_scope_file(instrument, path, payload)
 
             if verify_readback:
                 received = _read_scope_file(instrument, path)
                 # MSO22 firmware 2.26.13 on VXI-11 terminates READFile with one
                 # LF byte outside the stored file. Accept only that exact framing
                 # variant; never broadly strip bytes from binary readback.
-                readback_matches = received == local_payload or received == local_payload + b"\n"
+                readback_matches = received == payload or received == payload + b"\n"
                 if not readback_matches:
                     raise TekScopeAdapterError(
                         "instrument_verification_failed",
-                        f"Readback for {path} differed from the {len(local_payload)} uploaded bytes "
+                        f"Readback for {path} differed from the {len(payload)} uploaded bytes "
                         f"({len(received)} bytes received).",
                     )
 
@@ -510,17 +558,17 @@ def upload_file_and_configure(
             return {
                 "status": "sent",
                 "message": (
-                    f"Uploaded {len(local_payload)} bytes to {path}; selected the arbitrary "
+                    f"Uploaded {len(payload)} bytes to {path}; selected the arbitrary "
                     f"waveform at {actual['frequency_hz']:g} Hz and {actual['amplitude_vpp']:g} Vpp; "
                     f"output is {'on' if actual['output_enabled'] else 'off'}."
                 ),
-                "adapter": "tekscope-mso2",
+                "adapter": backend.id,
                 "identity": identity,
                 "model": model,
                 "remote_path": path,
-                "bytes": len(local_payload),
+                "bytes": len(payload),
                 "readback_verified": verify_readback,
-                "readback_transport_lf": verify_readback and received == local_payload + b"\n",
+                "readback_transport_lf": verify_readback and received == payload + b"\n",
                 **actual,
             }
         except TekScopeAdapterError:
@@ -542,14 +590,18 @@ def upload_file_and_configure(
                     pass
 
 
-def send_waveform(request: dict[str, Any]) -> dict[str, Any]:
-    """ArbDraw bridge entry point."""
+def _send_waveform(request: dict[str, Any], backend: TekScopeBackend) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise TekScopeAdapterError("invalid_request", "Adapter request must be an object.")
     resource = request.get("resource")
     if not isinstance(resource, str) or not resource.strip():
         raise TekScopeAdapterError("invalid_request", "resource must be a non-empty string.")
-    waveform, values = _project_waveform(request.get("waveform"))
+    waveform, raw_values = _project_waveform(request.get("waveform"))
+    values = _validated_values(
+        raw_values,
+        max_points=backend.max_arb_points,
+        family_name=backend.family_name,
+    )
     options = AdapterOptions.from_mapping(request.get("options"))
     name = options.file_name or _safe_file_name(str(request["waveform"].get("name") or "arbdraw-waveform"))
     remote_path = str(PurePosixPath(options.directory) / name)
@@ -557,7 +609,6 @@ def send_waveform(request: dict[str, Any]) -> dict[str, Any]:
     if frequency_hz is None:
         frequency_hz = _optional_positive(waveform.get("frequencyHz"), "waveform.frequencyHz")
     assert frequency_hz is not None
-    payload = encode_tekscope_csv(values, frequency_hz)
     high = _optional_finite(waveform.get("highVoltage"), "waveform.highVoltage")
     low = _optional_finite(waveform.get("lowVoltage"), "waveform.lowVoltage")
     if high is None or low is None or high <= low:
@@ -570,7 +621,7 @@ def send_waveform(request: dict[str, Any]) -> dict[str, Any]:
     )
     return upload_file_and_configure(
         resource,
-        payload,
+        None,
         remote_path,
         frequency_hz=frequency_hz,
         amplitude_vpp=amplitude_vpp,
@@ -580,5 +631,27 @@ def send_waveform(request: dict[str, Any]) -> dict[str, Any]:
         timeout_ms=options.timeout_ms,
         verify_readback=options.verify_readback,
         pyvisa_options=request.get("pyvisa_options"),
+        backend=backend,
+        payload_factory=lambda model: encode_tekscope_csv(
+            values,
+            frequency_hz,
+            model=model,
+            max_points=backend.max_arb_points,
+        ),
     )
+
+
+def send_waveform_mso2(request: dict[str, Any]) -> dict[str, Any]:
+    """ArbDraw bridge entry point for Tektronix 2 Series MSO scopes."""
+    return _send_waveform(request, MSO2_BACKEND)
+
+
+def send_waveform_mso6(request: dict[str, Any]) -> dict[str, Any]:
+    """ArbDraw bridge entry point for Tektronix 6 Series MSO scopes."""
+    return _send_waveform(request, MSO6_BACKEND)
+
+
+def send_waveform(request: dict[str, Any]) -> dict[str, Any]:
+    """Backward-compatible alias for the original MSO2 bridge entry point."""
+    return send_waveform_mso2(request)
 

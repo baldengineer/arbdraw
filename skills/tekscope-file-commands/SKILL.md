@@ -6,8 +6,9 @@ description: Implement, review, or troubleshoot binary-safe SCPI file transfer f
 # TekScope file commands
 
 Use these rules when an ArbDraw bridge adapter must move a file to or from a
-Tektronix 2 Series MSO. Keep vendor-specific file handling in the adapter, not
-in the generic bridge or browser UI.
+Tektronix MSO2 or MSO6. Keep vendor-specific file handling in the adapter, not
+in the generic bridge or browser UI, and select capability policy only after
+matching the instrument identity to a model-specific backend.
 
 ## Authoritative source
 
@@ -34,8 +35,10 @@ programming manual:
 
 - On MSO2 scopes, `FILESystem:WRITEFile` has a data-transfer boundary at 8,092
   bytes. Never send a payload at that boundary or above it.
-- Set the adapter's maximum safe MSO2 write size below 8,092 bytes and reject an
-  oversized request before opening the VISA resource or changing scope state.
+- Set the adapter's maximum safe MSO2 write size below 8,092 bytes. When the
+  caller selects a model-specific backend, open the session only far enough to
+  verify `*IDN?`, then reject an oversized MSO2 request before changing AFG
+  state or sending file data.
 - Keep the measured unit explicit as bytes. The adapter uses an 8,000-byte
   conservative ceiling.
 - Do not try to bypass the limit by splitting one file across multiple
@@ -55,6 +58,21 @@ programming manual:
 Return a stable error such as `instrument_limit_exceeded` for an MSO2 write that
 is too large. Include the attempted size and configured safe maximum in the
 message, but do not probe the fatal boundary on live hardware.
+
+## MSO6 backend knowledge
+
+Use a separate `tekscope-mso6` backend for MSO64, MSO66, MSO68, MSO64B,
+MSO66B, and MSO68B identities. Tek command references for the MSO4/5/6/7
+family confirm `FILESystem:READFile`, `FILESystem:WRITEFile`, `FILESystem:CWD`,
+`AFG:ARBitrary:SOUrce`, `AFG:FREQuency`, `AFG:AMPLitude`, `AFG:OFFSet`,
+`AFG:OUTPut:LOAd:IMPEDance`, and `AFG:OUTPut:STATE`.
+
+ArbDraw currently exposes a 100,000-point MSO6 profile. Do not apply the MSO2
+8,000-byte conservative write ceiling to this backend. The MSO6 CSV header,
+raw `READFile` framing, maximum practical transfer size, and live AFG behavior
+have not yet been validated on hardware; keep that distinction explicit in
+code comments and user-facing documentation until an authorized live test
+records the model, firmware, transport, byte count, and readback result.
 
 ## Command contract
 
@@ -225,8 +243,10 @@ Cover these behaviors without hardware:
 - Empty and binary payloads, including NUL, CR, LF, comma, quote, and `#` bytes.
 - Exact raw command bytes for `WRITEFile`.
 - MSO2 writes below the configured safe ceiling are accepted, while writes at
-  the 8,092-byte boundary and above are rejected without instrument I/O.
-- Other TekScope identities do not inherit the MSO2 write ceiling.
+  the adapter's 8,000-byte ceiling and above are rejected after identity but
+  before AFG state changes or raw file I/O.
+- MSO6 identities do not inherit the MSO2 write ceiling, and each backend
+  rejects identities from the other family before raw file I/O.
 - MSO2 `READFile` accepts responses larger than the write ceiling.
 - `READFile` using command-write plus raw-read, with no trailing `?` and no text
   decoding.

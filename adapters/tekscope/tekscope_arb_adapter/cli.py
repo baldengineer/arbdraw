@@ -6,7 +6,12 @@ import argparse
 import json
 from pathlib import Path
 
-from .adapter import TekScopeAdapterError, encode_tekscope_csv, upload_file_and_configure
+from .adapter import (
+    BACKENDS_BY_ID,
+    TekScopeAdapterError,
+    encode_tekscope_csv,
+    upload_file_and_configure,
+)
 
 
 def _numeric_rows(path: Path) -> list[float]:
@@ -32,6 +37,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     upload = subparsers.add_parser("upload-file", help="Upload and select an existing arb CSV.")
+    upload.add_argument(
+        "--backend",
+        choices=tuple(BACKENDS_BY_ID),
+        default="tekscope-mso2",
+        help="Select the expected TekScope model family.",
+    )
     upload.add_argument("--resource", required=True)
     upload.add_argument("--local-path", required=True, type=Path)
     upload.add_argument("--remote-path", required=True)
@@ -46,15 +57,13 @@ def main() -> None:
     upload.add_argument(
         "--values-only",
         action="store_true",
-        help="Wrap a one-value-per-line CSV in the Tek waveform CSV format accepted by the MSO2 AFG.",
+        help="Wrap a one-value-per-line CSV in the Tek waveform CSV format accepted by the scope AFG.",
     )
     arguments = parser.parse_args()
 
-    payload = (
-        encode_tekscope_csv(_numeric_rows(arguments.local_path), arguments.frequency_hz)
-        if arguments.values_only
-        else arguments.local_path.read_bytes()
-    )
+    backend = BACKENDS_BY_ID[arguments.backend]
+    values = _numeric_rows(arguments.local_path) if arguments.values_only else None
+    payload = None if values is not None else arguments.local_path.read_bytes()
     result = upload_file_and_configure(
         arguments.resource,
         payload,
@@ -67,6 +76,19 @@ def main() -> None:
         timeout_ms=arguments.timeout_ms,
         verify_readback=not arguments.no_readback,
         visa_library=arguments.visa_library,
+        backend=backend,
+        payload_factory=(
+            (
+                lambda model: encode_tekscope_csv(
+                    values,
+                    arguments.frequency_hz,
+                    model=model,
+                    max_points=backend.max_arb_points,
+                )
+            )
+            if values is not None
+            else None
+        ),
     )
     print(json.dumps(result, indent=2, sort_keys=True))
 

@@ -29,11 +29,21 @@ test('Rigol profile provides documented PyVISA option hooks', () => {
   assert.match(instruments, /bridgeClient\.sendWaveform\([\s\S]*pyvisaOptions:/);
 });
 
-test('TekScope profile selects the MSO2 adapter and enforces its arb depth', () => {
-  const profile = globalThis.ARBDRAW_AWG_PROFILES.tekscopeFiles;
+test('TekScope profiles select model-specific adapters and arb depths', () => {
+  const mso2 = globalThis.ARBDRAW_AWG_PROFILES.tekscopeMso2;
+  const mso6 = globalThis.ARBDRAW_AWG_PROFILES.tekscopeMso6;
+  const core = fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8');
   const instruments = fs.readFileSync(path.join(__dirname, '../js/instruments.js'), 'utf8');
-  assert.equal(profile.preferredBackend, 'tekscope-mso2');
-  assert.deepEqual(profile.sampleDepth, { default: 100, max: 240 });
+  const properties = fs.readFileSync(path.join(__dirname, '../js/properties.js'), 'utf8');
+  assert.equal(mso2.id, 'tekscope-mso2');
+  assert.deepEqual(mso2.legacyIds, ['tekscope-files']);
+  assert.equal(mso2.preferredBackend, 'tekscope-mso2');
+  assert.deepEqual(mso2.sampleDepth, { default: 100, max: 128_000 });
+  assert.equal(mso6.id, 'tekscope-mso6');
+  assert.equal(mso6.preferredBackend, 'tekscope-mso6');
+  assert.deepEqual(mso6.sampleDepth, { default: 1000, max: 100_000 });
   assert.match(instruments, /selectedAwgProfile\?\.preferredBackend/);
   assert.match(instruments, /adapterSelect\.value = preferred/);
+  assert.match(core, /profile\.legacyIds\?\.includes\(preferred\)/);
+  assert.match(properties, /profile\.legacyIds\?\.includes\(id\)/);
 });

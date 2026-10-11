@@ -33,17 +33,28 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
       // send_end: true,
     }),
   }),
-  tekscopeFiles: Object.freeze({
-    id: 'tekscope-files',
-    name: 'TekScope (files)',
+  tekscopeMso2: Object.freeze({
+    id: 'tekscope-mso2',
+    legacyIds: Object.freeze(['tekscope-files']),
+    name: 'TekScope MSO2 (files)',
     vid: null,
     pid: null,
     sampleRateType: 'Fixed',
     sampleRateMSa: null,
-    // The current CSV-over-VXI-11 adapter must keep WRITEFile below 8,000 bytes.
-    sampleDepth: Object.freeze({ default: 100, max: 240 }),
+    sampleDepth: Object.freeze({ default: 100, max: 128_000 }),
     transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
     preferredBackend: 'tekscope-mso2',
+  }),
+  tekscopeMso6: Object.freeze({
+    id: 'tekscope-mso6',
+    name: 'TekScope MSO6 (files)',
+    vid: null,
+    pid: null,
+    sampleRateType: 'Fixed',
+    sampleRateMSa: null,
+    sampleDepth: Object.freeze({ default: 1000, max: 100_000 }),
+    transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
+    preferredBackend: 'tekscope-mso6',
   }),
   audio: Object.freeze({
     id: 'audio',

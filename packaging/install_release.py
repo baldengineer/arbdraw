@@ -12,7 +12,13 @@ WHEEL_PREFIXES = {
     "bridge": "arbdraw_python_bridge-",
     "owon-xdg3000": "owon_multicomp_awg_python_waveform_importer-",
     "rigol-dg1022": "rigol_dg1022_arbdraw_adapter-",
-    "tekscope-mso2": "tekscope_arbdraw_adapter-",
+    "tekscope": "tekscope_arbdraw_adapter-",
+}
+
+EXPECTED_ENTRY_POINTS = {
+    "owon-xdg3000": {"owon-xdg3000"},
+    "rigol-dg1022": {"rigol-dg1022"},
+    "tekscope": {"tekscope-mso2", "tekscope-mso6"},
 }
 
 
@@ -27,7 +33,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--adapter",
-        choices=("all", "owon-xdg3000", "rigol-dg1022", "tekscope-mso2"),
+        choices=("all", "owon-xdg3000", "rigol-dg1022", "tekscope"),
         default="all",
         help="Install all supported adapters (default) or one instrument family.",
     )
@@ -37,19 +43,22 @@ def main() -> None:
 
     wheels = Path(__file__).resolve().parent / "wheels"
     selected = (
-        ("owon-xdg3000", "rigol-dg1022", "tekscope-mso2")
+        ("owon-xdg3000", "rigol-dg1022", "tekscope")
         if args.adapter == "all"
         else (args.adapter,)
     )
     paths = [find_wheel(wheels, WHEEL_PREFIXES["bridge"])]
     paths.extend(find_wheel(wheels, WHEEL_PREFIXES[adapter]) for adapter in selected)
+    expected = sorted(
+        entry_point for adapter in selected for entry_point in EXPECTED_ENTRY_POINTS[adapter]
+    )
     subprocess.run([sys.executable, "-m", "pip", "install", *map(str, paths)], check=True)
     subprocess.run(
         [
             sys.executable,
             "-c",
             "from python_bridge.server import discover_adapters; "
-            f"expected = {selected!r}; "
+            f"expected = {expected!r}; "
             "found = discover_adapters(); "
             "assert all(name in found for name in expected), f'Missing adapters: {found}'; "
             "print('Installed adapters:', ', '.join(sorted(found)))",

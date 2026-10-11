@@ -10,7 +10,10 @@ Python interpreter. To install only one adapter, use either:
 
     python install.py --adapter owon-xdg3000
     python install.py --adapter rigol-dg1022
-    python install.py --adapter tekscope-mso2
+    python install.py --adapter tekscope
+
+The TekScope package installs separate tekscope-mso2 and tekscope-mso6 bridge
+backends.
 
 Start the bridge with the same interpreter:
 

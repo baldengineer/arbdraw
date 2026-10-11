@@ -35,7 +35,9 @@ const awgProfiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
 let selectedAwgProfile = null;
 
 function profileById(id) {
-  return awgProfiles.find((profile) => profile.id === id) || null;
+  return (
+    awgProfiles.find((profile) => profile.id === id || profile.legacyIds?.includes(id)) || null
+  );
 }
 
 function defaultAwgProfile() {
