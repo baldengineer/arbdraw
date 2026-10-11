@@ -5,7 +5,7 @@ The bridge is the only process that talks to VISA or vendor utilities. ArbDraw t
 ## Download and install
 
 Open the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases)
-and download `arbdraw-bridge-with-adapters.zip` from the newest bridge release.
+and download `arbdraw-bridge-with-adapters-<version>.zip` from the newest bridge release.
 Extract it and use Python 3.11 or newer to install the bridge and all supported
 adapters into one Python environment:
 

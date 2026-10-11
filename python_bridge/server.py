@@ -21,7 +21,7 @@ from typing import Any, Callable, Protocol
 from urllib.parse import urlsplit
 
 API_VERSION = "1"
-BRIDGE_VERSION = "0.1.4"
+BRIDGE_VERSION = "0.1.5"
 MAX_REQUEST_BYTES = 64 * 1024 * 1024
 
 

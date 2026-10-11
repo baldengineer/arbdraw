@@ -10,8 +10,12 @@ import tempfile
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from python_bridge import __version__
+
+
 ENTRY_POINT = (
     '[project.entry-points."arbdraw.instrument_adapters"]\n'
     'owon-xdg3000 = "arbdraw_bridge_adapter:send_waveform"\n'
@@ -87,7 +91,7 @@ def main() -> None:
     wheels = sorted(output.glob("*.whl"))
     if len(wheels) != 4:
         raise SystemExit(f"Expected four wheels; found {[wheel.name for wheel in wheels]}")
-    bundle = output / "arbdraw-bridge-with-adapters.zip"
+    bundle = output / f"arbdraw-bridge-with-adapters-{__version__}.zip"
     with ZipFile(bundle, "w", compression=ZIP_DEFLATED) as archive:
         archive.write(ROOT / "packaging" / "install_release.py", "install.py")
         archive.write(ROOT / "packaging" / "RELEASE_README.txt", "README.txt")
