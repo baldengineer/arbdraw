@@ -29,3 +29,19 @@ test('TekScope documentation covers installation, both backends, and current lim
   assert.match(bridgeHelp, /arbdraw-bridge-tray\.exe/);
   assert.match(helpMenu, /title: 'TekScope adapter', source: 'docs\/help\/tekscope-adapter\.html'/);
 });
+
+test('bridge documentation explains the Windows tray status and controls', () => {
+  const sources = [
+    read('README.md'),
+    read('python_bridge/README.md'),
+    read('docs/help/python-bridge.html'),
+    read('packaging/RELEASE_README.txt'),
+  ];
+
+  for (const source of sources) {
+    assert.match(source, /arbdraw-bridge-tray\.exe/);
+    assert.match(source, /bridge version/i);
+    assert.match(source, /available adapters/i);
+    assert.match(source, /grey[\s\S]*blue/i);
+  }
+});

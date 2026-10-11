@@ -23,7 +23,7 @@ both installation and startup.
 
 The same installation also creates `arbdraw-bridge-tray.exe`. Run it to place
 an ArbDraw Bridge icon in the Windows notification area. Click the icon to see
-the ArbDraw favicon, current state, bridge version, and installed adapters, then
+the ArbDraw favicon, current state, bridge version, and available adapters, then
 choose **Start bridge**, **Stop bridge**, **Restart bridge**, or **Exit**. The
 app finds `arbdraw-bridge.exe` in the same Python environment and starts it
 without opening a console window.

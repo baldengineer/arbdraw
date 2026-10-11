@@ -22,9 +22,12 @@ Start the bridge with the same interpreter:
 On Windows, pip also creates arbdraw-bridge.exe and
 arbdraw-bridge-tray.exe in that interpreter's Scripts directory. Run the tray
 app for notification-area Start, Stop, and Restart controls, or run
-arbdraw-bridge.exe directly. If you use a virtual environment, run its Python
-executable for installation and use the launchers from that environment.
-Open ArbDraw's File > Instruments dialog to connect.
+arbdraw-bridge.exe directly. The tray menu shows the bridge version and
+available adapters. Its ArbDraw favicon is grey while the bridge is inactive
+and changes to blue when its health check confirms the bridge is running. If
+you use a virtual environment, run its Python executable for installation and
+use the launchers from that environment. Open ArbDraw's File > Instruments
+dialog to connect.
 
 The adapter code is distributed as separate wheels in this ZIP. It can also be
 installed alongside an existing bridge wheel by running python -m pip install

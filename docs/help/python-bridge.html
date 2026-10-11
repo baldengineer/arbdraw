@@ -10,6 +10,7 @@
 python -m python_bridge</code></pre>
   <p>The installer downloads Python dependencies and verifies that the adapters load. To install only one package, use <code>python install.py --adapter owon-xdg3000</code>, <code>python install.py --adapter rigol-dg1022</code>, or <code>python install.py --adapter tekscope</code>. The TekScope package registers both <code>tekscope-mso2</code> and <code>tekscope-mso6</code>.</p>
   <p>On Windows, pip creates <code>arbdraw-bridge.exe</code> and <code>arbdraw-bridge-tray.exe</code> in that Python environment's <code>Scripts</code> folder. Run the tray app for notification-area Start, Stop, and Restart controls without a console window, or run <code>arbdraw-bridge.exe</code> directly. If you already installed an older bridge wheel, run the ZIP installer using that same Python environment to upgrade the bridge and add adapters.</p>
+  <p>The tray menu shows the current bridge version and available adapters. Its ArbDraw favicon is grey while the bridge is stopped, starting, stopping, or in an error state, and changes to blue when the health check confirms the bridge is running.</p>
 
   <p>Individual <code>.whl</code> assets are also available for manual installation. Install a chosen adapter wheel with the same interpreter that runs the bridge. The <code>.tar.gz</code> assets are source distributions for developers and packaging tools. Leave the bridge terminal open while using an instrument; press <code>Ctrl+C</code> to stop it.</p>
 
