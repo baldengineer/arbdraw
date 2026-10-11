@@ -4,9 +4,17 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-function createHarness() {
+function createHarness({ url = 'https://example.test/arbdraw/' } = {}) {
   const elements = new Map();
   const listeners = {};
+  const currentUrl = new URL(url);
+  const location = {
+    href: currentUrl.href,
+    hash: currentUrl.hash,
+    pathname: currentUrl.pathname,
+    search: currentUrl.search,
+  };
+  const replacedUrls = [];
   const element = (id) => {
     if (!elements.has(id)) {
       const attributes = {};
@@ -41,6 +49,21 @@ function createHarness() {
       documentElement: { dataset: {} },
       addEventListener(type, listener) { listeners[type] = listener; },
     },
+    history: {
+      state: null,
+      replaceState(_state, _title, nextUrl) {
+        const resolved = new URL(nextUrl, location.href);
+        replacedUrls.push(resolved.href);
+        Object.assign(location, {
+          href: resolved.href,
+          hash: resolved.hash,
+          pathname: resolved.pathname,
+          search: resolved.search,
+        });
+      },
+    },
+    location,
+    URLSearchParams,
     clearEditorSelection() { calls.clear++; },
     setEditorTool(tool) { state.tool = tool; },
     normalizeFilterSettings() { return { enabled: true, noiseEnabled: false, smoothingEnabled: false }; },
@@ -54,7 +77,7 @@ function createHarness() {
   });
   const source = fs.readFileSync(path.join(__dirname, '../js/editor-modes.js'), 'utf8');
   vm.runInContext(source, context);
-  return { calls, context, element, listeners, state };
+  return { calls, context, element, listeners, location, replacedUrls, state };
 }
 
 test('a new editor starts in Basic and switching modes preserves waveform data', () => {
@@ -73,6 +96,32 @@ test('a new editor starts in Basic and switching modes preserves waveform data',
   assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), false);
   assert.equal(state.data, data);
   assert.deepEqual(state.data, [0, 1, 0]);
+});
+
+test('mode=arbitrary opens a bookmark directly in Arbitrary mode', () => {
+  const { context, location, replacedUrls, state } = createHarness({
+    url: 'https://example.test/arbdraw/?waveshape=square&mode=arbitrary#editor',
+  });
+
+  assert.equal(context.ARBDRAW_EDITOR_MODES.isAdvanced(), true);
+  assert.equal(state.tool, 'pencil');
+  assert.equal(location.search, '?waveshape=square&mode=arbitrary');
+  assert.deepEqual(replacedUrls, []);
+});
+
+test('mode selection updates its URL parameter without disturbing the rest of the URL', () => {
+  const { element, location, replacedUrls } = createHarness({
+    url: 'https://example.test/arbdraw/?waveshape=triangle#editor',
+  });
+
+  element('advancedModeBtn').onclick();
+  assert.equal(location.search, '?waveshape=triangle&mode=arbitrary');
+  assert.equal(location.hash, '#editor');
+
+  element('basicModeBtn').onclick();
+  assert.equal(location.search, '?waveshape=triangle');
+  assert.equal(location.hash, '#editor');
+  assert.equal(replacedUrls.length, 2);
 });
 
 test('Space switches to Arbitrary mode outside interactive controls', () => {

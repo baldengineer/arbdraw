@@ -3,6 +3,25 @@
 // Basic uses a generated waveform with optional filters; Arbitrary allows point edits.
 let editorMode = null;
 let lastAdvancedTool = state.tool === 'pointer' ? 'pencil' : state.tool;
+const EDITOR_MODE_URL_PARAMETER = 'mode';
+
+function editorModeFromUrl() {
+  const value = new URLSearchParams(globalThis.location?.search || '')
+    .get(EDITOR_MODE_URL_PARAMETER);
+  return value === 'arbitrary' ? 'advanced' : 'basic';
+}
+
+function syncEditorModeUrl(mode) {
+  if (!globalThis.history?.replaceState || !globalThis.location) return;
+  const params = new URLSearchParams(globalThis.location.search || ''),
+    requestedValue = mode === 'advanced' ? 'arbitrary' : null;
+  if (params.get(EDITOR_MODE_URL_PARAMETER) === requestedValue) return;
+  if (requestedValue) params.set(EDITOR_MODE_URL_PARAMETER, requestedValue);
+  else params.delete(EDITOR_MODE_URL_PARAMETER);
+  const search = params.toString(),
+    nextUrl = `${globalThis.location.pathname || ''}${search ? `?${search}` : ''}${globalThis.location.hash || ''}`;
+  globalThis.history.replaceState(globalThis.history.state, '', nextUrl);
+}
 
 function hasArbitraryEdits() {
   return state.samplesEdited === true;
@@ -18,6 +37,7 @@ function setEditorMode(requestedMode) {
     lastAdvancedTool = state.tool;
   editorMode = nextMode;
   document.documentElement.dataset.editorMode = nextMode;
+  syncEditorModeUrl(nextMode);
   $('basicModeBtn').setAttribute('aria-pressed', String(nextMode === 'basic'));
   $('advancedModeBtn').setAttribute('aria-pressed', String(nextMode === 'advanced'));
   $('functionSectionTitle').textContent = nextMode === 'basic' ? 'Function' : 'Waveform source';
@@ -84,4 +104,4 @@ $('advancedModeBtn').onclick = () => setEditorMode('advanced');
 $('confirmBasicModeBtn').onclick = convertToBasic;
 $('advancedSamplesBtn').onclick = () => setEditorMode('advanced');
 document.addEventListener('keydown', handleEditorModeShortcut);
-setEditorMode('basic');
+setEditorMode(editorModeFromUrl());

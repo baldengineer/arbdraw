@@ -68,6 +68,8 @@ Parameters use the same names as the editable defaults in `js/defaults.js`. `wav
 
 Use `?onboard=1` to force the getting-started tour to open or `?onboard=0` to suppress its automatic first-run launch. The tour can always be started again from **Help → Getting started**.
 
+Use `?mode=arbitrary` to open the editor in Arbitrary mode. Selecting Arbitrary adds this parameter to the current URL so the editing mode can be bookmarked; returning to Basic removes it.
+
 Driver.js uses the CDN by default. Add `?driver=local` to use the vendored JavaScript and CSS without attempting a network request.
 
 - Use **Save** to download an `.arbdraw.json` project containing waveform parameters and sample values.
