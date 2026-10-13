@@ -19,18 +19,31 @@ For each ArbDraw waveform, the adapter:
 1. Validates the ArbDraw document, selected backend, file path, and settings.
 2. Opens the VISA resource and checks `*IDN?` against the selected model family.
 3. Encodes the sample values as a Tek waveform CSV using the identified model.
-4. Disables AFG output and writes the CSV with binary-safe
-   `FILESystem:WRITEFile` block data.
-5. Reads the file back with `FILESystem:READFile` and verifies the bytes.
-6. Selects the file with `AFG:ARBitrary:SOUrce`, waits for parsing to finish,
+4. Checks the destination with `FILESystem:CWD` and `FILESystem:DIR?`, restoring
+   the previous working directory. If the file exists and overwrite is off,
+   stops with an error before changing AFG output.
+5. Disables AFG output, deletes the existing destination only when overwrite
+   is selected, and writes the CSV with binary-safe `FILESystem:WRITEFile` block data.
+6. Reads the file back with `FILESystem:READFile` and verifies the bytes.
+7. Selects the file with `AFG:ARBitrary:SOUrce`, waits for parsing to finish,
    and applies frequency, amplitude, offset, and load.
-7. Enables output only when the request selected **Enable output**.
-8. Queries the configured AFG state and returns it to ArbDraw.
+8. Enables output only when the request selected **Enable output**.
+9. Queries the configured AFG state and returns it to ArbDraw.
 
 The default destination directory is `C:/baldee`. Create that folder on the
 scope before the first transfer. The filename is derived from the ArbDraw
-project name unless an API or CLI caller supplies `file_name`. Sending the same
-destination again overwrites it. The adapter does not implement file deletion.
+project name unless an API caller supplies `file_name` or a CLI caller supplies
+`--remote-path`. **Path** initially shows `C:/baldee/`; **Overwrite waveform file**
+is off by default. Both preferences are saved in local browser settings and
+shared by the MSO2 and MSO6 backends.
+
+Tektronix's [file-command reference](https://tm-devices.readthedocs.io/stable/reference/tm_devices/commands/gen_gny502_msotekscopepc/filesystem/)
+documents `WRITEFile` without an overwrite flag or a guarantee that existing
+files are replaced. ArbDraw therefore implements explicit replacement with
+`FILESystem:DELEte` followed by `WRITEFile`. With overwrite off, a collision
+returns `waveform_file_exists` and asks you to change the project name or select
+**Overwrite waveform file**. Replacement is not atomic: if writing fails after
+deletion, the previous file is no longer available. No unrelated files are deleted.
 
 ## Requirements
 
@@ -40,8 +53,8 @@ destination again overwrites it. The adapter does not implement file deletion.
 - PyVISA plus a VISA implementation. NI-VISA normally works without an extra
   bridge option. For a pure-Python VISA stack, install `pyvisa-py` into the same
   Python environment and start the bridge with `--visa-library @py`.
-- Channel 1 selected in ArbDraw. The supported TekScope AFG is a single-channel
-  output even though the generic dialog can display other channel choices.
+- The supported TekScope AFG is a single-channel output. Selecting either
+  TekScope backend sets Channel to 1 and disables the selector.
 
 ## Install from a release bundle
 
@@ -103,15 +116,17 @@ The list should contain `tekscope-mso2` and `tekscope-mso6`.
 5. Select **Identify (*IDN?)** and check that the model matches the profile.
 6. Verify that ArbDraw selected `tekscope-mso2` or `tekscope-mso6` as the
    waveform backend.
-7. Select channel 1 and choose whether output should be enabled after a
-   successful transfer.
+7. Confirm **Path**, choose whether to **Overwrite waveform file**, and choose
+   whether output should be enabled after a successful transfer. Channel is
+   automatically set to 1 and disabled.
 8. Select **Send waveform** and wait for the verified result.
 
-The bridge API accepts adapter-specific `directory`, `file_name`,
+The bridge API accepts adapter-specific `directory`, `overwrite`, `file_name`,
 `frequency_hz`, `amplitude_vpp`, `offset_voltage`, `load_impedance`,
 `enable_output`, `timeout_ms`, and `verify_readback` options. The current
-ArbDraw dialog exposes channel and output state; the other values come from the
-project or adapter defaults.
+ArbDraw dialog exposes channel, output state, destination directory, and overwrite;
+the other values come from the project or adapter defaults. `overwrite` must be
+a boolean and defaults to `false`.
 
 ## MSO2 firmware write limit
 
@@ -166,9 +181,9 @@ arbdraw-tekscope upload-file `
   --values-only
 ```
 
-Add `--enable-output` only when the AFG should be on after verification. Live
-writes overwrite the named destination. No CLI or adapter operation deletes a
-scope file.
+Add `--enable-output` only when the AFG should be on after verification. Add
+`--overwrite` to replace the exact named destination; otherwise an existing file
+causes an error. Replacement deletes that destination before writing it again.
 
 ## Troubleshooting
 
@@ -181,6 +196,8 @@ scope file.
   returned by `*IDN?`. Select the matching ArbDraw profile and backend.
 - **Invalid scope path or write failure:** Confirm `C:/baldee` exists on the
   scope and that the filename contains only supported ASCII characters.
+- **`waveform_file_exists`:** Change the ArbDraw project name or select
+  **Overwrite waveform file** and send again.
 - **MSO2 `instrument_limit_exceeded`:** Reduce the sample count. A longer
   timeout will not help with the firmware block-size limit.
 - **Readback or source-load failure:** Keep the complete error message, model,

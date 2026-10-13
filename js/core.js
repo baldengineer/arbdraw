@@ -167,6 +167,11 @@ function normalizeDefaults(source = {}) {
       Math.round(finite('waveformVerticalDivisions', 10)),
     ),
     includeCsvTimestamps: source.includeCsvTimestamps !== false,
+    tekScopeDirectory:
+      typeof source.tekScopeDirectory === 'string' && source.tekScopeDirectory.trim()
+        ? source.tekScopeDirectory.trim()
+        : 'C:/baldee/',
+    tekScopeOverwrite: source.tekScopeOverwrite === true,
     awgProfileId:
       typeof source.awgProfileId === 'string' && source.awgProfileId.trim()
         ? source.awgProfileId.trim()

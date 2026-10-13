@@ -36,10 +36,11 @@ python -m python_bridge --idn 192.168.128.233</code></pre>
     <li>Select a discovered VISA resource, or enter the scope's IP address directly.</li>
     <li>Select <strong>Identify (*IDN?)</strong> and confirm the returned model matches the chosen profile.</li>
     <li>Confirm the waveform backend automatically selected <code>tekscope-mso2</code> or <code>tekscope-mso6</code>.</li>
-    <li>Use channel 1. Select <strong>Enable output</strong> only when the AFG should turn on after a successful transfer.</li>
+    <li>Channel is automatically set to 1 and disabled for both TekScope backends. Select <strong>Enable output</strong> only when the AFG should turn on after a successful transfer.</li>
+    <li>Confirm <strong>Path</strong> (initially <code>C:/baldee/</code>) and select <strong>Overwrite waveform file</strong> to replace an existing file. Both preferences are saved in local browser settings.</li>
     <li>Select <strong>Send waveform</strong> and wait for the verified success message.</li>
   </ol>
-  <p>The adapter disables AFG output before writing the file. It reads the file back, selects it, applies the requested settings, and only then restores output to the requested state. The destination filename is derived from the ArbDraw project name. Sending the same name again overwrites that file; the adapter does not delete files.</p>
+  <p>The destination filename is derived from the ArbDraw project name. With <strong>Overwrite waveform file</strong> off (the default), an existing destination causes an error asking you to change the project name or enable overwrite. With overwrite selected, the adapter disables AFG output, deletes the existing destination, and writes the new file. It reads the file back, selects it, applies the requested settings, and only then restores output to the requested state. Replacement is not atomic: if writing fails after deletion, the previous file is no longer available.</p>
 
   <h2>MSO2 transfer limit</h2>
   <p>Tested MSO2 firmware rejects a <code>FILESystem:WRITEFile</code> payload near 8,092 bytes. The adapter conservatively rejects encoded files of 8,000 bytes or more before changing AFG state. This is a firmware file-transfer issue, not the scope's advertised waveform-memory depth. A 100-point waveform is known to work; larger records can exceed the byte limit even when their point count is valid.</p>

@@ -13,6 +13,8 @@ globalThis.ARBDRAW_DEFAULTS = {
   // precision.
   inputDecimalPlaces: 4,
   bridgeUrl: 'http://127.0.0.1:8876',
+  tekScopeDirectory: 'C:/baldee/',
+  tekScopeOverwrite: false,
   awgProfileId: 'audio',
   highLevelV: 500,
   highLevelUnit: 'mV',

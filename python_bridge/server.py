@@ -229,7 +229,17 @@ class BridgeService:
                     f"Unknown waveform adapter: {adapter_id}." if self.adapters else "No waveform adapter is installed in the Python bridge.",
                 )
             with self._visa_operation_lock:
-                result = handler(request)
+                try:
+                    result = handler(request)
+                except Exception as error:
+                    if isinstance(error, BridgeError):
+                        raise
+                    # Adapters may expose safe, machine-readable error codes.
+                    # Keep their actionable messages intact at the API boundary.
+                    code = getattr(error, "code", None)
+                    if isinstance(code, str) and code:
+                        raise BridgeError(HTTPStatus.BAD_REQUEST, code, str(error)) from error
+                    raise
             return HTTPStatus.OK, result or {"status": "sent", "message": "Waveform sent."}
         raise BridgeError(HTTPStatus.NOT_FOUND, "route_not_found", "REST endpoint not found.")
 

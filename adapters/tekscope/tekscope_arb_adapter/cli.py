@@ -54,6 +54,7 @@ def main() -> None:
     upload.add_argument("--visa-library", default=None)
     upload.add_argument("--enable-output", action="store_true")
     upload.add_argument("--no-readback", action="store_true")
+    upload.add_argument("--overwrite", action="store_true", help="Replace an existing destination waveform file.")
     upload.add_argument(
         "--values-only",
         action="store_true",
@@ -75,6 +76,7 @@ def main() -> None:
         enable_output=arguments.enable_output,
         timeout_ms=arguments.timeout_ms,
         verify_readback=not arguments.no_readback,
+        overwrite=arguments.overwrite,
         visa_library=arguments.visa_library,
         backend=backend,
         sample_count=len(values) if values is not None else None,

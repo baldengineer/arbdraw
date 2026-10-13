@@ -276,6 +276,10 @@
           <label for="instrumentChannel">Channel<select class="menu-select" id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
           <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
         </div>
+        <div id="instrumentFileOptions" class="bridge-file-options" hidden>
+          <label class="save-filename-label" for="instrumentDirectory">Path<input id="instrumentDirectory" type="text" value="C:/baldee/" spellcheck="false" autocomplete="off"></label>
+          <label class="save-name-option" for="instrumentOverwrite"><input id="instrumentOverwrite" type="checkbox">Overwrite waveform file</label>
+        </div>
         <div class="bridge-actions">
           <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
           <button id="sendWaveformBtn" type="button" class="primary">Send waveform</button>

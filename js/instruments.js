@@ -20,6 +20,9 @@
   const identifyButton = $('identifyResourceBtn');
   const sendButton = $('sendWaveformBtn');
   const channelSelect = $('instrumentChannel');
+  const fileOptions = $('instrumentFileOptions');
+  const directoryInput = $('instrumentDirectory');
+  const overwriteCheckbox = $('instrumentOverwrite');
   const enableOutputCheckbox = $('instrumentEnableOutput');
   const statusElement = $('bridgeStatus');
   const resultElement = $('bridgeResult');
@@ -29,6 +32,27 @@
   let busy = false;
   let keepAlivePending = false;
   let resources = [];
+
+  directoryInput.value = DEFAULT_VALUES.tekScopeDirectory;
+  overwriteCheckbox.checked = DEFAULT_VALUES.tekScopeOverwrite;
+
+  function isTekScopeBackend() {
+    return ['tekscope-mso2', 'tekscope-mso6'].includes(adapterSelect.value);
+  }
+
+  function updateBackendControls() {
+    const tekScope = isTekScopeBackend();
+    fileOptions.hidden = !tekScope;
+    channelSelect.disabled = tekScope;
+    if (tekScope) channelSelect.value = '1';
+  }
+
+  function saveFileSettings() {
+    persistSettings({
+      tekScopeDirectory: directoryInput.value.trim(),
+      tekScopeOverwrite: overwriteCheckbox.checked,
+    });
+  }
 
   try {
     bridgeUrlInput.value = localStorage.getItem(BRIDGE_URL_STORAGE_KEY) || defaultBridgeUrl;
@@ -141,6 +165,7 @@
     if (!adapters.length) {
       adapterSelect.add(new Option('No adapter installed', ''));
       adapterSelect.disabled = true;
+      updateBackendControls();
       return;
     }
     adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
@@ -150,11 +175,11 @@
 
   function selectPreferredAdapter(adapters = null) {
     const preferred = selectedAwgProfile?.preferredBackend;
-    if (!preferred) return;
     const available = adapters
       ? adapters.some((adapter) => adapter.id === preferred)
       : Array.from(adapterSelect.options).some((option) => option.value === preferred);
     if (available) adapterSelect.value = preferred;
+    updateBackendControls();
   }
 
   async function connect() {
@@ -213,6 +238,9 @@
   $('instrumentsBtn').addEventListener('click', openSendToAwgDialog);
 
   connectButton.addEventListener('click', () => runBridgeAction(connect));
+  adapterSelect.addEventListener('change', updateBackendControls);
+  directoryInput.addEventListener('input', saveFileSettings);
+  overwriteCheckbox.addEventListener('change', saveFileSettings);
   $('awgProfileSelect')?.addEventListener('change', () => selectPreferredAdapter());
   refreshButton.addEventListener('click', () => runBridgeAction(loadResources));
   resourceInput.addEventListener('input', () => {
@@ -272,8 +300,12 @@
           adapter: adapterSelect.value || 'default',
           pyvisaOptions: selectedPyVisaOptions(),
           options: {
-            channel: Number(channelSelect.value),
+            channel: isTekScopeBackend() ? 1 : Number(channelSelect.value),
             enable_output: enableOutputCheckbox.checked,
+            ...(isTekScopeBackend() ? {
+              directory: directoryInput.value.trim(),
+              overwrite: overwriteCheckbox.checked,
+            } : {}),
           },
         },
       );
@@ -292,5 +324,6 @@
 
   bridgeDialog.addEventListener('close', () => setResult(''));
   setInterval(checkBridgeHealth, BRIDGE_KEEP_ALIVE_MS);
+  updateBackendControls();
   updateActions();
 })();

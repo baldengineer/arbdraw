@@ -93,6 +93,7 @@ class AdapterOptions:
     enable_output: bool = False
     timeout_ms: int = 60_000
     verify_readback: bool = True
+    overwrite: bool = False
 
     @classmethod
     def from_mapping(cls, value: Any) -> "AdapterOptions":
@@ -111,6 +112,7 @@ class AdapterOptions:
             "enable_output",
             "timeout_ms",
             "verify_readback",
+            "overwrite",
         }
         unknown = sorted(set(value) - allowed)
         if unknown:
@@ -154,6 +156,9 @@ class AdapterOptions:
 
         enable_output = value.get("enable_output", False)
         verify_readback = value.get("verify_readback", True)
+        overwrite = value.get("overwrite", False)
+        if not isinstance(overwrite, bool):
+            raise TekScopeAdapterError("invalid_adapter_options", "overwrite must be boolean.")
         if not isinstance(enable_output, bool) or not isinstance(verify_readback, bool):
             raise TekScopeAdapterError(
                 "invalid_adapter_options", "enable_output and verify_readback must be boolean."
@@ -180,6 +185,7 @@ class AdapterOptions:
             enable_output=enable_output,
             timeout_ms=timeout_ms,
             verify_readback=verify_readback,
+            overwrite=overwrite,
         )
 
 
@@ -488,6 +494,31 @@ def _write_scope_file(instrument: Any, path: str, payload: bytes) -> None:
     _check_status(instrument, f"writing {path}")
 
 
+def _scope_file_exists(instrument: Any, path: str) -> bool:
+    """List the destination directory, restoring shared CWD even on failure."""
+    directory, _, name = path.rpartition("/")
+    previous = parse_cwd_response(_query_text(instrument, "FILESystem:CWD?"))
+    # CWD may return a drive alone (e.g. "C:"). Add its root separator so
+    # validation and restoration retain absolute-path semantics.
+    if re.fullmatch(r"[A-Za-z]:", previous):
+        previous += "/"
+    previous = validate_scope_path(previous, require_file=False)
+    try:
+        _write_checked(instrument, f'FILESystem:CWD "{directory}/"', "opening the waveform directory")
+        response = _query_text(instrument, "FILESystem:DIR?")
+        _check_status(instrument, "listing the waveform directory")
+        listing = re.sub(r"^:?(?:FILESYSTEM|FILES):DIR\s*", "", response, flags=re.IGNORECASE)
+        quoted = r'"(?:[^"]|"")*"'
+        if listing and not re.fullmatch(rf"{quoted}(?:\s*,\s*{quoted})*", listing):
+            raise TekScopeAdapterError(
+                "instrument_verification_failed", "Could not parse FILESystem:DIR? response."
+            )
+        entries = re.findall(r'"((?:[^"]|"")*)"', listing)
+        return any(entry.replace('""', '"').casefold() == name.casefold() for entry in entries)
+    finally:
+        _write_checked(instrument, f'FILESystem:CWD "{previous}"', "restoring the working directory")
+
+
 def _open_manager(visa_library: str | None = None) -> Any:
     try:
         import pyvisa
@@ -515,6 +546,7 @@ def upload_file_and_configure(
     enable_output: bool = False,
     timeout_ms: int = 60_000,
     verify_readback: bool = True,
+    overwrite: bool = False,
     pyvisa_options: dict[str, Any] | None = None,
     visa_library: str | None = None,
     manager_factory: Callable[[], Any] | None = None,
@@ -544,6 +576,8 @@ def upload_file_and_configure(
         raise TekScopeAdapterError(
             "invalid_adapter_options", "enable_output and verify_readback must be boolean."
         )
+    if not isinstance(overwrite, bool):
+        raise TekScopeAdapterError("invalid_adapter_options", "overwrite must be boolean.")
     assert frequency is not None and amplitude is not None and offset is not None
     _validate_afg_limits(
         backend,
@@ -579,7 +613,16 @@ def upload_file_and_configure(
             # Drain pre-existing status only after identity succeeds. Do not begin a
             # session with *CLS; power-on events are not attributable to this upload.
             _consume_status(instrument)
+            exists = _scope_file_exists(instrument, path)
+            if exists and not overwrite:
+                raise TekScopeAdapterError(
+                    "waveform_file_exists",
+                    f"Waveform file {path} already exists. Change the project name or select "
+                    "Overwrite waveform file and send again.",
+                )
             _write_checked(instrument, "AFG:OUTPut:STATE OFF", "disabling AFG output")
+            if exists:
+                _write_checked(instrument, f'FILESystem:DELEte "{path}"', "deleting the existing waveform file")
             _write_scope_file(instrument, path, payload)
 
             if verify_readback:
@@ -655,6 +698,7 @@ def upload_file_and_configure(
                 "remote_path": path,
                 "bytes": len(payload),
                 "readback_verified": verify_readback,
+                "overwritten": exists,
                 "readback_transport_lf": verify_readback and received == payload + b"\n",
                 **actual,
             }
@@ -722,6 +766,7 @@ def _send_waveform(request: dict[str, Any], backend: TekScopeBackend) -> dict[st
         enable_output=options.enable_output,
         timeout_ms=options.timeout_ms,
         verify_readback=options.verify_readback,
+        overwrite=options.overwrite,
         pyvisa_options=request.get("pyvisa_options"),
         backend=backend,
         sample_count=len(values),

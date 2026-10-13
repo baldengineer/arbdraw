@@ -116,6 +116,37 @@ class PythonBridgeTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "invalid_request")
 
+    def test_adapter_collision_error_reaches_the_http_client(self):
+        class AdapterCollisionError(RuntimeError):
+            code = "waveform_file_exists"
+
+        message = "Waveform file already exists. Change the project name or select Overwrite waveform file."
+        def collision_handler(_request):
+            raise AdapterCollisionError(message)
+
+        service = self.server.RequestHandlerClass.service
+        service.adapters["collision-test"] = collision_handler
+        try:
+            status, _, body = self.request("/api/v1/waveforms/send", {
+                "resource": "USB0::INSTR", "adapter": "collision-test",
+                "waveform": {"schema": "arbdraw.waveform", "version": 1},
+            })
+        finally:
+            del service.adapters["collision-test"]
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"], {"code": "waveform_file_exists", "message": message})
+
+    def test_adapter_bridge_errors_keep_their_original_status(self):
+        def handler(_request):
+            raise BridgeError(503, "adapter_unavailable", "Adapter unavailable.")
+        service = BridgeService(FakeVisa(), adapters={"test": handler})
+        with self.assertRaises(BridgeError) as context:
+            service.dispatch("POST", "/api/v1/waveforms/send", {
+                "resource": "USB0::INSTR", "adapter": "test",
+                "waveform": {"schema": "arbdraw.waveform", "version": 1},
+            })
+        self.assertEqual(context.exception.status, 503)
+
     def test_instrument_operations_are_serialized_across_clients(self):
         active = 0
         maximum_active = 0

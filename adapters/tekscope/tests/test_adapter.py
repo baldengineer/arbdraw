@@ -42,6 +42,9 @@ class FakeInstrument:
         self.commands = []
         self.raw_writes = []
         self.files = {}
+        self.cwd = "C:/original/"
+        self.directory_header = ""
+        self.directory_response = None
         self.pending_read = b""
         self.state = {
             "AFG:ARBITRARY:SOURCE": '""',
@@ -67,10 +70,20 @@ class FakeInstrument:
         size = int(block[2 : 2 + digits])
         payload = block[2 + digits :]
         assert len(payload) == size
+        if path in self.files:
+            raise RuntimeError("Destination already exists")
         self.files[path] = payload
 
     def write(self, command):
         self.commands.append(command)
+        if command.startswith("FILESystem:CWD "):
+            self.cwd = command.split('"', 2)[1]
+            return
+        if command.startswith("FILESystem:DELEte "):
+            path = command.split('"', 2)[1]
+            key = next(key for key in self.files if key.casefold() == path.casefold())
+            del self.files[key]
+            return
         if command.startswith("FILESystem:READFile "):
             path = command.split('"', 2)[1]
             self.pending_read = self.files[path]
@@ -91,6 +104,15 @@ class FakeInstrument:
             return "1"
         if command == "ALLEV?":
             return ""
+        if command == "FILESystem:CWD?":
+            return f'{self.directory_header.replace("DIR", "CWD")}"{self.cwd}"'
+        if command == "FILESystem:DIR?":
+            if self.directory_response is not None:
+                return self.directory_response
+            directory = self.cwd.rstrip("/").casefold()
+            names = [path.rpartition("/")[2] for path in self.files
+                     if path.rpartition("/")[0].casefold() == directory]
+            return self.directory_header + ",".join(f'"{name}"' for name in names)
         header = command[:-1].upper()
         return self.state[header]
 
@@ -158,6 +180,88 @@ class TekScopeAdapterTests(unittest.TestCase):
             AdapterOptions.from_mapping({"mystery": True})
         with self.assertRaisesRegex(TekScopeAdapterError, "channel 1"):
             AdapterOptions.from_mapping({"channel": 2})
+
+    def test_overwrite_option_is_opt_in_and_boolean(self):
+        self.assertFalse(AdapterOptions.from_mapping({}).overwrite)
+        self.assertTrue(AdapterOptions.from_mapping({"overwrite": True}).overwrite)
+        for invalid in (1, "true", None):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(TekScopeAdapterError, "overwrite must be boolean"):
+                AdapterOptions.from_mapping({"overwrite": invalid})
+
+    def test_existing_file_requires_overwrite_without_changing_afg(self):
+        for identity, backend_id in (("MSO22", "tekscope-mso2"), ("MSO64B", "tekscope-mso6")):
+            with self.subTest(backend=backend_id):
+                from tekscope_arb_adapter.adapter import BACKENDS_BY_ID
+                instrument = FakeInstrument(identity=f"TEKTRONIX,{identity},SN1,1.0")
+                instrument.files["C:/baldee/TEST.csv"] = b"original"
+                instrument.state["AFG:OUTPUT:STATE"] = "1"
+                manager = FakeManager(instrument)
+                with self.assertRaisesRegex(TekScopeAdapterError, "Change the project name.*Overwrite waveform file") as context:
+                    upload_file_and_configure(
+                        "TCPIP0::scope::INSTR", b"0\n1\n", "C:/baldee/test.csv",
+                        frequency_hz=1000, amplitude_vpp=1, offset_voltage=0,
+                        backend=BACKENDS_BY_ID[backend_id], manager_factory=lambda: manager,
+                    )
+                self.assertEqual(context.exception.code, "waveform_file_exists")
+                self.assertEqual(instrument.files["C:/baldee/TEST.csv"], b"original")
+                self.assertEqual(instrument.state["AFG:OUTPUT:STATE"], "1")
+                self.assertFalse(instrument.raw_writes)
+                self.assertFalse(any(command.startswith("FILESystem:DELEte") for command in instrument.commands))
+                self.assertEqual(instrument.cwd, "C:/original/")
+                self.assertTrue(manager.closed)
+                self.assertTrue(instrument.closed)
+
+    def test_overwrite_replaces_existing_file_for_both_backends(self):
+        from tekscope_arb_adapter.adapter import BACKENDS_BY_ID
+        for model, backend_id in (("MSO22", "tekscope-mso2"), ("MSO64B", "tekscope-mso6")):
+            with self.subTest(backend=backend_id):
+                instrument = FakeInstrument(identity=f"TEKTRONIX,{model},SN1,1.0")
+                instrument.files["C:/baldee/test.csv"] = b"original"
+                instrument.files["C:/baldee/other.csv"] = b"keep"
+                instrument.directory_header = ":FILESYSTEM:DIR "
+                result = upload_file_and_configure(
+                    "TCPIP0::scope::INSTR", b"0\n1\n", "C:/baldee/test.csv",
+                    frequency_hz=1000, amplitude_vpp=1, offset_voltage=0, overwrite=True,
+                    backend=BACKENDS_BY_ID[backend_id], manager_factory=lambda: FakeManager(instrument),
+                )
+                self.assertTrue(result["overwritten"])
+                self.assertTrue(result["readback_verified"])
+                self.assertEqual(instrument.files["C:/baldee/test.csv"], b"0\n1\n")
+                self.assertEqual(instrument.files["C:/baldee/other.csv"], b"keep")
+                self.assertEqual(instrument.cwd, "C:/original/")
+                self.assertLess(instrument.commands.index("AFG:OUTPut:STATE OFF"),
+                                instrument.commands.index('FILESystem:DELEte "C:/baldee/test.csv"'))
+
+    def test_directory_failure_restores_cwd_and_aborts_before_upload(self):
+        instrument = FakeInstrument()
+        instrument.directory_response = "unrecognized response"
+        with self.assertRaisesRegex(TekScopeAdapterError, "Could not parse FILESystem:DIR"):
+            upload_file_and_configure(
+                "TCPIP0::scope::INSTR", b"0\n1\n", "C:/baldee/test.csv",
+                frequency_hz=1000, amplitude_vpp=1, offset_voltage=0, overwrite=True,
+                manager_factory=lambda: FakeManager(instrument),
+            )
+        self.assertEqual(instrument.cwd, "C:/original/")
+        self.assertFalse(instrument.raw_writes)
+        self.assertNotIn("AFG:OUTPut:STATE OFF", instrument.commands)
+
+    def test_delete_failure_aborts_without_writing(self):
+        instrument = FakeInstrument()
+        instrument.files["C:/baldee/test.csv"] = b"original"
+        original_write = instrument.write
+        def fail_delete(command):
+            if command.startswith("FILESystem:DELEte"):
+                raise RuntimeError("read-only file")
+            original_write(command)
+        instrument.write = fail_delete
+        with self.assertRaisesRegex(TekScopeAdapterError, "read-only file"):
+            upload_file_and_configure(
+                "TCPIP0::scope::INSTR", b"0\n1\n", "C:/baldee/test.csv",
+                frequency_hz=1000, amplitude_vpp=1, offset_voltage=0, overwrite=True,
+                manager_factory=lambda: FakeManager(instrument),
+            )
+        self.assertFalse(instrument.raw_writes)
+        self.assertEqual(instrument.files["C:/baldee/test.csv"], b"original")
 
     def test_oversized_mso2_write_is_rejected_after_identity_before_state_change(self):
         instrument = FakeInstrument()
@@ -297,7 +401,9 @@ class TekScopeAdapterTests(unittest.TestCase):
         )
         self.assertEqual(instrument.files["C:/baldee/test.csv"], b"0\n1\n0\n-1\n")
         writes = [command for command in instrument.commands if not command.endswith("?")]
-        self.assertEqual(writes[0], "AFG:OUTPut:STATE OFF")
+        self.assertEqual(writes[0], 'FILESystem:CWD "C:/baldee/"')
+        self.assertLess(writes.index('FILESystem:CWD "C:/original/"'), writes.index("AFG:OUTPut:STATE OFF"))
+        self.assertFalse(result["overwritten"])
         self.assertLess(
             writes.index("AFG:OUTPut:LOAd:IMPEDance HIGHZ"),
             writes.index("AFG:AMPLitude 2.5"),
@@ -331,6 +437,7 @@ class TekScopeAdapterTests(unittest.TestCase):
 
     def test_send_waveform_derives_file_frequency_amplitude_and_offset(self):
         instrument = FakeInstrument()
+        instrument.files["C:/custom/Practice sine.csv"] = b"previous waveform"
         manager = FakeManager(instrument)
         request = {
             "resource": "TCPIP0::scope::INSTR",
@@ -346,7 +453,7 @@ class TekScopeAdapterTests(unittest.TestCase):
                     "lowVoltage": -0.75,
                 },
             },
-            "options": {"enable_output": False},
+            "options": {"enable_output": False, "directory": "C:/custom/", "overwrite": True},
         }
 
         import tekscope_arb_adapter.adapter as adapter
@@ -358,7 +465,8 @@ class TekScopeAdapterTests(unittest.TestCase):
         finally:
             adapter._open_manager = original
 
-        self.assertEqual(result["remote_path"], "C:/baldee/Practice sine.csv")
+        self.assertEqual(result["remote_path"], "C:/custom/Practice sine.csv")
+        self.assertTrue(result["overwritten"])
         uploaded = instrument.files[result["remote_path"]]
         self.assertIn(b"Record Length,3\r\n", uploaded)
         self.assertIn(b"TIME,CH1\r\n", uploaded)

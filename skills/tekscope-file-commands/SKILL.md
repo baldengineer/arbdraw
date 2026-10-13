@@ -230,6 +230,15 @@ otherwise an invalid-file error can surface on an unrelated subsequent command.
 
 ## Adapter workflow and safety
 
+`WRITEFile` has no documented overwrite flag or replacement guarantee. For
+both backends, the adapter checks the destination using `CWD` and `DIR?`, then
+restores CWD. It defaults `overwrite` to false and reports `waveform_file_exists`
+with guidance to change the project name or select **Overwrite waveform file**.
+When explicitly selected, replacement disables AFG output, deletes only the
+existing destination with `FILESystem:DELEte`, checks status, then writes and
+verifies the new file. Delete-then-write is not atomic. This sequence is covered
+by fake VISA tests; live replacement still needs model/firmware qualification.
+
 1. Validate the resource, path, payload size, overwrite policy, and all options
    before contacting the instrument. Apply the MSO2-only safe write ceiling
    after model selection and before sending any file data.
