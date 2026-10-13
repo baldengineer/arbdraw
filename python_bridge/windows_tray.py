@@ -361,6 +361,8 @@ def run_tray(controller: BridgeController) -> int:
     )
     if not shell32.Shell_NotifyIconW(NIM_ADD, ctypes.byref(notify_data)):
         raise ctypes.WinError()
+    controller.start()
+    update_icon(balloon=controller.state == BridgeState.ERROR)
     user32.SetTimer(hwnd, 1, 1000, None)
 
     message = MSG()

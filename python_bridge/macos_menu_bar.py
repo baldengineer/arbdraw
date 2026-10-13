@@ -198,7 +198,7 @@ def run_menu_bar(controller: BridgeController) -> int:
             else:
                 button.setTitle_("AD")
 
-            self.controller.refresh()
+            self.controller.start()
             self.update_menu()
             self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
                 1.0, self, "refreshStatus:", None, True

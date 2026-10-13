@@ -28,6 +28,10 @@ choose **Start bridge**, **Stop bridge**, **Restart bridge**, or **Exit**. The
 app finds `arbdraw-bridge.exe` in the same Python environment and starts it
 without opening a console window.
 
+When the icon loads, the app automatically tries to start the bridge. If a
+compatible bridge is already running, it uses that process. If startup fails,
+the icon reports an error and you can retry with **Start bridge**.
+
 The favicon is grey while the bridge is stopped, starting, stopping, or in an
 error state. It changes to the ArbDraw blue when the bridge health check
 confirms that it is running.
@@ -54,6 +58,10 @@ menu bar without opening a Dock window:
 ```bash
 arbdraw-bridge-menubar
 ```
+
+When the status item loads, the app automatically tries to start the bridge.
+If a compatible bridge is already running, it uses that process. If startup
+fails, the menu reports an error and you can retry with **Start Bridge**.
 
 Click the waveform status item to see the current state, bridge version,
 available adapters, and bridge log. The menu provides **Start Bridge**, **Stop
