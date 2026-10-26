@@ -125,11 +125,12 @@ when you want the menu bar controller.
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
 
 Instrument waveform sending also requires the corresponding adapter package.
-For TekScope development, install the included package into the same Python
+For TekScope development, clone and install the separate package into the same Python
 environment before starting the bridge:
 
 ```powershell
-python -m pip install -e .\adapters\tekscope
+git clone git@github.com:baldengineer/tekscope-arbdraw-adapter.git .\local_adapters\tekscope-arbdraw-adapter
+python -m pip install -e .\local_adapters\tekscope-arbdraw-adapter
 python -m python_bridge --serve-app .
 ```
 
@@ -192,7 +193,7 @@ MSO2 firmware has an observed `FILESystem:WRITEFile` failure near 8,092 bytes,
 so the adapter rejects encoded payloads of 8,000 bytes or more. This is separate
 from the profile's point-memory limit. The MSO6 backend does not inherit this
 cap and has been verified end-to-end through 100,000 points. See the
-[complete TekScope adapter guide](../adapters/tekscope/README.md).
+[complete TekScope adapter guide](https://github.com/baldengineer/tekscope-arbdraw-adapter#readme).
 
 ## Install and manage adapters
 
@@ -292,24 +293,55 @@ git -C .\local_adapters\owon-multicomp-awg-python-waveform-importer pull --ff-on
 
 Restart the bridge to load updated Python code. Run the editable install command again if `pyproject.toml` or dependencies changed.
 
-### Develop the included TekScope adapters
+### Develop the TekScope adapters
 
-The shared TekScope package lives in this repository and registers separate
-MSO2 and MSO6 backends in the bridge environment:
+The shared TekScope package lives in its
+[own repository](https://github.com/baldengineer/tekscope-arbdraw-adapter), like
+the OWON and Rigol adapters. Clone it once into the ignored local adapter
+directory, then register it in the bridge environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e .\adapters\tekscope
-.\.venv\Scripts\python.exe -m pytest -q .\adapters\tekscope\tests
+git clone git@github.com:baldengineer/tekscope-arbdraw-adapter.git .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe -m pip install -e .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe -m unittest discover -s .\local_adapters\tekscope-arbdraw-adapter\tests -p "test_*.py"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_tekscope_integration.py"
 ```
 
-It uploads a Tek waveform CSV into the scope filesystem, reads it back for
-verification, selects it as the built-in AFG arbitrary source, and applies
-frequency, amplitude, offset, load, and output settings. Output remains off
-unless ArbDraw's **Enable output after send** option is selected.
+The adapter registers both `tekscope-mso2` and `tekscope-mso6`. It uploads a Tek
+waveform CSV into the scope filesystem, reads it back for verification, selects
+it as the built-in AFG arbitrary source, and applies the waveform settings.
+Output remains off unless **Enable output after send** is selected.
 
-See [the adapter README](../adapters/tekscope/README.md) for the model matrix,
-release installation, scope-directory requirement, CLI workflow, MSO2 firmware
-limit, MSO6 hardware validation, and troubleshooting.
+To update, run:
+
+```powershell
+git -C .\local_adapters\tekscope-arbdraw-adapter pull --ff-only
+```
+
+Restart the bridge after pulling changes. Reinstall the editable package when
+its packaging metadata or dependencies change. The integration tests skip
+explicitly if no adapter is installed; set `ARBDRAW_REQUIRE_TEKSCOPE=1` to make
+a missing adapter an error, as the release workflow does.
+
+See [the adapter README](https://github.com/baldengineer/tekscope-arbdraw-adapter#readme)
+for supported models, setup, CLI usage, and limitations. The authoritative
+[TekScope file-command skill](https://github.com/baldengineer/tekscope-arbdraw-adapter/blob/main/skills/tekscope-file-commands/SKILL.md)
+is maintained with that source.
+
+### Build a release bundle from source
+
+Check out each adapter at the full commit SHA recorded in
+`.github/workflows/python-bridge-release.yml`, then build into a fresh output
+directory. Release CI fetches each independent repository at those pins:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install build twine
+.\.venv\Scripts\python.exe packaging/build_release.py --owon-source .\local_adapters\owon-multicomp-awg-python-waveform-importer --rigol-source .\local_adapters\rigol-awg-python-importer --tekscope-source .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe packaging/check_release.py dist
+```
+
+The bridge has no mandatory adapter dependency. The release bundle contains
+four separately built wheels: bridge, OWON, Rigol, and TekScope.
 
 ### Remove an adapter
 
