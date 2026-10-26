@@ -46,6 +46,9 @@ Thumbs.db
 ignore/
 local_adapters/
 
+# Local implementation plans
+/TEKSCOPE_ADAPTER_EXTRACTION_PLAN.md
+
 # Environment variables and local secrets
 .env
 .env.*
