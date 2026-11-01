@@ -164,8 +164,13 @@ function parseProject(raw) {
 }
 function loadProject(raw) {
   const parsed = parseProject(raw), profile = profileById(parsed.AWG.profileId);
-  if (parsed.waveform.segments && parsed.waveform.sampleCount > (profile?.sampleDepth?.max ?? 1000000))
-    throw new Error('This sequence exceeds its AWG profile’s sample limit.');
+  if (parsed.waveform.segments) {
+    if (!profile) throw new Error(`Unknown sequence AWG profile: ${parsed.AWG.profileId}. Choose a supported profile in the source project before importing.`);
+    const limit = Number.isFinite(profile.sampleDepth?.max) ? profile.sampleDepth.max : 1000000;
+    if (parsed.waveform.sampleCount > limit)
+      throw new Error('This sequence exceeds its AWG profile’s sample limit.');
+    parsed.AWG.profileId = profile.id;
+  }
   projectDocument = parsed;
   state.activeSegment = null;
   clearEditorSelection(false);

@@ -479,3 +479,46 @@ test('restoration invalidates queued Samples chunks from the previous target', (
   assert.equal((element('samplesTableBody').innerHTML.match(/data-index=/g) || []).length, 1800);
   assert.equal(element('samplesProgress').textContent, '1,800 of 1,800');
 });
+
+function loadProjectImport(fixture) {
+  const { context, element } = fixture;
+  vm.runInContext(read('js/awg-profiles.js'), context);
+  context.awgProfiles = Object.values(context.ARBDRAW_AWG_PROFILES);
+  context.awgProfileSelect = element('awgProfileSelect');
+  element('samplesEdit').removeAttribute = () => {};
+  vm.runInContext(slice('js/properties.js', 'function profileById(', 'function defaultAwgProfile(')
+    + slice('js/properties.js', 'function restoreAwgSettingsFromDocument(', 'renderAwgProfiles();')
+    + slice('js/project.js', 'function loadProject(', 'const projectNameInput'), context);
+}
+
+test('sequence import resolves its profile and rejects unknown or oversized records atomically', () => {
+  const fixture = harness(1000000), { context, run } = fixture;
+  loadProjectImport(fixture);
+  run('state.samples = 6000; generate();'); context.addSequenceSegment();
+  run('renderAwgTiming(); raw = JSON.parse(JSON.stringify(projectDocument)); selectedAwgProfile = profileById("rigol-dg1022");');
+  const before = run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo, selectedAwgProfile })');
+  for (const id of ['missing-profile', 'rigol-dg1022']) {
+    assert.throws(() => run(`raw.AWG.profileId = '${id}'; loadProject(raw);`), /Unknown sequence AWG profile|sample limit/);
+    assert.equal(run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo, selectedAwgProfile })'), before);
+  }
+  for (const id of ['tekscope-files', 'other', 'owon-xdg3000']) {
+    run(`raw.AWG.profileId = '${id}'; loadProject(raw);`);
+    assert.equal(run('selectedAwgProfile.id'), id === 'tekscope-files' ? 'tekscope-mso2' : id);
+    assert.equal(run('projectDocument.AWG.profileId'), run('selectedAwgProfile.id'));
+    assert.equal(run('recordState().samples'), 6000);
+    assert.equal(run('recordState().data.length'), 6000);
+  }
+});
+
+test('sequence import accepts the profile limit and rejects one extra point', () => {
+  const fixture = harness(1000000), { context, run } = fixture;
+  loadProjectImport(fixture);
+  run('state.samples = 4096; generate();'); context.addSequenceSegment();
+  run('renderAwgTiming(); raw = JSON.parse(JSON.stringify(projectDocument)); raw.AWG.profileId = "rigol-dg1022"; loadProject(raw);');
+  assert.equal(run('recordState().samples'), 4096);
+  assert.equal(run('recordState().data.length'), 4096);
+  const before = run('JSON.stringify(projectDocument)');
+  run('raw.AWG.sampleCount++; raw.waveform.segments[0].sampleCount++; raw.waveform.segments[0].values.push(0);');
+  assert.throws(() => run('loadProject(raw)'), /sample limit/);
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+});
