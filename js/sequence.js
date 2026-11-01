@@ -9,10 +9,13 @@ function sequenceOverview() {
   return Boolean(sequenceSegments() && !sequenceSegments()[state.activeSegment]);
 }
 
-function sequenceCapacity(index = state.activeSegment) {
-  const maximum = Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
+function sequenceSampleLimit() {
+  return Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
     ? selectedAwgProfile.sampleDepth.max : 1000000;
-  return maximum - (sequenceSegments() || []).reduce(
+}
+
+function sequenceCapacity(index = state.activeSegment) {
+  return sequenceSampleLimit() - (sequenceSegments() || []).reduce(
     (sum, segment, i) => sum + (i === index ? 0 : segment.sampleCount), 0,
   );
 }
@@ -66,10 +69,14 @@ function addSequenceSegment() {
   finishWaveformPreview();
   const segments = sequenceSegments(), source = segments
     ? segments[state.activeSegment] || segments.at(-1) : projectDocument.waveform;
-  if (source.sampleCount > sequenceCapacity(-1) - (segments ? 0 : source.sampleCount)) {
-    showToast('The additional segment exceeds this AWG profile’s sample limit. Reduce the segment sample count first.');
+  const count = segments ? segments.length + 1 : 2,
+    total = Math.min(recordState().samples, sequenceSampleLimit());
+  if (total < count * 2) {
+    showToast(`Each segment needs at least 2 points. Increase the total sample count to at least ${count * 2} before adding a segment.`);
     return;
   }
+  if ((segments || [source]).some((segment) => segment.samplesEdited)
+    && !window.confirm('Adding a segment will divide the AWG’s total points equally among all segments and regenerate their waveforms. You will lose any arbitrary edits to the existing waveform samples. Continue?')) return;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   if (!segments) {
     const original = cloneWaveform(source);
@@ -80,8 +87,20 @@ function addSequenceSegment() {
     original.durationMs = original.sampleCount / (original.sampleRateMSa * 1000);
     projectDocument.waveform.segments = [original, cloneWaveform(original)];
   } else segments.push(cloneWaveform(source));
+  // Keep the record length and shared clock; distribute leftover whole points.
+  const points = Math.floor(total / count), remainder = total % count,
+    rate = projectDocument.waveform.sampleRateMSa * 1e6;
+  sequenceSegments().forEach((segment, index) => {
+    segment.sampleCount = points + (index < remainder ? 1 : 0);
+    segment.frequencyHz = rate * segment.cycles / segment.sampleCount;
+    segment.durationMs = segment.sampleCount / rate * 1000;
+  });
+  sequenceSegments().forEach((segment, index) => {
+    state.activeSegment = index;
+    generate(segment.type, false, false, false, false);
+  });
   setEditorMode('advanced');
-  selectSequenceSegment(sequenceSegments().length - 1);
+  selectSequenceSegment(sequenceSegments().length - 1, false);
   renderAwgTiming();
   pushHistory();
 }

@@ -66,7 +66,9 @@ New projects open in **Basic**, where you choose a waveshape and adjust its prop
 
 ## Sequences
 
-Select **Add Segments** beside **Full Record** to enter Arbitrary mode and create two segments: the current waveform and a copy. The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input; the **+** card appends a copy of the selected segment (or the last segment while viewing the full record). Use **×** to remove a segment.
+Select **Add Segments** beside **Full Record** to enter Arbitrary mode and create two segments from the current waveform's source settings. The AWG's current total point count is divided equally between them. Each **+** addition copies the selected segment's source settings (or the last segment while viewing the full record), then redistributes the total points across all segments and regenerates their waveforms. Any leftover whole points are assigned to the first segments. If any existing waveform has arbitrary sample edits, a confirmation warns that those edits will be lost; canceling keeps the waveform unchanged.
+
+The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input. Use **×** to remove a segment.
 
 Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, browser playback, and Send to AWG use the complete sequence. Under **File → Export Waveform**, choose **Full Record** to export everything or **Segment X** to export the selected segment as CSV, SVG, or WAV. The segment choice appears only while a segment is selected. Undo/redo and project JSON preserve the segments and their sources.
 
