@@ -184,6 +184,7 @@ function generate(
   scopeSelection = true,
   confirmOverwrite = true,
   preserveVoltageDraft = false,
+  deferRender = false,
 ) {
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
@@ -277,10 +278,11 @@ function generate(
   const levels = generatedVoltageLevels(state.data);
   state.high = levels.high;
   state.low = levels.low;
+  state.samplesEdited = range.scoped;
+  if (deferRender) return true;
   if (typeof renderVoltageLevels === 'function')
     renderVoltageLevels({ preserveActiveDraft: preserveVoltageDraft });
   if (typeof renderAwgTiming === 'function') renderAwgTiming();
-  state.samplesEdited = range.scoped;
   if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) {
     renderFrequency();
     renderTiming();

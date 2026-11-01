@@ -522,3 +522,62 @@ test('sequence import accepts the profile limit and rejects one extra point', ()
   assert.throws(() => run('loadProject(raw)'), /sample limit/);
   assert.equal(run('JSON.stringify(projectDocument)'), before);
 });
+
+test('unchanged sequence reads reuse samples and mutations concatenate only once', () => {
+  const fixture = harness(), { context, run } = fixture;
+  context.addSequenceSegment();
+  run(`var concatenations = 0;
+    Object.defineProperty(sequenceSegments(), 'flatMap', { value: function(fn) {
+      concatenations++; return Array.prototype.flatMap.call(this, fn);
+    }}); var cached = recordState().data;`);
+  for (let i = 0; i < 10; i++) run('recordState(); syncSequence();');
+  assert.equal(run('concatenations'), 0);
+  assert.equal(run('cached === recordState().data'), true);
+  run('state.phase = 90; recordState();');
+  assert.equal(run('concatenations'), 0); // metadata does not replace the sample array
+  run('generate("square"); recordState();');
+  assert.equal(run('concatenations'), 1);
+  const neighbor = run('JSON.stringify(sequenceSegments()[0])');
+  vm.runInContext(slice('js/waveform-editor.js', 'function editorEditIndexRange(', 'const dutyDisabledTypes'), context);
+  context.editAt({ i: 2, v: 123 }, null);
+  assert.equal(run('recordState().data[10]'), 123);
+  assert.equal(run('concatenations'), 2);
+  loadSampleEditing(fixture);
+  context.updateSampleVoltage({ dataset: { index: '3' }, value: '456' }, true);
+  assert.equal(run('recordState().data[11]'), 456);
+  assert.equal(run('concatenations'), 3);
+  assert.equal(run('JSON.stringify(sequenceSegments()[0])'), neighbor);
+  run('state.data[3] = 789; state.samplesEdited = true; recordState();');
+  assert.equal(run('state.history.at(-1).segments[1].values[3]'), 456);
+  assert.equal(run('concatenations'), 4);
+  run('undoWaveform(); redoWaveform();');
+  assert.equal(run('recordState().data[11]'), 456);
+});
+
+test('adding redistributes and generates all segments before a single document render', () => {
+  const { context, run } = harness();
+  context.addSequenceSegment();
+  let renders = 0, draws = 0;
+  context.renderDocument = () => { renders++; context.syncSequence(); };
+  context.draw = () => { draws++; context.syncSequence(); };
+  context.addSequenceSegment();
+  assert.equal(renders, 1);
+  assert.equal(draws, 0);
+  assert.equal(run('recordState().data.length'), 16);
+  assert.deepEqual(Array.from(run('sequenceSegments().map(s => s.values.length)')), [6, 5, 5]);
+});
+
+test('card previews are cached per segment and invalidate for in-place edits', () => {
+  const { context, run } = harness();
+  context.addSequenceSegment();
+  const counts = [0, 0];
+  const canvases = counts.map((_, index) => ({ getContext() { return {
+    clearRect() { counts[index]++; }, beginPath() {}, lineTo() {}, stroke() {},
+  }; } }));
+  const paint = () => canvases.forEach((canvas, i) => context.drawSequencePreview(canvas, run(`sequenceSegments()[${i}]`)));
+  paint(); paint(); assert.deepEqual(counts, [1, 1]);
+  run('state.data[0] = 123; state.samplesEdited = true;');
+  paint(); assert.deepEqual(counts, [1, 2]);
+  run('pushHistory(); generate("square"); undoWaveform();');
+  paint(); assert.deepEqual(counts, [2, 3]); // restored segments have new identities
+});

@@ -31,7 +31,7 @@ function refreshEditorModeHints() {
   $('sampleEditHint').hidden = editorMode !== 'basic';
 }
 
-function setEditorMode(requestedMode) {
+function setEditorMode(requestedMode, { render = true } = {}) {
   const nextMode = requestedMode === 'advanced' ? 'advanced' : 'basic';
   if (editorMode === 'advanced' && nextMode === 'basic' && state.tool !== 'pointer')
     lastAdvancedTool = state.tool;
@@ -48,8 +48,10 @@ function setEditorMode(requestedMode) {
     setEditorTool(lastAdvancedTool, false);
   }
   refreshEditorModeHints();
-  if (!$('samplesView').classList.contains('hidden')) renderSamples();
-  draw();
+  if (render) {
+    if (!$('samplesView').classList.contains('hidden')) renderSamples();
+    draw();
+  }
 }
 
 function handleEditorModeShortcut(event) {

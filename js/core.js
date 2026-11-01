@@ -437,7 +437,10 @@ Object.entries(documentFields).forEach(([stateKey, documentKey]) => {
     get: () => (stateKey === 'sampleRate' ? projectDocument.waveform : editableWaveform())[documentKey],
     set: (value) => {
       if (globalThis.ARBDRAW_SEQUENCE?.setField(stateKey, value)) return;
-      (stateKey === 'sampleRate' ? projectDocument.waveform : editableWaveform())[documentKey] = value;
+      const target = stateKey === 'sampleRate' ? projectDocument.waveform : editableWaveform();
+      const changed = target[documentKey] !== value || (stateKey === 'samplesEdited' && value === true);
+      target[documentKey] = value;
+      if (changed) globalThis.ARBDRAW_SEQUENCE?.invalidate(stateKey === 'data' || stateKey === 'samplesEdited', target);
     },
   });
 });

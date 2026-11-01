@@ -19,11 +19,25 @@ function sequenceCapacity(index = state.activeSegment) {
   );
 }
 
+let sequenceDataRevision = 0, sequenceMetadataRevision = 0;
+let synchronizedWaveform = null, synchronizedDataRevision = -1, synchronizedMetadataRevision = -1;
+const segmentRevisions = new WeakMap(), sequencePreviewCache = new WeakMap();
+
+// In-place sample writers signal completion via state.samplesEdited = true.
+// Structural writers must invalidate data explicitly; replacement documents are detected by identity.
+function invalidateSequence(dataChanged = false, segment = editableWaveform()) {
+  sequenceMetadataRevision++;
+  if (dataChanged) sequenceDataRevision++;
+  if (segment) segmentRevisions.set(segment, (segmentRevisions.get(segment) || 0) + 1);
+}
+
 function syncSequence() {
   const waveform = projectDocument.waveform, segments = sequenceSegments();
   if (!segments) return;
+  if (waveform === synchronizedWaveform && sequenceMetadataRevision === synchronizedMetadataRevision) return;
   for (const segment of segments) segment.sampleRateMSa = waveform.sampleRateMSa;
-  waveform.values = segments.flatMap((segment) => segment.values);
+  if (waveform !== synchronizedWaveform || sequenceDataRevision !== synchronizedDataRevision)
+    waveform.values = segments.flatMap((segment) => segment.values);
   waveform.sampleCount = segments.reduce((sum, segment) => sum + segment.sampleCount, 0);
   waveform.durationMs = waveform.sampleCount / (waveform.sampleRateMSa * 1000);
   waveform.frequencyHz = 1000 / waveform.durationMs;
@@ -31,6 +45,9 @@ function syncSequence() {
   waveform.highVoltage = segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity);
   waveform.lowVoltage = segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity);
   waveform.samplesEdited = segments.some((segment) => segment.samplesEdited);
+  synchronizedWaveform = waveform;
+  synchronizedDataRevision = sequenceDataRevision;
+  synchronizedMetadataRevision = sequenceMetadataRevision;
 }
 
 function setSequenceField(key, value) {
@@ -43,6 +60,7 @@ function setSequenceField(key, value) {
   segment.sampleCount = Math.max(2, Math.min(Math.round(count), sequenceCapacity()));
   segment.frequencyHz = rate * segment.cycles / segment.sampleCount;
   segment.durationMs = segment.sampleCount / rate * 1000;
+  invalidateSequence(false, segment);
   return true;
 }
 
@@ -57,6 +75,7 @@ function setSequenceTiming(cycles, frequency) {
   const timing = proposedSequenceTiming(cycles, frequency);
   if (!timing) return false;
   Object.assign(editableWaveform(), timing);
+  invalidateSequence();
   return true;
 }
 
@@ -99,6 +118,7 @@ function addSequenceSegment(type = null) {
     original.durationMs = original.sampleCount / (original.sampleRateMSa * 1000);
     projectDocument.waveform.segments = [original, cloneWaveform(original)];
   } else segments.push(cloneWaveform(source));
+  invalidateSequence(true);
   if (type) sequenceSegments().at(-1).type = type;
   // Keep the record length and shared clock; distribute leftover whole points.
   const points = Math.floor(total / count), remainder = total % count,
@@ -110,9 +130,9 @@ function addSequenceSegment(type = null) {
   });
   sequenceSegments().forEach((segment, index) => {
     state.activeSegment = index;
-    generate(segment.type, false, false, false, false);
+    generate(segment.type, false, false, false, false, false, true);
   });
-  setEditorMode('advanced');
+  setEditorMode('advanced', { render: false });
   selectSequenceSegment(sequenceSegments().length - 1, false);
   renderAwgTiming();
   pushHistory();
@@ -125,6 +145,7 @@ function removeSequenceSegment(index) {
   finishWaveformPreview();
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   segments.splice(index, 1);
+  invalidateSequence(true);
   if (segments.length === 1) {
     const remaining = segments[0];
     remaining.sampleRateMSa = projectDocument.waveform.sampleRateMSa;
@@ -146,6 +167,10 @@ function leaveSequence() {
 }
 
 function drawSequencePreview(canvas, segment) {
+  const revision = segmentRevisions.get(segment) || 0, previous = sequencePreviewCache.get(canvas);
+  if (previous?.segment === segment && previous.revision === revision
+    && previous.color === DEFAULT_VALUES.arbitraryEditorColor) return;
+  sequencePreviewCache.set(canvas, { segment, revision, color: DEFAULT_VALUES.arbitraryEditorColor });
   const context = canvas.getContext('2d'), width = canvas.width = 160, height = canvas.height = 36;
   context.clearRect(0, 0, width, height);
   const span = Math.max(0.000001, segment.highVoltage - segment.lowVoltage);
@@ -262,6 +287,7 @@ function updateSequenceOverviewWindow() {
 globalThis.ARBDRAW_SEQUENCE = {
   hasSegments: () => Boolean(sequenceSegments()),
   sync: syncSequence, refresh: refreshSequence, setField: setSequenceField,
+  invalidate: invalidateSequence,
   capacity: sequenceCapacity,
   proposedTiming: proposedSequenceTiming, setTiming: setSequenceTiming,
   updateOverviewWindow: updateSequenceOverviewWindow,
