@@ -157,3 +157,6 @@ Run the JavaScript regression suite with `node --test tests/*.test.js` and the b
 ArbDraw is available under the [MIT License](LICENSE).
 
 
+
+Saved timing settings use schema version 1: sample count and sample rate are stored in the selected display units and normalized once on load. Unversioned settings from older releases are migrated from canonical points/MSa/s. Defaults and URL overrides continue to use their declared units. Generated records are limited to the selected profile's capacity and an application maximum of 1,000,000 points, including the Other profile.
+

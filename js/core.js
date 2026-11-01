@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Shared defaults, project document, and application state.
+// Persisted timing quantities use display units (settings schema 1).
+const SAMPLE_RATE_UNITS = Object.freeze({ 'Sa/s': 1e-6, 'kSa/s': 0.001, 'MSa/s': 1,
+  'GSa/s': 1e3, 'pts/s': 1e-6, 'Kpts/s': 0.001, 'Mpts/s': 1 });
+const SAMPLE_COUNT_UNITS = Object.freeze({ pts: 1, Kpts: 1e3, kpts: 1e3, Mpts: 1e6 });
+const APPLICATION_SAMPLE_LIMIT = 1000000;
+function sampleLimitForProfile(profile) {
+  return Number.isFinite(profile?.sampleDepth?.max)
+    ? Math.max(2, Math.min(APPLICATION_SAMPLE_LIMIT, profile.sampleDepth.max)) : APPLICATION_SAMPLE_LIMIT;
+}
 function normalizeDefaults(source = {}) {
   const finite = (key, fallback) =>
     Number.isFinite(Number(source[key])) ? Number(source[key]) : fallback;
@@ -39,20 +48,11 @@ function normalizeDefaults(source = {}) {
     ns: 1e-9,
     ps: 1e-12,
   };
-  const sampleRateUnits = {
-    'Sa/s': 1e-6,
-    'kSa/s': 0.001,
-    'MSa/s': 1,
-    'GSa/s': 1e3,
-    'pts/s': 1e-6,
-    'Kpts/s': 0.001,
-    'Mpts/s': 1,
-  };
-  const sampleCountUnits = {
-    pts: 1,
-    kpts: 1e3,
-    Mpts: 1e6,
-  };
+  const sampleRateUnits = SAMPLE_RATE_UNITS, sampleCountUnits = SAMPLE_COUNT_UNITS;
+  const profiles = Object.values(globalThis.ARBDRAW_AWG_PROFILES || {});
+  const profile = profiles.find(p => p.id === source.awgProfileId || p.legacyIds?.includes(source.awgProfileId))
+    || profiles.find(p => p.id === 'audio') || profiles.find(p => p.id === 'other') || profiles[0];
+
 
   const noisePercentMax = Math.min(100, Math.max(0, finite('noisePercentMax', 10))),
     noisePercent = Math.min(noisePercentMax, Math.max(0, finite('noisePercent', 1)));
@@ -70,7 +70,8 @@ function normalizeDefaults(source = {}) {
   const riseTimeUnit = unit('riseTimeUnit', transitionTimeUnits, 'ns');
   const fallTimeUnit = unit('fallTimeUnit', transitionTimeUnits, 'ns');
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
-  const sampleCountUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
+  const countUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
+  const sampleCountUnit = countUnit === 'kpts' ? 'Kpts' : countUnit;
   const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'serial'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
@@ -111,13 +112,13 @@ function normalizeDefaults(source = {}) {
       finite('sampleRateMSa', 2500 / sampleRateUnits[sampleRateUnit]) *
         sampleRateUnits[sampleRateUnit],
     ),
-    sampleCount: Math.max(
+    sampleCount: Math.min(sampleLimitForProfile(profile), Math.max(
       2,
       Math.round(
         finite('sampleCount', 10000 / sampleCountUnits[sampleCountUnit]) *
           sampleCountUnits[sampleCountUnit],
       ),
-    ),
+    )),
     nCycles: Math.max(1, Math.round(finite('nCycles', 1))),
     frequencyHz: Math.max(
       0.000001,
@@ -184,7 +185,17 @@ const SETTINGS_STORAGE_KEY = 'arbdraw-settings';
 function readStoredSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}');
-    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+    if (stored.settingsVersion === undefined) {
+      // The old writer saved canonical count/MSa/s beside display-unit labels.
+      if (Number.isFinite(stored.sampleCount))
+        stored.sampleCount /= SAMPLE_COUNT_UNITS[stored.sampleCountUnit] || 1;
+      if (Number.isFinite(stored.sampleRateMSa))
+        stored.sampleRateMSa /= SAMPLE_RATE_UNITS[stored.sampleRateUnit] || 1;
+      stored.settingsVersion = 1;
+      try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(stored)); } catch { /* Read-only storage. */ }
+    }
+    return stored;
   } catch {
     return {};
   }
@@ -194,7 +205,7 @@ function persistSettings(settings) {
   try {
     localStorage.setItem(
       SETTINGS_STORAGE_KEY,
-      JSON.stringify({ ...readStoredSettings(), ...settings }),
+      JSON.stringify({ ...readStoredSettings(), ...settings, settingsVersion: 1 }),
     );
   } catch {
     // Storage may be unavailable for restricted file or private browsing contexts.

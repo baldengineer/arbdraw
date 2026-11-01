@@ -10,8 +10,7 @@ function sequenceOverview() {
 }
 
 function sequenceSampleLimit() {
-  return Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
-    ? selectedAwgProfile.sampleDepth.max : 1000000;
+  return sampleLimitForProfile(selectedAwgProfile);
 }
 
 function sequenceCapacity(index = state.activeSegment) {

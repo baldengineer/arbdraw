@@ -5,8 +5,8 @@ const voltageScaleByLabel = { V: 1, mV: 0.001, µV: 0.000001 },
   amplitudeScaleByLabel = { Vpp: 1, mVpp: 0.001, µVpp: 0.000001 },
   frequencyScaleByLabel = { mHz: 0.001, Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 },
   periodScaleByLabel = { Ms: 1e6, s: 1, ms: 0.001, µs: 1e-6, ns: 1e-9 },
-  sampleRateScaleByLabel = { 'pts/s': 1e-6, 'Kpts/s': 0.001, 'Mpts/s': 1, 'Sa/s': 1e-6, 'kSa/s': 0.001, 'MSa/s': 1, 'GSa/s': 1e3 },
-  sampleCountScaleByLabel = { pts: 1, Kpts: 1e3, Mpts: 1e6 },
+  sampleRateScaleByLabel = SAMPLE_RATE_UNITS,
+  sampleCountScaleByLabel = SAMPLE_COUNT_UNITS,
   tsResolutionScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 },
   transitionTimeScaleByLabel = { ps: 1e-12, ns: 1e-9, µs: 1e-6, ms: 0.001, s: 1 };
 let amplitudeUnitScale = amplitudeScaleByLabel[DEFAULT_VALUES.amplitudeUnit];
@@ -95,9 +95,7 @@ function restoreAwgSettingsFromDocument(awg = {}) {
   }
   const rate = Number(awg.sampleRateMSa),
     samples = Number(awg.sampleCount),
-    maximumSamples = Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
-      ? selectedAwgProfile.sampleDepth.max
-      : Number.POSITIVE_INFINITY;
+    maximumSamples = sampleLimitForProfile(selectedAwgProfile);
   if (Number.isFinite(rate) && rate > 0) state.sampleRate = rate;
   if (Number.isFinite(samples) && samples >= 2)
     state.samples = Math.min(Math.round(samples), maximumSamples);
@@ -129,9 +127,9 @@ function persistCurrentSettings() {
     lowLevelUnit: $('lowInput').closest('label').querySelector('.voltage-unit-button').textContent,
     offsetUnit: $('offsetInput').closest('label').querySelector('.voltage-unit-button').textContent,
     amplitudeUnit: $('amplitudeUnitBtn').textContent,
-    sampleRateMSa: state.sampleRate,
+    sampleRateMSa: state.sampleRate / sampleRateUnitScale,
     sampleRateUnit: $('sampleRateUnitBtn').textContent,
-    sampleCount: state.samples,
+    sampleCount: state.samples / sampleCountUnitScale,
     sampleCountUnit: $('sampleCountUnitBtn').textContent,
     waveformType: state.type,
     nCycles: state.cycles,
@@ -388,9 +386,7 @@ function commitTimingInput(kind, { preview = false } = {}) {
     const desiredResolutionSeconds = value * tsResolutionUnitScale,
       durationSeconds = state.samples / (state.sampleRate * 1e6),
       samples = Math.ceil(durationSeconds / desiredResolutionSeconds) + 1,
-      maximumSamples = Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
-        ? selectedAwgProfile.sampleDepth.max
-        : Number.POSITIVE_INFINITY;
+      maximumSamples = sampleLimitForProfile(selectedAwgProfile);
     if (
       !Number.isFinite(desiredResolutionSeconds) ||
       desiredResolutionSeconds <= 0 ||
@@ -425,9 +421,7 @@ function commitTimingInput(kind, { preview = false } = {}) {
   } else {
     const samples = Math.min(
       Math.max(2, Math.round(value * sampleCountUnitScale)),
-      Number.isFinite(selectedAwgProfile?.sampleDepth?.max)
-        ? selectedAwgProfile.sampleDepth.max
-        : Number.POSITIVE_INFINITY,
+      sampleLimitForProfile(selectedAwgProfile),
     );
     if (samples === state.samples) {
       renderTiming();
