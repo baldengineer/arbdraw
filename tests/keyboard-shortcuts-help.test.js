@@ -22,3 +22,13 @@ test('keyboard shortcut dialog explains the marker behavior for Escape', () => {
     /keys: \['Esc'\],[\s\S]*description: 'Close menus\/dialogs or clear markers and activate Select'/,
   );
 });
+
+
+test('sequence help describes the shape menu, destructive regeneration and fixed-total examples', () => {
+  const help = fs.readFileSync(path.join(root, 'docs/help/sequences.html'), 'utf8');
+  for (const behavior of [/choose the new segment.*waveshape from the menu/, /All segments are regenerated/,
+    /keeps the total record points and shared clock fixed/, /16 points.*6\/5\/5/, /at least two points/,
+    /increase the total record points/, /Cancel preserves the waveform/, /two 1,000-point segments/,
+    /2 kHz source frequency/, /lasts 1 ms, and repeats at 1 kHz/]) assert.match(help, behavior);
+  assert.doesNotMatch(help, /Two copies make a 4,000-point|reduce the sample count of an existing/);
+});
