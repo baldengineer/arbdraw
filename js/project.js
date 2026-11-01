@@ -149,11 +149,7 @@ function parseProject(raw) {
     if (segments.reduce((sum, segment) => sum + segment.sampleCount, 0) !== sampleCount)
       throw new Error('Sequence sample counts must add up to the AWG record length.');
     parsed.waveform.segments = segments;
-    parsed.waveform.values = segments.flatMap((segment) => segment.values);
-    parsed.waveform.frequencyHz = sampleRateMSa * 1e6 / sampleCount;
-    parsed.waveform.cycles = 1;
-    parsed.waveform.highVoltage = segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity);
-    parsed.waveform.lowVoltage = segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity);
+    Object.assign(parsed.waveform, summarizeSegments(segments, sampleRateMSa));
     parsed.AWG.frequencyHz = parsed.waveform.frequencyHz;
     parsed.AWG.periodSeconds = 1 / parsed.AWG.frequencyHz;
     parsed.AWG.highVoltage = parsed.waveform.highVoltage;
@@ -334,10 +330,7 @@ function exportWaveformData(segmentIndex = null) {
     return globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? { ...recordState(), fullSequence: true } : state;
   const segment = projectDocument.waveform.segments?.[segmentIndex];
   if (!Number.isInteger(segmentIndex) || !segment) throw new Error('Select a segment to export.');
-  return {
-    ...Object.fromEntries(Object.entries(documentFields).map(([key, field]) => [key, segment[field]])),
-    sampleRate: projectDocument.waveform.sampleRateMSa,
-  };
+  return waveformOutput(segment, projectDocument.waveform.sampleRateMSa);
 }
 function downloadCsv(includeHeader, filename, includeTimestamps = true, output = exportWaveformData()) {
   const values = output.data.map((value) => Number(value ?? 0));

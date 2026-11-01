@@ -36,15 +36,8 @@ function syncSequence() {
   if (!segments) return;
   if (waveform === synchronizedWaveform && sequenceMetadataRevision === synchronizedMetadataRevision) return;
   for (const segment of segments) segment.sampleRateMSa = waveform.sampleRateMSa;
-  if (waveform !== synchronizedWaveform || sequenceDataRevision !== synchronizedDataRevision)
-    waveform.values = segments.flatMap((segment) => segment.values);
-  waveform.sampleCount = segments.reduce((sum, segment) => sum + segment.sampleCount, 0);
-  waveform.durationMs = waveform.sampleCount / (waveform.sampleRateMSa * 1000);
-  waveform.frequencyHz = 1000 / waveform.durationMs;
-  waveform.cycles = 1;
-  waveform.highVoltage = segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity);
-  waveform.lowVoltage = segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity);
-  waveform.samplesEdited = segments.some((segment) => segment.samplesEdited);
+  Object.assign(waveform, summarizeSegments(segments, waveform.sampleRateMSa,
+    waveform !== synchronizedWaveform || sequenceDataRevision !== synchronizedDataRevision));
   synchronizedWaveform = waveform;
   synchronizedDataRevision = sequenceDataRevision;
   synchronizedMetadataRevision = sequenceMetadataRevision;

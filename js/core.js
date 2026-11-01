@@ -415,6 +415,27 @@ const documentFields = {
 };
 
 // Segment selection is transient. The document always retains the full record.
+function summarizeSegments(segments, sampleRateMSa, includeValues = true) {
+  const sampleCount = segments.reduce((sum, segment) => sum + segment.sampleCount, 0);
+  return {
+    sampleCount,
+    durationMs: sampleCount / (sampleRateMSa * 1000),
+    frequencyHz: sampleRateMSa * 1e6 / sampleCount,
+    cycles: 1,
+    highVoltage: segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity),
+    lowVoltage: segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity),
+    samplesEdited: segments.some((segment) => segment.samplesEdited),
+    ...(includeValues ? { values: segments.flatMap((segment) => segment.values) } : {}),
+  };
+}
+
+function waveformOutput(waveform, sharedSampleRate = waveform.sampleRateMSa) {
+  return {
+    ...Object.fromEntries(Object.entries(documentFields).map(([key, field]) => [key, waveform[field]])),
+    sampleRate: sharedSampleRate,
+  };
+}
+
 function editableWaveform() {
   return projectDocument.waveform.segments?.[state.activeSegment] || projectDocument.waveform;
 }
@@ -427,9 +448,7 @@ function recordWaveform() {
 function recordState() {
   if (!projectDocument.waveform.segments) return state;
   const waveform = recordWaveform();
-  return Object.fromEntries(Object.entries(documentFields).map(
-    ([key, field]) => [key, waveform[field]],
-  ));
+  return waveformOutput(waveform, waveform.sampleRateMSa);
 }
 
 Object.entries(documentFields).forEach(([stateKey, documentKey]) => {

@@ -581,3 +581,24 @@ test('card previews are cached per segment and invalidate for in-place edits', (
   run('pushHistory(); generate("square"); undoWaveform();');
   paint(); assert.deepEqual(counts, [2, 3]); // restored segments have new identities
 });
+
+test('import, runtime and restored sequences agree on their pure aggregate summary', () => {
+  const { context, run } = harness();
+  context.addSequenceSegment();
+  run('state.high = 4; state.low = -3; state.data[0] = 2; state.samplesEdited = true; pushHistory(); renderAwgTiming();');
+  const expected = run('JSON.stringify(summarizeSegments(sequenceSegments(), state.sampleRate))');
+  assert.equal(run('JSON.stringify(summarizeSegments(parseProject(JSON.parse(JSON.stringify(projectDocument))).waveform.segments, state.sampleRate))'), expected);
+  run('generate("dc"); undoWaveform();');
+  assert.equal(run('JSON.stringify(summarizeSegments(sequenceSegments(), state.sampleRate))'), expected);
+  const before = run('JSON.stringify(projectDocument)');
+  run('summarizeSegments(sequenceSegments(), state.sampleRate); waveformOutput(editableWaveform(), state.sampleRate);');
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+});
+
+test('waveform output projection preserves ordinary timing and explicitly overrides a shared clock', () => {
+  const { run } = harness();
+  assert.equal(run('waveformOutput(projectDocument.waveform).frequency'), run('state.frequency'));
+  assert.equal(run('waveformOutput(projectDocument.waveform).cycles'), run('state.cycles'));
+  assert.equal(run('waveformOutput(projectDocument.waveform).data === state.data'), true);
+  assert.equal(run('waveformOutput(projectDocument.waveform, 0.123).sampleRate'), 0.123);
+});
