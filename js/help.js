@@ -6,6 +6,7 @@ const helpItems = [
   { title: 'About', source: 'docs/help/about.html' },
   { title: 'How to use', source: 'docs/help/how-to-use.html' },
   { title: 'Editor navigation', source: 'docs/help/editor-navigation.html' },
+  { title: 'Sequences', source: 'docs/help/sequences.html' },
   { title: 'Python bridge', source: 'docs/help/python-bridge.html' },
   { title: 'TekScope adapter', source: 'docs/help/tekscope-adapter.html' },
   { title: 'JSON format', source: 'docs/help/json-format.html' },
