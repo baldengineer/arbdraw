@@ -28,7 +28,7 @@ test('custom menus and native selectors use the shared menu interface', () => {
     assert.match(read(file), /ARBDRAW_MENU\.create\(/, `${file} should use the shared menu constructor`);
   assert.match(read('js/instruments.js'), /ARBDRAW_MENU\.item\(\{ text: resource, role: 'option'/);
   assert.match(read('js/project.js'), /const exportButton = ARBDRAW_MENU\.item\(/);
-  assert.doesNotMatch(read('js/project.js'), /exportMenu/);
+  assert.match(read('js/project.js'), /id: 'exportScopeMenu', label: 'Export Waveform'/);
   assert.match(read('js/fields.js'), /definition\.kind === 'select' \? 'field-input menu-select'/);
 });
 

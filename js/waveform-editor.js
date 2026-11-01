@@ -185,6 +185,7 @@ function generate(
   confirmOverwrite = true,
   preserveVoltageDraft = false,
 ) {
+  if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   const n = state.samples,
@@ -223,7 +224,7 @@ function generate(
   if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
   state.type = type;
   const generatedData = Array.from({ length: generatedPointCount }, (_, i) => {
-    const t = i / Math.max(1, generatedPointCount - 1),
+    const t = i / Math.max(1, globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? generatedPointCount : generatedPointCount - 1),
       p = (t * state.cycles + state.phase / 360) % 1;
     switch (type) {
       case 'sine':
@@ -259,7 +260,8 @@ function generate(
         return noiseSamples[i];
       case 'serial':
         {
-          const elapsedSeconds = t * bufferDurationSeconds;
+          const elapsedSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+            ? i / (state.sampleRate * 1e6) : t * bufferDurationSeconds;
           return serialVoltage(elapsedSeconds);
         }
       default:
@@ -279,6 +281,10 @@ function generate(
     renderVoltageLevels({ preserveActiveDraft: preserveVoltageDraft });
   if (typeof renderAwgTiming === 'function') renderAwgTiming();
   state.samplesEdited = range.scoped;
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) {
+    renderFrequency();
+    renderTiming();
+  }
   globalThis.ARBDRAW_EDITOR_MODES?.refresh();
   if (type === 'triangle') updateFunctionSelect(type);
   if (recordHistory) pushHistory();
@@ -288,11 +294,13 @@ function generate(
   return true;
 }
 function cloneWaveform(source = projectDocument.waveform) {
+  if (source === projectDocument.waveform) globalThis.ARBDRAW_SEQUENCE?.sync();
   return {
     ...source,
     serial: { ...source.serial },
     filters: { ...source.filters },
     values: [...source.values],
+    ...(source.segments ? { segments: source.segments.map((segment) => cloneWaveform(segment)) } : {}),
   };
 }
 function restoreWaveform(snapshot) {
@@ -420,9 +428,11 @@ function updateEditorNavigation(view = currentEditorViewport()) {
     'aria-valuetext',
     fullRecord ? 'Full record' : `Points ${view.start} through ${view.end}`,
   );
+  globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
 }
 
 function drawEditorOverview() {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
   const view = currentEditorViewport(),
     w = editorOverviewCanvas.width,
     h = editorOverviewCanvas.height,
@@ -432,17 +442,19 @@ function drawEditorOverview() {
   editorOverviewContext.clearRect(0, 0, w, h);
   editorOverviewContext.fillStyle = '#090d0f';
   editorOverviewContext.fillRect(0, 0, w, h);
-  if (!state.data.length) return;
-  const bounds = voltageBounds(),
+  if (!output.data.length) return;
+  const bounds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+      ? { high: output.high === output.low ? output.high + 5 : output.high,
+          low: output.high === output.low ? output.low - 5 : output.low } : voltageBounds(),
     pad = 4 * d,
     drawWidth = Math.max(1, w - pad * 2),
     drawHeight = Math.max(1, h - pad * 2),
-    sampleStep = Math.max(1, Math.floor(state.data.length / Math.max(1, w))),
-    lastIndex = state.data.length - 1;
+    sampleStep = Math.max(1, Math.floor(output.data.length / Math.max(1, w))),
+    lastIndex = output.data.length - 1;
   editorOverviewContext.beginPath();
   const drawPoint = (index) => {
     const x = pad + (drawWidth * index) / Math.max(1, lastIndex),
-      y = pad + ((bounds.high - state.data[index]) / (bounds.high - bounds.low)) * drawHeight;
+      y = pad + ((bounds.high - output.data[index]) / (bounds.high - bounds.low)) * drawHeight;
     index ? editorOverviewContext.lineTo(x, y) : editorOverviewContext.moveTo(x, y);
   };
   for (let index = 0; index <= lastIndex; index += sampleStep) drawPoint(index);
@@ -454,6 +466,7 @@ function drawEditorOverview() {
   editorOverviewContext.globalAlpha = 1;
 }
 function draw() {
+  globalThis.ARBDRAW_SEQUENCE?.refresh();
   const w = canvas.width,
     h = canvas.height,
     d = devicePixelRatio || 1,
@@ -844,6 +857,7 @@ $('editorPosition').addEventListener('keydown', handleEditorNavigationKey);
 $('editorPositionIncrease').addEventListener('click', () => moveEditorViewport(1));
 $('editorPositionDecrease').addEventListener('click', () => moveEditorViewport(-1));
 $('editorFullRecord').addEventListener('click', () => {
+  if (globalThis.ARBDRAW_SEQUENCE?.showOverview()) return;
   setEditorViewport({ start: 0, pointsPerScreen: editorRecordLength() });
 });
 $('editorSelectionClear').addEventListener('click', clearEditorSelection);
@@ -880,6 +894,7 @@ function dragEditorViewport(clientX) {
 }
 
 editorViewportWindow.addEventListener('pointerdown', (event) => {
+  if (globalThis.ARBDRAW_SEQUENCE?.showOverview()) return;
   const view = currentEditorViewport();
   if (!view.maximumStart) return;
   event.preventDefault();
@@ -899,6 +914,10 @@ editorViewportWindow.addEventListener('pointercancel', (event) => {
     editorViewportWindow.releasePointerCapture(event.pointerId);
 });
 editorViewportWindow.addEventListener('keydown', (event) => {
+  if ((event.key === 'Enter' || event.key === ' ') && globalThis.ARBDRAW_SEQUENCE?.showOverview()) {
+    event.preventDefault();
+    return;
+  }
   if (handleEditorNavigationKey(event)) return;
   const view = currentEditorViewport(),
     step = event.shiftKey ? Math.max(1, Math.round(view.pointsPerScreen / 2)) : 1;
@@ -916,6 +935,7 @@ document.addEventListener('keydown', (event) => {
   handleEditorNavigationKey(event);
 });
 editorOverview.addEventListener('pointerdown', (event) => {
+  if (globalThis.ARBDRAW_SEQUENCE?.showOverview()) return;
   if (event.target === editorViewportWindow) return;
   const bounds = editorOverview.getBoundingClientRect(),
     ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),

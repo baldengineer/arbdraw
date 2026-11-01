@@ -84,7 +84,7 @@ function parseProject(raw) {
       lowVoltage = Math.min(lowVoltage, value);
     }
   }
-  return {
+  const parsed = {
     schema: 'arbdraw.waveform',
     version: 1,
     name: String(raw.name || 'Imported waveform').slice(0, 120),
@@ -130,9 +130,43 @@ function parseProject(raw) {
       values,
     },
   };
+  if (source.segments !== undefined) {
+    if (!Array.isArray(source.segments) || source.segments.length < 2)
+      throw new Error('A sequence must contain at least two segments.');
+    const segments = source.segments.map((segment) => {
+      if (!segment || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
+        || segment.sampleCount < 2 || !Array.isArray(segment.values)
+        || segment.values.length !== segment.sampleCount || !segment.values.every(Number.isFinite))
+        throw new Error('Each sequence segment must contain its declared finite voltage samples.');
+      const normalized = parseProject({
+        schema: raw.schema, version: raw.version,
+        AWG: { ...parsed.AWG, sampleCount: segment.sampleCount }, waveform: segment,
+      }).waveform;
+      normalized.frequencyHz = sampleRateMSa * 1e6 * normalized.cycles / normalized.sampleCount;
+      return normalized;
+    });
+    if (segments.reduce((sum, segment) => sum + segment.sampleCount, 0) !== sampleCount)
+      throw new Error('Sequence sample counts must add up to the AWG record length.');
+    parsed.waveform.segments = segments;
+    parsed.waveform.values = segments.flatMap((segment) => segment.values);
+    parsed.waveform.frequencyHz = sampleRateMSa * 1e6 / sampleCount;
+    parsed.waveform.cycles = 1;
+    parsed.waveform.highVoltage = segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity);
+    parsed.waveform.lowVoltage = segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity);
+    parsed.AWG.frequencyHz = parsed.waveform.frequencyHz;
+    parsed.AWG.periodSeconds = 1 / parsed.AWG.frequencyHz;
+    parsed.AWG.highVoltage = parsed.waveform.highVoltage;
+    parsed.AWG.lowVoltage = parsed.waveform.lowVoltage;
+    parsed.AWG.tsResolutionSeconds = 1 / (sampleRateMSa * 1e6);
+  }
+  return parsed;
 }
 function loadProject(raw) {
-  projectDocument = parseProject(raw);
+  const parsed = parseProject(raw), profile = profileById(parsed.AWG.profileId);
+  if (parsed.waveform.segments && parsed.waveform.sampleCount > (profile?.sampleDepth?.max ?? 1000000))
+    throw new Error('This sequence exceeds its AWG profile’s sample limit.');
+  projectDocument = parsed;
+  state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
@@ -184,6 +218,7 @@ $('confirmNewBtn').onclick = () => {
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   resetPropertyPanels();
   projectDocument = createDefaultDocument();
+  state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
@@ -209,7 +244,22 @@ $('newBtn').textContent = 'New Project';
 $('openBtn').textContent = 'Open JSON Waveform';
 $('saveBtn').textContent = 'Save JSON Waveform';
 exportButton.title = 'CSV, SVG, or WAV';
-$('saveBtn').after(exportButton);
+exportButton.setAttribute('aria-haspopup', 'menu');
+exportButton.setAttribute('aria-expanded', 'false');
+const exportMenuAnchor = document.createElement('div');
+exportMenuAnchor.className = 'view-submenu-item export-submenu-item';
+const exportMenu = ARBDRAW_MENU.create({
+  id: 'exportScopeMenu', label: 'Export Waveform', className: 'file-menu view-submenu export-submenu',
+});
+const exportRecordButton = ARBDRAW_MENU.item({
+  id: 'exportFullRecordBtn', text: 'Full Record', onClick: () => openExportDialog(),
+});
+const exportSegmentButton = ARBDRAW_MENU.item({
+  id: 'exportSegmentBtn', text: 'Segment', onClick: () => openExportDialog(state.activeSegment),
+});
+exportMenu.append(exportRecordButton, exportSegmentButton);
+exportMenuAnchor.append(exportButton, exportMenu);
+$('saveBtn').after(exportMenuAnchor);
 $('saveBtn').title = 'JSON';
 $('openBtn').title = 'JSON';
 function projectNameFromFilename(filename) {
@@ -237,6 +287,8 @@ $('confirmSaveBtn').onclick = () => {
     projectDocument.name = savedName;
     document.querySelector('.document-name').value = savedName;
   }
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  renderAwgTiming();
   const json = JSON.stringify(projectDocument, null, 2);
   downloadBlob(new Blob([json], { type: 'application/json' }), filename);
   $('saveDialog').close();
@@ -271,8 +323,18 @@ function buildCsvRows({ values, durationSeconds, metadata = [], includeHeader, i
   }
   return rows;
 }
-function downloadCsv(includeHeader, filename, includeTimestamps = true) {
-  const values = state.data.map((value) => Number(value ?? 0));
+function exportWaveformData(segmentIndex = null) {
+  if (segmentIndex === null)
+    return globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? { ...recordState(), fullSequence: true } : state;
+  const segment = projectDocument.waveform.segments?.[segmentIndex];
+  if (!Number.isInteger(segmentIndex) || !segment) throw new Error('Select a segment to export.');
+  return {
+    ...Object.fromEntries(Object.entries(documentFields).map(([key, field]) => [key, segment[field]])),
+    sampleRate: projectDocument.waveform.sampleRateMSa,
+  };
+}
+function downloadCsv(includeHeader, filename, includeTimestamps = true, output = exportWaveformData()) {
+  const values = output.data.map((value) => Number(value ?? 0));
   // Iterate instead of spreading samples into Math.min/max: large records exceed
   // the browser's function-argument limit.
   let voltageMin = Infinity, voltageMax = -Infinity;
@@ -282,26 +344,27 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   }
   if (!values.length) voltageMin = voltageMax = 0;
   const sampleCount = values.length,
-    durationSeconds = state.duration / 1000,
+    durationSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+      ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
       ['Generated', new Date().toISOString()],
-      ['Waveform type', titles[state.type] || state.type],
-      ['High level (V)', state.high],
-      ['Low level (V)', state.low],
-      ['Amplitude (Vpp)', state.high - state.low],
-      ['Offset (V)', (state.high + state.low) / 2],
-      ['Frequency (Hz)', state.frequency],
-      ['Period (s)', 1 / state.frequency],
-      ['Cycles', state.cycles],
-      ['Phase (degrees)', state.phase],
-      ['Duty cycle (%)', state.duty],
-      ['Symmetry (%)', state.symmetry],
-      ['Rise time (s)', state.riseTime],
-      ['Fall time (s)', state.fallTime],
-      ['Noise color', state.noiseColor],
-      ['Sample rate (MSa/s)', state.sampleRate],
+      ['Waveform type', output.fullSequence ? 'Sequence' : titles[output.type] || output.type],
+      ['High level (V)', output.high],
+      ['Low level (V)', output.low],
+      ['Amplitude (Vpp)', output.high - output.low],
+      ['Offset (V)', (output.high + output.low) / 2],
+      ['Frequency (Hz)', output.frequency],
+      ['Period (s)', 1 / output.frequency],
+      ['Cycles', output.cycles],
+      ['Phase (degrees)', output.phase],
+      ['Duty cycle (%)', output.duty],
+      ['Symmetry (%)', output.symmetry],
+      ['Rise time (s)', output.riseTime],
+      ['Fall time (s)', output.fallTime],
+      ['Noise color', output.noiseColor],
+      ['Sample rate (MSa/s)', output.sampleRate],
       ['Sample count', sampleCount],
       ['Time min (s)', 0],
       ['Time max (s)', timeMax],
@@ -313,25 +376,27 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   downloadBlob(blob, filename);
   showToast(`Waveform exported as ${includeHeader ? 'CSV with header' : 'CSV'}`);
 }
-function downloadSvg(filename) {
+function downloadSvg(filename, output = exportWaveformData()) {
   const svg = ARBDRAW_SVG_EXPORT.waveformSvg({
-    values: state.data,
+    values: output.data,
     name: projectDocument.name,
     includeAxes: $('includeSvgAxes').checked,
-    durationSeconds: state.duration / 1000,
+    durationSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+      ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
   });
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   downloadBlob(blob, filename);
   showToast('Waveform exported as SVG');
 }
-function downloadWav(filename) {
+function downloadWav(filename, output = exportWaveformData()) {
   const buffer = ARBDRAW_WAV_EXPORT.waveformWav({
-    values: state.data,
-    sampleRateHz: state.sampleRate * 1e6,
+    values: output.data,
+    sampleRateHz: output.sampleRate * 1e6,
   });
   downloadBlob(new Blob([buffer], { type: 'audio/wav' }), filename);
   showToast('Waveform exported as WAV');
 }
+let exportTarget = null;
 function updateExportFormat() {
   const format = $('exportFormatSelect').value,
     csv = format === 'csv',
@@ -343,7 +408,7 @@ function updateExportFormat() {
   $('svgExportDescription').hidden = !svg;
   $('wavExportDescription').hidden = format !== 'wav';
   $('wavExportDescription').textContent =
-    `Mono, 16-bit PCM at ${(state.sampleRate * 1e6).toLocaleString()} Hz, normalized to full scale. WAV export supports 8–384 kHz; select the Audio profile for 48 kHz.`;
+    `Mono, 16-bit PCM at ${((exportTarget?.output || state).sampleRate * 1e6).toLocaleString()} Hz, normalized to full scale. WAV export supports 8–384 kHz; select the Audio profile for 48 kHz.`;
   $('exportError').textContent = '';
   $('confirmExportBtn').textContent = `Export ${format.toUpperCase()}`;
 }
@@ -351,33 +416,72 @@ $('exportFormatSelect').addEventListener('change', updateExportFormat);
 $('includeCsvTimestamps').addEventListener('change', () => {
   setIncludeCsvTimestampsPreference($('includeCsvTimestamps').checked);
 });
-$('exportBtn').onclick = (event) => {
-  event.stopPropagation();
+function openExportDialog(segmentIndex = null) {
+  const output = exportWaveformData(segmentIndex),
+    label = segmentIndex === null ? 'Full Record' : `Segment ${segmentIndex + 1}`;
+  exportTarget = { output, label };
   closeFileMenu();
   const projectName = projectNameFromFilename(document.querySelector('.document-name').value);
+  $('exportScopeTitle').textContent = `Export ${label}`;
+  $('exportScopeDescription').textContent = `${label} · ${output.data.length.toLocaleString()} samples. Choose the file format and filename.`;
   $('exportFormatSelect').value = 'csv';
-  $('exportFilenameInput').value = projectName + '.csv';
+  $('exportFilenameInput').value = projectName + (segmentIndex === null ? '' : `-segment-${segmentIndex + 1}`) + '.csv';
   updateExportFormat();
-  $('updateProjectNameOnExport').checked = true;
+  $('updateProjectNameOnExport').checked = segmentIndex === null;
   $('includeCsvHeaders').checked = false;
   setIncludeCsvTimestampsPreference(includeCsvTimestampsPreference, false);
   $('exportDialog').showModal();
   $('exportFilenameInput').focus();
   $('exportFilenameInput').select();
+}
+
+function refreshExportScopeMenu() {
+  const selected = Number.isInteger(state.activeSegment)
+    && Boolean(projectDocument.waveform.segments?.[state.activeSegment]);
+  exportSegmentButton.hidden = !selected;
+  exportSegmentButton.disabled = !selected;
+  exportSegmentButton.textContent = selected ? `Segment ${state.activeSegment + 1}` : 'Segment';
+}
+function setExportScopeMenuOpen(open) {
+  refreshExportScopeMenu();
+  ARBDRAW_MENU.setOpen(exportMenuAnchor, exportButton, open);
+}
+$('exportBtn').onclick = (event) => {
+  event.stopPropagation();
+  setExportScopeMenuOpen(true);
 };
+exportButton.addEventListener('pointerenter', (event) => {
+  if (event.pointerType === 'mouse') setExportScopeMenuOpen(true);
+});
+exportButton.addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    setExportScopeMenuOpen(true);
+    exportRecordButton.focus();
+  }
+});
+exportMenu.addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    setExportScopeMenuOpen(false);
+    exportButton.focus();
+  }
+});
 $('confirmExportBtn').onclick = () => {
   const format = $('exportFormatSelect').value;
   let filename = $('exportFilenameInput').value.trim() || `Untitled waveform.${format}`;
   if (!filename.toLowerCase().endsWith(`.${format}`)) filename += `.${format}`;
   const savedName = projectNameFromFilename(filename);
   try {
-    if (format === 'svg') downloadSvg(filename);
-    else if (format === 'wav') downloadWav(filename);
+    if (format === 'svg') downloadSvg(filename, exportTarget.output);
+    else if (format === 'wav') downloadWav(filename, exportTarget.output);
     else
       downloadCsv(
         $('includeCsvHeaders').checked,
         filename,
         $('includeCsvTimestamps').checked,
+        exportTarget.output,
       );
   } catch (error) {
     $('exportError').textContent = error.message;
@@ -422,12 +526,14 @@ function closeEditMenu() {
   ARBDRAW_MENU.setOpen(editMenu, editButton, false);
 }
 function closeFileMenu() {
+  setExportScopeMenuOpen(false);
   ARBDRAW_MENU.setOpen(fileMenu, fileButton, false);
 }
 fileButton.onclick = (event) => {
   event.stopPropagation();
   closeEditMenu();
   closeViewPicker();
+  setExportScopeMenuOpen(false);
   ARBDRAW_MENU.setOpen(fileMenu, fileButton, !fileMenu.classList.contains('open'));
 };
 editButton.onclick = (event) => {

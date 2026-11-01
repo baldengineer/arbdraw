@@ -14,6 +14,7 @@ authors = [
 ]
 dependencies = [
   "PyVISA>=1.13",
+  "pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -33,6 +34,7 @@ arbdraw-bridge = "python_bridge.server:main"
 
 [project.gui-scripts]
 arbdraw-bridge-tray = "python_bridge.windows_tray:main"
+arbdraw-bridge-menubar = "python_bridge.macos_menu_bar:main"
 
 [project.urls]
 Homepage = "https://baldengineer.github.io/arbdraw/"

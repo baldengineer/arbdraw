@@ -167,6 +167,11 @@ function normalizeDefaults(source = {}) {
       Math.round(finite('waveformVerticalDivisions', 10)),
     ),
     includeCsvTimestamps: source.includeCsvTimestamps !== false,
+    tekScopeDirectory:
+      typeof source.tekScopeDirectory === 'string' && source.tekScopeDirectory.trim()
+        ? source.tekScopeDirectory.trim()
+        : 'C:/baldee/',
+    tekScopeOverwrite: source.tekScopeOverwrite === true,
     awgProfileId:
       typeof source.awgProfileId === 'string' && source.awgProfileId.trim()
         ? source.awgProfileId.trim()
@@ -398,11 +403,30 @@ const documentFields = {
   data: 'values',
 };
 
+// Segment selection is transient. The document always retains the full record.
+function editableWaveform() {
+  return projectDocument.waveform.segments?.[state.activeSegment] || projectDocument.waveform;
+}
+
+function recordWaveform() {
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  return projectDocument.waveform;
+}
+
+function recordState() {
+  if (!projectDocument.waveform.segments) return state;
+  const waveform = recordWaveform();
+  return Object.fromEntries(Object.entries(documentFields).map(
+    ([key, field]) => [key, waveform[field]],
+  ));
+}
+
 Object.entries(documentFields).forEach(([stateKey, documentKey]) => {
   Object.defineProperty(state, stateKey, {
-    get: () => projectDocument.waveform[documentKey],
+    get: () => (stateKey === 'sampleRate' ? projectDocument.waveform : editableWaveform())[documentKey],
     set: (value) => {
-      projectDocument.waveform[documentKey] = value;
+      if (globalThis.ARBDRAW_SEQUENCE?.setField(stateKey, value)) return;
+      (stateKey === 'sampleRate' ? projectDocument.waveform : editableWaveform())[documentKey] = value;
     },
   });
 });
@@ -460,6 +484,7 @@ function normalizeSerialSettings(source = {}, fallback = DEFAULT_VALUES) {
 const $ = (id) => document.getElementById(id);
 
 function waveformDurationMs() {
+  if (projectDocument.waveform.segments) return state.samples / (state.sampleRate * 1000);
   return (1 / state.frequency) * 1000;
 }
 

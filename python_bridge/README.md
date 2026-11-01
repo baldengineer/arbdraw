@@ -28,6 +28,10 @@ choose **Start bridge**, **Stop bridge**, **Restart bridge**, or **Exit**. The
 app finds `arbdraw-bridge.exe` in the same Python environment and starts it
 without opening a console window.
 
+When the icon loads, the app automatically tries to start the bridge. If a
+compatible bridge is already running, it uses that process. If startup fails,
+the icon reports an error and you can retry with **Start bridge**.
+
 The favicon is grey while the bridge is stopped, starting, stopping, or in an
 error state. It changes to the ArbDraw blue when the bridge health check
 confirms that it is running.
@@ -44,6 +48,47 @@ a shortcut or terminal, for example:
 ```powershell
 arbdraw-bridge-tray.exe --url http://127.0.0.1:9000 -- --port 9000 --visa-library @py
 ```
+
+### macOS menu bar app
+
+On macOS, the installation also creates `arbdraw-bridge-menubar` and installs
+its native AppKit dependency. Run it from Terminal to add ArbDraw Bridge to the
+menu bar without opening a Dock window:
+
+```bash
+arbdraw-bridge-menubar
+```
+
+When the status item loads, the app automatically tries to start the bridge.
+If a compatible bridge is already running, it uses that process. If startup
+fails, the menu reports an error and you can retry with **Start Bridge**.
+
+Click the waveform status item to see the current state, bridge version,
+available adapters, and bridge log. The menu provides **Start Bridge**, **Stop
+Bridge**, **Restart Bridge**, **Open Bridge Log**, and **Quit ArbDraw Bridge**.
+The status item is blue only after the health check confirms a running bridge;
+otherwise it is grey.
+
+The menu bar app finds `arbdraw-bridge` beside its own launcher. If the launcher
+is not on `PATH`, use the full path shown by the installer, or run it from the
+same environment as `python -m python_bridge.macos_menu_bar`. Only one menu bar
+instance can run for a macOS user at a time.
+
+As on Windows, the app can control a compatible bridge that was already
+running. Quitting stops only a bridge process started by the menu bar app and
+leaves an externally started bridge alone. Bridge output is written to
+`~/Library/Logs/ArbDraw/bridge.log`.
+
+Non-default URLs and bridge arguments use the same `--` separator as the
+Windows utility:
+
+```bash
+arbdraw-bridge-menubar --url http://127.0.0.1:9000 -- --port 9000 --visa-library @py
+```
+
+To launch it when you sign in, add the full `arbdraw-bridge-menubar` executable
+path from your Python environment in **System Settings → General → Login
+Items**. Keep that environment installed at the same path.
 
 To install only one instrument family, use `python .\install.py --adapter
 owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope`. The TekScope
@@ -73,14 +118,19 @@ python -m pip install -e .
 python -m python_bridge
 ```
 
+On macOS, that editable install also installs the Cocoa dependency and menu bar
+launcher. Start it with `arbdraw-bridge-menubar` instead of the second command
+when you want the menu bar controller.
+
 Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
 
 Instrument waveform sending also requires the corresponding adapter package.
-For TekScope development, install the included package into the same Python
+For TekScope development, clone and install the separate package into the same Python
 environment before starting the bridge:
 
 ```powershell
-python -m pip install -e .\adapters\tekscope
+git clone git@github.com:baldengineer/tekscope-arbdraw-adapter.git .\local_adapters\tekscope-arbdraw-adapter
+python -m pip install -e .\local_adapters\tekscope-arbdraw-adapter
 python -m python_bridge --serve-app .
 ```
 
@@ -143,7 +193,7 @@ MSO2 firmware has an observed `FILESystem:WRITEFile` failure near 8,092 bytes,
 so the adapter rejects encoded payloads of 8,000 bytes or more. This is separate
 from the profile's point-memory limit. The MSO6 backend does not inherit this
 cap and has been verified end-to-end through 100,000 points. See the
-[complete TekScope adapter guide](../adapters/tekscope/README.md).
+[complete TekScope adapter guide](https://github.com/baldengineer/tekscope-arbdraw-adapter#readme).
 
 ## Install and manage adapters
 
@@ -243,24 +293,55 @@ git -C .\local_adapters\owon-multicomp-awg-python-waveform-importer pull --ff-on
 
 Restart the bridge to load updated Python code. Run the editable install command again if `pyproject.toml` or dependencies changed.
 
-### Develop the included TekScope adapters
+### Develop the TekScope adapters
 
-The shared TekScope package lives in this repository and registers separate
-MSO2 and MSO6 backends in the bridge environment:
+The shared TekScope package lives in its
+[own repository](https://github.com/baldengineer/tekscope-arbdraw-adapter), like
+the OWON and Rigol adapters. Clone it once into the ignored local adapter
+directory, then register it in the bridge environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e .\adapters\tekscope
-.\.venv\Scripts\python.exe -m pytest -q .\adapters\tekscope\tests
+git clone git@github.com:baldengineer/tekscope-arbdraw-adapter.git .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe -m pip install -e .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe -m unittest discover -s .\local_adapters\tekscope-arbdraw-adapter\tests -p "test_*.py"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_tekscope_integration.py"
 ```
 
-It uploads a Tek waveform CSV into the scope filesystem, reads it back for
-verification, selects it as the built-in AFG arbitrary source, and applies
-frequency, amplitude, offset, load, and output settings. Output remains off
-unless ArbDraw's **Enable output after send** option is selected.
+The adapter registers both `tekscope-mso2` and `tekscope-mso6`. It uploads a Tek
+waveform CSV into the scope filesystem, reads it back for verification, selects
+it as the built-in AFG arbitrary source, and applies the waveform settings.
+Output remains off unless **Enable output after send** is selected.
 
-See [the adapter README](../adapters/tekscope/README.md) for the model matrix,
-release installation, scope-directory requirement, CLI workflow, MSO2 firmware
-limit, MSO6 hardware validation, and troubleshooting.
+To update, run:
+
+```powershell
+git -C .\local_adapters\tekscope-arbdraw-adapter pull --ff-only
+```
+
+Restart the bridge after pulling changes. Reinstall the editable package when
+its packaging metadata or dependencies change. The integration tests skip
+explicitly if no adapter is installed; set `ARBDRAW_REQUIRE_TEKSCOPE=1` to make
+a missing adapter an error, as the release workflow does.
+
+See [the adapter README](https://github.com/baldengineer/tekscope-arbdraw-adapter#readme)
+for supported models, setup, CLI usage, and limitations. The authoritative
+[TekScope file-command skill](https://github.com/baldengineer/tekscope-arbdraw-adapter/blob/main/skills/tekscope-file-commands/SKILL.md)
+is maintained with that source.
+
+### Build a release bundle from source
+
+Check out each adapter at the full commit SHA recorded in
+`.github/workflows/python-bridge-release.yml`, then build into a fresh output
+directory. Release CI fetches each independent repository at those pins:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install build twine
+.\.venv\Scripts\python.exe packaging/build_release.py --owon-source .\local_adapters\owon-multicomp-awg-python-waveform-importer --rigol-source .\local_adapters\rigol-awg-python-importer --tekscope-source .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe packaging/check_release.py dist
+```
+
+The bridge has no mandatory adapter dependency. The release bundle contains
+four separately built wheels: bridge, OWON, Rigol, and TekScope.
 
 ### Remove an adapter
 

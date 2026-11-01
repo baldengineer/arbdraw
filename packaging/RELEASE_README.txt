@@ -29,6 +29,14 @@ you use a virtual environment, run its Python executable for installation and
 use the launchers from that environment. Open ArbDraw's File > Send to AWG
 dialog to connect.
 
+On macOS, pip creates arbdraw-bridge and arbdraw-bridge-menubar in that
+interpreter's bin directory. Run arbdraw-bridge-menubar for equivalent menu bar
+Start, Stop, Restart, version, adapter, and log controls. The status item is
+blue only while the bridge health check confirms it is running. Bridge logs are
+stored in ~/Library/Logs/ArbDraw/bridge.log. The installer prints the full
+launcher path, which you can also add to System Settings > General > Login
+Items if you want it to start when you sign in.
+
 The adapter code is distributed as separate wheels in this ZIP. It can also be
 installed alongside an existing bridge wheel by running python -m pip install
 with the selected adapter wheel path, using the same Python interpreter that

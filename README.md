@@ -20,7 +20,7 @@ ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from 
 
 The **Send to AWG** command connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
 
-Download `arbdraw-bridge-with-adapters-<version>.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. On Windows, run `arbdraw-bridge-tray.exe` for notification-area Start, Stop, and Restart controls, or run `arbdraw-bridge.exe` directly. The tray menu reports the bridge version and available adapters. Its ArbDraw favicon is grey while the bridge is inactive and changes to blue when the health check confirms it is running. On other platforms, use `python -m python_bridge`. See [python_bridge/README.md](python_bridge/README.md) for single-adapter installation, VISA setup, source installation, and API details.
+Download `arbdraw-bridge-with-adapters-<version>.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. On Windows, run `arbdraw-bridge-tray.exe` for notification-area controls. On macOS, run `arbdraw-bridge-menubar` for equivalent menu bar controls. Both status menus report the bridge version and available adapters. Their icons are grey while inactive and blue after confirming the bridge is running. On other platforms, use `python -m python_bridge`. See [python_bridge/README.md](python_bridge/README.md) for platform-specific setup, single-adapter installation, VISA setup, source installation, and API details.
 
 ### TekScope MSO2 and MSO6
 
@@ -38,7 +38,7 @@ Replace the example IP with the scope's address. In ArbDraw, select the matching
 **TekScope MSO2 (files)** or **TekScope MSO6 (files)** AWG profile, then use
 **File → Send to AWG** to identify the scope and send the waveform. The MSO2
 backend includes a firmware-specific file-write limit; the MSO6 backend has
-been verified with waveforms up to 100,000 points. See the [TekScope adapter guide](adapters/tekscope/README.md)
+been verified with waveforms up to 100,000 points. See the [TekScope adapter guide](https://github.com/baldengineer/tekscope-arbdraw-adapter#readme)
 for supported models, VISA setup, file behavior, limitations, and
 troubleshooting.
 
@@ -54,6 +54,7 @@ troubleshooting.
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
 - Optional noise and smoothing filters with checkbox and value controls in Advanced mode Properties
 - Undo and redo for waveform changes
+- Sequences with independent segment sources, sample counts, and waveform previews
 - Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
@@ -62,6 +63,16 @@ troubleshooting.
 ## Editing modes
 
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
+
+## Sequences
+
+Select **Add Segments** beside **Full Record** to enter Arbitrary mode and create two segments: the current waveform and a copy. The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input; the **+** card appends a copy of the selected segment (or the last segment while viewing the full record). Use **×** to remove a segment.
+
+Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, browser playback, and Send to AWG use the complete sequence. Under **File → Export Waveform**, choose **Full Record** to export everything or **Segment X** to export the selected segment as CSV, SVG, or WAV. The segment choice appears only while a segment is selected. Undo/redo and project JSON preserve the segments and their sources.
+
+A sequence uses one sample clock, established from the original waveform's sample count and AWG output period. Changing a segment's sample count changes its frequency; changing its frequency or cycle count adjusts its sample count at that clock. Timing is rounded to whole samples and constrained by the AWG profile's total record limit. The AWG frequency and period describe repetition of the complete sequence. Choose the AWG profile before adding segments; it remains fixed until the sequence is removed. WAV export still requires a supported sample rate.
+
+Removing all but one segment returns to a single waveform. Switching to Basic asks before discarding the sequence and keeps the selected segment, or the first segment in full-record view.
 
 ## Menu styling
 
@@ -101,7 +112,7 @@ See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field refe
 
 ## Exporting waveforms
 
-Choose **Export Waveform**, select **CSV**, **SVG**, or **WAV**, and enter a filename.
+Choose **File → Export Waveform → Full Record** (or **Segment X** while a segment is selected), select **CSV**, **SVG**, or **WAV**, and enter a filename. Segment exports start their time axis at zero and retain the shared sequence sample rate. Their filenames include the segment number, and updating the project name is unchecked by default.
 
 - **CSV** exports voltage samples with an optional metadata header and a timestamp column that is included by default but can be omitted. The timestamp choice is remembered until you create a new project or reset all settings.
 - **SVG** exports black waveform lines on a transparent background, with optional axes and grid.

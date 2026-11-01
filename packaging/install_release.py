@@ -70,6 +70,10 @@ def main() -> None:
         scripts = Path(sysconfig.get_path("scripts"))
         print(f"Open the Windows tray controller: {scripts / 'arbdraw-bridge-tray.exe'}")
         print(f"Or start the bridge directly: {scripts / 'arbdraw-bridge.exe'}")
+    elif sys.platform == "darwin":
+        scripts = Path(sysconfig.get_path("scripts"))
+        print(f"Open the macOS menu bar controller: {scripts / 'arbdraw-bridge-menubar'}")
+        print(f"Or start the bridge directly: {scripts / 'arbdraw-bridge'}")
     else:
         print(f"Start the bridge with: {sys.executable} -m python_bridge")
 

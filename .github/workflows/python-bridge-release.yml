@@ -38,8 +38,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build tools
-        run: python -m pip install --upgrade build
+      - name: Check out TekScope adapter
+        uses: actions/checkout@v7
+        with:
+          repository: baldengineer/tekscope-arbdraw-adapter
+          ref: dec4bc24882a8ccb5c5a421832eefa11632f4da4
+          path: adapter-sources/tekscope
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install bridge, TekScope adapter, and build tools
+        run: python -m pip install build -e . -e adapter-sources/tekscope
 
       - name: Validate tag and package version
         if: github.ref_type == 'tag'
@@ -57,16 +69,22 @@ jobs:
               raise SystemExit(f"Tag {tag!r} does not match package version {expected!r}")
 
       - name: Test bridge
-        run: python -m unittest discover -s tests -p "test_python_bridge.py"
+        env:
+          ARBDRAW_REQUIRE_TEKSCOPE: '1'
+        run: python -m unittest discover -s tests -p "test_*.py"
 
       - name: Test TekScope adapter
-        run: python -m unittest discover -s adapters/tekscope/tests -p "test_*.py"
+        run: python -m unittest discover -s adapter-sources/tekscope/tests -p "test_*.py"
+
+      - name: Test web app and documentation
+        run: node --test tests/*.test.js
 
       - name: Build bridge and adapter distributions
         run: >-
           python packaging/build_release.py
           --owon-source adapter-sources/owon
           --rigol-source adapter-sources/rigol
+          --tekscope-source adapter-sources/tekscope
 
       - name: Check distributions
         run: |

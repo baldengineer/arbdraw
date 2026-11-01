@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sequences — ArbDraw Help</title>
+  <link rel="stylesheet" href="help.css">
+</head>
+<body>
+<article>
+  <h1>Sequences</h1>
+  <p>A sequence joins multiple waveform segments into one memory record. Each segment has its own waveshape, voltage levels, timing, filters, and samples. Use it to combine pulses, steady levels, serial data, and other waveshapes in a single output.</p>
+
+  <h2>Create a sequence</h2>
+  <ol>
+    <li>Choose the AWG profile and prepare the first waveform.</li>
+    <li>Select <b>Add Segments</b> beside <b>Full Record</b>. ArbDraw switches to Arbitrary mode and creates two segments: the existing waveform and a copy.</li>
+    <li>Select a segment card above the full-record overview to edit that segment.</li>
+    <li>Select the <b>+</b> card at the right to append another segment. It copies the selected segment's properties and samples. When the full sequence is displayed, it copies the last segment.</li>
+  </ol>
+  <p>The AWG profile stays fixed while the sequence exists. Its sample limit applies to the combined record. If another segment would exceed that limit, reduce the sample count of an existing segment before adding it.</p>
+
+  <h2>Edit a segment or inspect the full record</h2>
+  <p>Each card shows a waveform preview and an editable sample count. Select the card to show that segment in the main editor. Properties, filters, drawing tools, point-selection markers, and edits in the Samples view apply to that segment. Its point indices start at zero, and its voltage axis fits its own levels.</p>
+  <p>Click the full-record overview below the cards, or select <b>Full Record</b>, to display all segments in order. This view is read only. Select a segment card to resume editing. The highlighted portion of the overview identifies the selected segment; in full-record view it follows the visible range as you zoom and pan.</p>
+  <p>The oscilloscope-style Viewer, browser playback, and <b>Send to AWG</b> use the complete sequence even when one segment is selected in the editor.</p>
+
+  <h2>Segment timing and sequence timing</h2>
+  <p>All segments use one shared sample clock. When you first add segments, ArbDraw establishes that clock from the existing waveform's sample count and output period, preserving the original waveform's output timing.</p>
+  <table>
+    <thead><tr><th scope="col">Control or readout</th><th scope="col">Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Frequency / Period in Properties</td><td>The selected segment's source frequency and period.</td></tr>
+      <tr><td>N Cycles</td><td>The number of source cycles in the selected segment.</td></tr>
+      <tr><td>Sample count on a card</td><td>The length of that segment in points.</td></tr>
+      <tr><td>Sample rate</td><td>The shared clock for the entire sequence.</td></tr>
+      <tr><td>AWG Frequency / AWG Period</td><td>How often the complete sequence repeats, and the duration of one complete record.</td></tr>
+    </tbody>
+  </table>
+  <p>Changing a segment's sample count changes its duration and source frequency. Changing its source frequency, period, or cycle count adjusts its sample count at the shared clock. Timing is rounded to whole samples and constrained by the AWG profile's remaining record capacity.</p>
+  <p>For example, a 2,000-point segment containing one 1 kHz cycle establishes a 2 million samples/second clock. Two copies make a 4,000-point sequence lasting 2 ms, so the AWG repeats the full record at 500 Hz. If the second segment is reduced to 1,000 points, its source frequency becomes 2 kHz and the complete sequence lasts 1.5 ms.</p>
+  <p>For a serial segment, baud rate controls bit timing. Configure its payload, framing, and idle bits in Serial properties. Serial samples use the shared clock, so bit edges are limited to that clock's sample resolution and the available record capacity.</p>
+
+  <h2>Export the record or a segment</h2>
+  <p>Open <b>File → Export Waveform</b> and choose the scope before selecting CSV, SVG, or WAV:</p>
+  <ul>
+    <li><b>Full Record</b> exports every segment in sequence order.</li>
+    <li><b>Segment X</b> exports only the selected segment, where X is its card number. This choice is available only while a segment is selected.</li>
+  </ul>
+  <p>The export dialog shows the chosen scope and sample count. Segment exports start their time axis at zero and retain the shared sample rate. Their default filenames include the segment number, and updating the project name is unchecked by default. WAV export requires a supported sample rate between 8 and 384 kHz.</p>
+
+  <h2>Save, undo, and remove segments</h2>
+  <p>Use <b>File → Save JSON Waveform</b> to keep the complete editable project, including every segment's source settings and samples. Opening the project restores the sequence in Arbitrary mode and displays the full record. The selected card and editor zoom are not saved.</p>
+  <p>Undo and redo include segment additions, removals, property changes, and point edits. Select <b>×</b> on a card to remove that segment. When only one segment remains, ArbDraw returns to a single waveform.</p>
+  <p>Switching to Basic asks for confirmation before discarding the sequence. It keeps the selected segment, or the first segment when viewing the full record, and regenerates that waveform from its source properties and current filters. This conversion clears the previous edit history. Save a JSON project first if you want to retain the sequence.</p>
+
+  <p>See <a href="editor-navigation.html">Editor navigation</a> for zoom, pan, and keyboard controls, and <a href="json-format.html">JSON format</a> for the project format.</p>
+</article>
+</body>
+</html>

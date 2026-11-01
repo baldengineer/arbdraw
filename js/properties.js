@@ -64,6 +64,7 @@ function renderAwgProfiles() {
 
 function applyAwgProfile(profile) {
   if (!profile) return;
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) return false;
   if (!confirmWaveformReplacement(false)) {
     awgProfileSelect.value = selectedAwgProfile?.id || '';
     return false;
@@ -235,10 +236,15 @@ function renderTiming() {
   $('samplesEdit').step = 1 / sampleCountUnitScale;
   if (Number.isFinite(selectedAwgProfile?.sampleDepth?.max))
     $('samplesEdit').max = selectedAwgProfile.sampleDepth.max / sampleCountUnitScale;
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments())
+    $('samplesEdit').max = globalThis.ARBDRAW_SEQUENCE.capacity() / sampleCountUnitScale;
   $('tsResolutionEdit').value = Number(
-    ((state.duration / 1000 / Math.max(1, state.samples - 1)) / tsResolutionUnitScale).toPrecision(10),
+    ((globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? 1 / (state.sampleRate * 1e6)
+      : state.duration / 1000 / Math.max(1, state.samples - 1)) / tsResolutionUnitScale).toPrecision(10),
   );
-  $('sampleRateField').title = 'Not used but saved in the JSON.';
+  $('sampleRateField').title = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+    ? 'Shared sequence clock. Segment frequency and sample count are linked at this rate.'
+    : 'Not used but saved in the JSON.';
   $('samplesField').removeAttribute('title');
   renderAwgTiming();
 }
@@ -248,16 +254,17 @@ function renderFrequency() {
   renderAwgTiming();
 }
 function renderAwgTiming() {
-  if (!$('awgFrequencyEdit') || !Number.isFinite(state.frequency) || state.frequency <= 0) return;
-  const awgFrequency = state.frequency / Math.max(1, state.cycles),
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
+  if (!$('awgFrequencyEdit') || !Number.isFinite(output.frequency) || output.frequency <= 0) return;
+  const awgFrequency = output.frequency / Math.max(1, output.cycles),
     awgPeriod = 1 / awgFrequency,
-    highUnit = displayVoltageUnitFor(state.high),
-    lowUnit = displayVoltageUnitFor(state.low),
+    highUnit = displayVoltageUnitFor(output.high),
+    lowUnit = displayVoltageUnitFor(output.low),
     frequencyUnit = displayUnitFor(awgFrequency, frequencyDisplayUnits),
     periodUnit = displayUnitFor(awgPeriod, periodDisplayUnits);
-  $('awgHighEdit').value = Number((state.high / highUnit.scale).toPrecision(10));
+  $('awgHighEdit').value = Number((output.high / highUnit.scale).toPrecision(10));
   $('awgHighUnit').textContent = highUnit.label;
-  $('awgLowEdit').value = Number((state.low / lowUnit.scale).toPrecision(10));
+  $('awgLowEdit').value = Number((output.low / lowUnit.scale).toPrecision(10));
   $('awgLowUnit').textContent = lowUnit.label;
   $('awgFrequencyEdit').value = Number((awgFrequency / frequencyUnit.scale).toPrecision(10));
   $('awgFrequencyUnit').textContent = frequencyUnit.label;
@@ -267,11 +274,12 @@ function renderAwgTiming() {
     ...(projectDocument.AWG || {}),
     profileId: selectedAwgProfile?.id || globalThis.ARBDRAW_DEFAULT_AWG_PROFILE || 'other',
     sampleRateType: selectedAwgProfile?.sampleRateType || 'Fixed',
-    sampleRateMSa: state.sampleRate,
-    sampleCount: state.samples,
-    tsResolutionSeconds: state.duration / 1000 / Math.max(1, state.samples - 1),
-    highVoltage: state.high,
-    lowVoltage: state.low,
+    sampleRateMSa: output.sampleRate,
+    sampleCount: output.samples,
+    tsResolutionSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? 1 / (output.sampleRate * 1e6)
+      : output.duration / 1000 / Math.max(1, output.samples - 1),
+    highVoltage: output.high,
+    lowVoltage: output.low,
     frequencyHz: awgFrequency,
     periodSeconds: awgPeriod,
   };
@@ -343,6 +351,7 @@ function cancelWaveformPreview() {
 }
 
 function commitTimingInput(kind, { preview = false } = {}) {
+  if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return;
   const input = kind === 'rate'
       ? $('rateEdit')
       : kind === 'samples'
@@ -551,6 +560,7 @@ function applyProperties({ preview = false } = {}) {
     valueChanged(inputVoltage('lowInput'), state.low);
   const waveformChanged =
     amplitudeChanged ||
+    (globalThis.ARBDRAW_SEQUENCE?.hasSegments() && frequencyChanged) ||
     ((state.type === 'serial' || state.type === 'square' || state.type === 'pulse') &&
       frequencyChanged) ||
     transitionChanged ||

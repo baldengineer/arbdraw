@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import tempfile
@@ -18,10 +19,18 @@ from python_bridge import __version__
 VERIFY = """
 import json
 import threading
+import sys
+from pathlib import Path
 from importlib.resources import files
 from urllib.request import urlopen
+import python_bridge
+import tekscope_arb_adapter
 from python_bridge.server import BridgeService, create_server, discover_adapters
 
+for package in (python_bridge, tekscope_arb_adapter):
+    assert Path(package.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()), (
+        f'{package.__name__} was imported from outside the release environment'
+    )
 adapters = discover_adapters()
 expected = {'owon-xdg3000', 'rigol-dg1022', 'tekscope-mso2', 'tekscope-mso6'}
 assert expected <= adapters.keys(), f'Missing adapters: {expected - adapters.keys()}'
@@ -69,8 +78,22 @@ def main() -> None:
         )
         if not tray.is_file():
             raise SystemExit(f"Missing tray launcher: {tray}")
-        subprocess.run([str(python), "-c", VERIFY], check=True)
-        subprocess.run([str(python), "-m", "python_bridge", "--help"], check=True, stdout=subprocess.DEVNULL)
+        menu_bar = environment / (
+            "Scripts/arbdraw-bridge-menubar.exe"
+            if sys.platform == "win32"
+            else "bin/arbdraw-bridge-menubar"
+        )
+        if not menu_bar.is_file():
+            raise SystemExit(f"Missing menu bar launcher: {menu_bar}")
+        subprocess.run([str(python), "-c", VERIFY], check=True, cwd=root)
+        subprocess.run(
+            [str(python), "-m", "unittest", "discover", "-s", str(ROOT / "tests"),
+             "-p", "test_tekscope_integration.py"],
+            check=True,
+            cwd=root,
+            env={**os.environ, "ARBDRAW_REQUIRE_TEKSCOPE": "1"},
+        )
+        subprocess.run([str(python), "-m", "python_bridge", "--help"], check=True, cwd=root, stdout=subprocess.DEVNULL)
 
 
 if __name__ == "__main__":

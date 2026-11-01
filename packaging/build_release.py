@@ -39,6 +39,8 @@ def copy_source(source: Path, destination: Path) -> None:
             "build",
             "ignore",
             "local_adapters",
+            "adapter-sources",
+            "TEKSCOPE_ADAPTER_EXTRACTION_PLAN.md",
             "node_modules",
             ".pytest_cache",
         ),
@@ -60,9 +62,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--owon-source", required=True, type=Path)
     parser.add_argument("--rigol-source", required=True, type=Path)
+    parser.add_argument("--tekscope-source", required=True, type=Path)
     parser.add_argument("--output", default=ROOT / "dist", type=Path)
     parser.add_argument("--no-isolation", action="store_true", help="Use installed build dependencies.")
     args = parser.parse_args()
+    for name in ("owon", "rigol", "tekscope"):
+        source = getattr(args, f"{name}_source").resolve()
+        if not (source / "pyproject.toml").is_file():
+            parser.error(f"--{name}-source must contain pyproject.toml: {source}")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
@@ -71,9 +78,11 @@ def main() -> None:
         bridge = staging / "bridge"
         owon = staging / "owon"
         rigol = staging / "rigol"
+        tekscope = staging / "tekscope"
         copy_source(ROOT, bridge)
         copy_source(args.owon_source.resolve(), owon)
         copy_source(args.rigol_source.resolve(), rigol)
+        copy_source(args.tekscope_source.resolve(), tekscope)
 
         metadata = owon / "pyproject.toml"
         contents = metadata.read_text(encoding="utf-8")
@@ -86,7 +95,7 @@ def main() -> None:
         build(bridge, output, args.no_isolation)
         build(owon, output, args.no_isolation)
         build(rigol, output, args.no_isolation)
-        build(bridge / "adapters" / "tekscope", output, args.no_isolation)
+        build(tekscope, output, args.no_isolation)
 
     wheels = sorted(output.glob("*.whl"))
     if len(wheels) != 4:

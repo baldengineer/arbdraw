@@ -152,7 +152,7 @@ class ProbeBridgeTests(unittest.TestCase):
                 return json.dumps(self.payload).encode()
 
         with patch(
-            "python_bridge.windows_tray.urlopen",
+            "python_bridge.tray_controller.urlopen",
             return_value=Response(
                 {
                     "service": "arbdraw-python-bridge",
@@ -168,7 +168,7 @@ class ProbeBridgeTests(unittest.TestCase):
             )
 
         with patch(
-            "python_bridge.windows_tray.urlopen",
+            "python_bridge.tray_controller.urlopen",
             return_value=Response({"service": "something-else", "pid": 42}),
         ):
             self.assertIsNone(probe_bridge("http://127.0.0.1:8876"))

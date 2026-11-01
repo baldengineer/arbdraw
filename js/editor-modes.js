@@ -24,7 +24,7 @@ function syncEditorModeUrl(mode) {
 }
 
 function hasArbitraryEdits() {
-  return state.samplesEdited === true;
+  return state.samplesEdited === true || Boolean(globalThis.ARBDRAW_SEQUENCE?.hasSegments());
 }
 
 function refreshEditorModeHints() {
@@ -81,6 +81,9 @@ function requestBasicMode() {
 
 function convertToBasic() {
   $('basicModeConfirmDialog').close();
+  const hadSequence = globalThis.ARBDRAW_SEQUENCE?.hasSegments();
+  globalThis.ARBDRAW_SEQUENCE?.leave();
+  if (hadSequence) renderDocument();
   clearEditorSelection(false);
   generate(state.type, false, false, false, false);
   state.history = [];
@@ -93,7 +96,7 @@ function convertToBasic() {
 }
 
 globalThis.ARBDRAW_EDITOR_MODES = {
-  isAdvanced: () => editorMode === 'advanced',
+  isAdvanced: () => editorMode === 'advanced' && !globalThis.ARBDRAW_SEQUENCE?.isOverview(),
   refresh: refreshEditorModeHints,
   forOpenedProject: () => setEditorMode(hasArbitraryEdits() ? 'advanced' : 'basic'),
   forNewProject: () => setEditorMode('basic'),

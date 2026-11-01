@@ -38,6 +38,10 @@
               <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
               <div id="editorPointAxisLabel" class="axis-label x-label editor-point-label">POINTS</div>
             </div>
+            <div id="editorSequenceControls" class="editor-sequence-controls" hidden>
+              <div id="editorSegments" class="editor-segments" role="group" aria-label="Sequence segments" hidden></div>
+              <div id="sequenceHint" class="sequence-hint" role="status" hidden></div>
+            </div>
             <div id="editorRecordOverview" class="editor-record-overview" aria-label="Full memory record overview">
               <canvas id="editorOverviewCanvas" aria-hidden="true"></canvas>
               <div id="editorViewportWindow" class="editor-viewport-window" role="slider" tabindex="0" aria-label="Visible portion of memory record" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="Full record"></div>
@@ -62,6 +66,7 @@
                 </div>
               </div>
               <button id="editorFullRecord" class="editor-full-record" type="button">Full Record</button>
+              <button id="addSegmentsBtn" class="editor-full-record" type="button">Add Segments</button>
               <div id="editorSelectionReadout" class="editor-selection-readout" role="status" aria-live="polite" hidden>
                 <span class="editor-selection-title" title="Waveshape and property changes apply only to the selected points">Selection · edits scoped</span>
                 <span>L <output id="editorSelectionLeft">0 pts</output></span>
@@ -214,7 +219,7 @@
   <dialog id="basicModeConfirmDialog" class="open-dialog mode-confirm-dialog" aria-labelledby="basicModeConfirmTitle">
     <form method="dialog">
       <div class="dialog-heading"><div><span class="eyebrow">EDITING MODE</span><h2 id="basicModeConfirmTitle">Switch to Basic?</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
-      <p>Switching to Basic will discard Arbitrary point edits. The waveform will be regenerated from its properties and current filters. Continue?</p>
+      <p>Switching to Basic will discard Arbitrary point edits and the sequence, keeping only the selected segment (or the first segment in full-record view). The waveform will be regenerated from its properties and current filters. Continue?</p>
       <div class="dialog-actions"><button value="cancel" class="ghost">Cancel</button><button id="confirmBasicModeBtn" type="button" class="primary">Switch to Basic</button></div>
     </form>
   </dialog>
@@ -241,8 +246,8 @@
   </dialog>
   <dialog id="exportDialog" class="open-dialog">
     <form method="dialog">
-      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export Waveform</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
-      <p>Choose the file format and filename.</p>
+      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2 id="exportScopeTitle">Export Full Record</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p id="exportScopeDescription">Choose the file format and filename.</p>
       <label class="save-filename-label" for="exportFormatSelect">Format<select class="menu-select" id="exportFormatSelect"><option value="csv">CSV</option><option value="svg">SVG</option><option value="wav">WAV</option></select></label>
       <label id="svgAxesOption" class="save-name-option" hidden><input id="includeSvgAxes" type="checkbox"> Include axes and grid</label>
       <p id="svgExportDescription" hidden>Black waveform lines on a transparent background.</p>
@@ -275,6 +280,10 @@
         <div class="bridge-send-options">
           <label for="instrumentChannel">Channel<select class="menu-select" id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
           <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
+        </div>
+        <div id="instrumentFileOptions" class="bridge-file-options" hidden>
+          <label class="save-filename-label" for="instrumentDirectory">Path<input id="instrumentDirectory" type="text" value="C:/baldee/" spellcheck="false" autocomplete="off"></label>
+          <label class="save-name-option" for="instrumentOverwrite"><input id="instrumentOverwrite" type="checkbox">Overwrite waveform file</label>
         </div>
         <div class="bridge-actions">
           <button id="identifyResourceBtn" type="button" class="ghost">Identify (*IDN?)</button>
@@ -334,6 +343,7 @@
   <script src="js/audio-playback.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/project.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/editor-modes.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/sequence.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/help.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/ui.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/instruments.js?v=__ARBDRAW_BUILD_SHA__"></script>

@@ -2,10 +2,11 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Serial waveform metadata controls.
 function serialSettings() {
-  if (!projectDocument.waveform.serial) {
-    projectDocument.waveform.serial = normalizeSerialSettings();
+  const waveform = typeof editableWaveform === 'function' ? editableWaveform() : projectDocument.waveform;
+  if (!waveform.serial) {
+    waveform.serial = normalizeSerialSettings();
   }
-  return projectDocument.waveform.serial;
+  return waveform.serial;
 }
 
 function serialPayloadValues(payload) {
@@ -116,7 +117,8 @@ function commitSerialProperties(event, { preview = false } = {}) {
   const binaryPattern = editingBinary
     ? $('serialBinaryPattern').value.replace(/[^01]/g, '')
     : '';
-  projectDocument.waveform.serial = normalizeSerialSettings({
+  const waveform = typeof editableWaveform === 'function' ? editableWaveform() : projectDocument.waveform;
+  waveform.serial = normalizeSerialSettings({
     baud: Number($('serialBaud').value),
     wordSize: Number($('serialWordSize').value),
     bitOrder: $('serialBitOrder').value,

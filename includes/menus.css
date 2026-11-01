@@ -26,6 +26,19 @@
   letter-spacing: normal;
 }
 
+.file-menu .export-submenu {
+  position: absolute;
+  top: -5px;
+  left: calc(100% + 3px);
+  right: auto;
+  display: none;
+  min-width: 140px;
+}
+.export-submenu [hidden] { display: none !important; }
+@media (max-width: 560px) {
+  .file-menu .export-submenu { top: calc(100% + 3px); left: 0; min-width: 100%; }
+}
+
 /* Role selectors beat surrounding control styles; button/a keep new actions
    visually consistent even before a role is supplied. */
 .menu-surface :is([role^="menuitem"], [role="option"], button, a) {
