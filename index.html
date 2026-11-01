@@ -246,8 +246,8 @@
   </dialog>
   <dialog id="exportDialog" class="open-dialog">
     <form method="dialog">
-      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2>Export Waveform</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
-      <p>Choose the file format and filename.</p>
+      <div class="dialog-heading"><div><span class="eyebrow">EXPORT WAVEFORM</span><h2 id="exportScopeTitle">Export Full Record</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+      <p id="exportScopeDescription">Choose the file format and filename.</p>
       <label class="save-filename-label" for="exportFormatSelect">Format<select class="menu-select" id="exportFormatSelect"><option value="csv">CSV</option><option value="svg">SVG</option><option value="wav">WAV</option></select></label>
       <label id="svgAxesOption" class="save-name-option" hidden><input id="includeSvgAxes" type="checkbox"> Include axes and grid</label>
       <p id="svgExportDescription" hidden>Black waveform lines on a transparent background.</p>

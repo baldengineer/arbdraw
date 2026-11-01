@@ -240,3 +240,42 @@ test('leaving a sequence retains the selected source or the first source in full
     assert.equal(run('state.type'), overview ? 'sine' : 'square');
   }
 });
+
+test('segment exports contain only the requested segment with its own type and timing', async () => {
+  const { context, run } = harness();
+  context.addSequenceSegment();
+  run('state.samples = 8; generate("square");');
+  const downloads = [], rendered = {};
+  Object.assign(context, {
+    Blob,
+    downloadBlob(blob) { downloads.push(blob); },
+    ARBDRAW_SVG_EXPORT: { waveformSvg(options) { rendered.svg = options; return '<svg/>'; } },
+    ARBDRAW_WAV_EXPORT: { waveformWav(options) { rendered.wav = options; return new ArrayBuffer(0); } },
+  });
+  context.document.querySelector = () => ({ value: 'Sequence test' });
+  vm.runInContext(slice('js/project.js', 'function buildCsvRows(', 'function updateExportFormat('), context);
+  const before = run('JSON.stringify(projectDocument)');
+  for (const index of [0, 1]) {
+    const expected = Array.from(run(`sequenceSegments()[${index}].values`));
+    run(`{ const output = exportWaveformData(${index});
+      downloadCsv(true, "segment.csv", true, output);
+      downloadSvg("segment.svg", output); downloadWav("segment.wav", output); }`);
+    const csv = await downloads.at(-3).text();
+    assert.ok(csv.includes(`Waveform type,${index === 0 ? 'Sine wave' : 'Square wave'}\r\n`));
+    assert.ok(csv.includes(`Frequency (Hz),${index === 0 ? 1000 : 2000}\r\n`));
+    const rows = csv.split('Time (s),Voltage (V)\r\n')[1].trim().split('\r\n');
+    assert.equal(rows.length, expected.length);
+    rows.forEach((row, i) => {
+      const [time, voltage] = row.split(',').map(Number);
+      assert.ok(Math.abs(time - i / 16000) < 1e-12);
+      assert.equal(voltage, expected[i]);
+    });
+    assert.deepEqual(Array.from(rendered.svg.values), expected);
+    assert.equal(rendered.svg.durationSeconds, (expected.length - 1) / 16000);
+    assert.deepEqual(Array.from(rendered.wav.values), expected);
+    assert.equal(rendered.wav.sampleRateHz, 16000);
+  }
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+  assert.throws(() => run('exportWaveformData(2)'), /Select a segment/);
+  assert.throws(() => run('exportWaveformData(-1)'), /Select a segment/);
+});

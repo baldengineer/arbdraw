@@ -68,7 +68,7 @@ New projects open in **Basic**, where you choose a waveshape and adjust its prop
 
 Select **Add Segments** beside **Full Record** to enter Arbitrary mode and create two segments: the current waveform and a copy. The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input; the **+** card appends a copy of the selected segment (or the last segment while viewing the full record). Use **×** to remove a segment.
 
-Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, file exports, browser playback, and Send to AWG always use the complete sequence. Undo/redo and project JSON preserve the segments and their sources.
+Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, browser playback, and Send to AWG use the complete sequence. Under **File → Export Waveform**, choose **Full Record** to export everything or **Segment X** to export the selected segment as CSV, SVG, or WAV. The segment choice appears only while a segment is selected. Undo/redo and project JSON preserve the segments and their sources.
 
 A sequence uses one sample clock, established from the original waveform's sample count and AWG output period. Changing a segment's sample count changes its frequency; changing its frequency or cycle count adjusts its sample count at that clock. Timing is rounded to whole samples and constrained by the AWG profile's total record limit. The AWG frequency and period describe repetition of the complete sequence. Choose the AWG profile before adding segments; it remains fixed until the sequence is removed. WAV export still requires a supported sample rate.
 
@@ -112,7 +112,7 @@ See [ArbDraw_JSON_Format.md](ArbDraw_JSON_Format.md) for the complete field refe
 
 ## Exporting waveforms
 
-Choose **Export Waveform**, select **CSV**, **SVG**, or **WAV**, and enter a filename.
+Choose **File → Export Waveform → Full Record** (or **Segment X** while a segment is selected), select **CSV**, **SVG**, or **WAV**, and enter a filename. Segment exports start their time axis at zero and retain the shared sequence sample rate. Their filenames include the segment number, and updating the project name is unchecked by default.
 
 - **CSV** exports voltage samples with an optional metadata header and a timestamp column that is included by default but can be omitted. The timestamp choice is remembered until you create a new project or reset all settings.
 - **SVG** exports black waveform lines on a transparent background, with optional axes and grid.
