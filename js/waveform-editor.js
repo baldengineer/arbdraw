@@ -189,6 +189,13 @@ function generate(
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
+  if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
+  // Initialize Serial through the same timing path as a payload edit. Sequences
+  // retain their shared clock and explicitly allocated segment lengths.
+  if (type === 'serial' && !globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+    && (state.type !== 'serial' || !state.data.length)) {
+    ensureSerialPeriodCoversPayload();
+  }
   const n = state.samples,
     existingData = state.data,
     range = waveformGenerationRange(
@@ -222,7 +229,6 @@ function generate(
           })
         : null,
     bufferDurationSeconds = waveformDurationMs() / 1000;
-  if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
   state.type = type;
   const generatedData = Array.from({ length: generatedPointCount }, (_, i) => {
     const t = i / Math.max(1, globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? generatedPointCount : generatedPointCount - 1),

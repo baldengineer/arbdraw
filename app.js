@@ -67,5 +67,4 @@ $('playWaveformBtn').onclick = async () => {
 };
 
 renderDocument();
-if (state.type === 'serial') ensureSerialPeriodCoversPayload();
 generate();
