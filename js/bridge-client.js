@@ -66,7 +66,7 @@
       }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      let response;
+      let response, text;
       try {
         response = await this.fetchImpl(`${this.baseUrl}${path}`, {
           method,
@@ -74,8 +74,9 @@
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal,
         });
+        text = await response.text();
       } catch (error) {
-        const timedOut = error?.name === 'AbortError';
+        const timedOut = controller.signal.aborted || error?.name === 'AbortError';
         throw new BridgeRequestError(
           timedOut
             ? `The Python bridge did not respond within ${timeoutMs} ms.`
@@ -86,7 +87,6 @@
         clearTimeout(timeout);
       }
 
-      const text = await response.text();
       let payload = null;
       if (text) {
         try {

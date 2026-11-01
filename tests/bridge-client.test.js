@@ -117,3 +117,54 @@ test('sends adapter channel and output options with a waveform', async () => {
     enable_output: true,
   });
 });
+const delayedFetch = ({ stall = false, text = '{"status":"ok"}', fail = false, ok = true, status = 200 } = {}) =>
+  async (_url, { signal }) => ({ ok, status, text: () => new Promise((resolve, reject) => {
+    const abort = () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    if (!stall) setTimeout(() => {
+      signal.removeEventListener('abort', abort);
+      if (fail) reject(new TypeError('body transport failed'));
+      else resolve(text);
+    }, 5);
+  }) });
+
+test('request deadline covers an abort-aware body that stalls after headers', async () => {
+  let signal;
+  const fetchImpl = delayedFetch({ stall: true });
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', { timeoutMs: 20,
+    fetchImpl: (url, options) => { signal = options.signal; return fetchImpl(url, options); } });
+  await assert.rejects(client.health(), { code: 'bridge_timeout' });
+  assert.equal(signal.aborted, true);
+});
+
+test('body consumption preserves success, malformed JSON, transport and HTTP errors', async () => {
+  for (const [options, expected] of [
+    [{}, null], [{ text: 'not json' }, 'invalid_bridge_response'],
+    [{ fail: true }, 'bridge_unreachable'],
+    [{ ok: false, status: 403, text: '{"error":{"code":"origin_not_allowed","message":"Denied"}}' }, 'origin_not_allowed'],
+  ]) {
+    const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', { timeoutMs: 1000, fetchImpl: delayedFetch(options) });
+    if (expected) await assert.rejects(client.health(), { code: expected });
+    else assert.deepEqual(await client.health(), { status: 'ok' });
+  }
+});
+
+test('a stalled body releases instrument action and keepalive state', async () => {
+  const vm = require('node:vm'), fs = require('node:fs'), path = require('node:path');
+  const source = fs.readFileSync(path.join(__dirname, '../js/instruments.js'), 'utf8');
+  const extract = (from, to) => source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', { timeoutMs: 10, fetchImpl: delayedFetch({ stall: true }) });
+  let offline = 0;
+  const context = vm.createContext({ bridgeClient: client, bridgeDialog: { open: true }, busy: false, keepAlivePending: false,
+    updateActions() {}, setResult() {}, isConnectionError: () => true,
+    markBridgeOnline() {}, markBridgeOffline() { offline++; } });
+  vm.runInContext(extract('  async function runBridgeAction(', '  async function loadResources(')
+    + extract('  async function checkBridgeHealth(', '  function openSendToAwgDialog('), context);
+  await context.runBridgeAction(() => client.health());
+  assert.equal(context.busy, false);
+  await context.checkBridgeHealth();
+  assert.equal(context.keepAlivePending, false);
+  await context.checkBridgeHealth();
+  assert.equal(offline, 3);
+});
