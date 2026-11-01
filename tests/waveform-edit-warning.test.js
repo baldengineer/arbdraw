@@ -64,7 +64,7 @@ test('destructive property and record-level changes use the replacement guard', 
   const filters = fs.readFileSync(path.join(__dirname, '..', 'js', 'filters.js'), 'utf8');
   const serial = fs.readFileSync(path.join(__dirname, '..', 'js', 'serial-properties.js'), 'utf8');
 
-  assert.match(properties, /waveformChanged && waveformReplacementNeedsConfirmation\(\)/);
+  assert.match(properties, /waveformChanged && waveformReplacementNeedsConfirmation\(scopeSelection\)/);
   assert.match(properties, /function applyAwgProfile[\s\S]*confirmWaveformReplacement\(false\)/);
   assert.match(properties, /function commitTimingInput[\s\S]*waveformReplacementNeedsConfirmation\(false\)/);
   assert.match(filters, /function regenerateWithFilters[\s\S]*confirmWaveformReplacement\(false\)/);

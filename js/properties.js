@@ -305,8 +305,12 @@ function syncInputs(updateSourceLevels = false) {
     state.high = state.sourceHigh;
     state.low = state.sourceLow;
   }
-  state.cycles = Math.max(1, Math.round(+$('cyclesInput').value));
-  state.frequency = Math.max(0.000001, inputFrequency());
+  const cycles = Math.max(1, Math.round(+$('cyclesInput').value)),
+    frequency = Math.max(0.000001, inputFrequency());
+  if (!globalThis.ARBDRAW_SEQUENCE?.setTiming(cycles, frequency)) {
+    state.cycles = cycles;
+    state.frequency = frequency;
+  }
   state.phase = +$('phaseInput').value;
   state.duty = +$('dutyInput').value;
   state.symmetry = +$('symmetryInput').value;
@@ -330,7 +334,6 @@ function beginWaveformPreview() {
     historyLength: state.history.length,
     redo: state.redo.map((snapshot) => cloneWaveform(snapshot)),
   };
-  pushHistory();
 }
 
 function finishWaveformPreview() {
@@ -569,9 +572,13 @@ function applyProperties({ preview = false } = {}) {
     valueChanged(+$('dutyInput').value, state.duty) ||
     valueChanged(+$('symmetryInput').value, state.symmetry) ||
     valueChanged(+$('rcTauInput').value, state.rcTau);
-  if (waveformChanged && waveformReplacementNeedsConfirmation()) {
+  const proposedTiming = globalThis.ARBDRAW_SEQUENCE?.proposedTiming(
+    +$('cyclesInput').value, Math.max(0.000001, inputFrequency()),
+  );
+  const scopeSelection = !proposedTiming || proposedTiming.sampleCount === state.samples;
+  if (waveformChanged && waveformReplacementNeedsConfirmation(scopeSelection)) {
     if (preview) return false;
-    if (!confirmWaveformReplacement()) {
+    if (!confirmWaveformReplacement(scopeSelection)) {
       renderDocument();
       return false;
     }
@@ -583,7 +590,7 @@ function applyProperties({ preview = false } = {}) {
       state.type,
       !preview && !waveformPreviewTransaction,
       !preview && !waveformPreviewTransaction,
-      true,
+      scopeSelection,
       false,
       preview,
     );

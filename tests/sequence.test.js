@@ -366,3 +366,61 @@ test('segment exports contain only the requested segment with its own type and t
   assert.throws(() => run('exportWaveformData(2)'), /Select a segment/);
   assert.throws(() => run('exportWaveformData(-1)'), /Select a segment/);
 });
+
+function loadPropertyEditing(fixture) {
+  const { context, run, element } = fixture;
+  Object.assign(context, {
+    inputVoltage: id => +element(id).value,
+    inputFrequency: () => +element('frequencyInput').value,
+    inputTransitionTime: id => +element(id).value,
+    renderTransitionTimes() {}, refreshScopeTime() {}, refreshScopeVertical() {},
+  });
+  vm.runInContext(slice('js/properties.js', 'function syncInputs(', 'function commitTimingInput(')
+    + slice('js/properties.js', 'function propertiesDiffer()', "document.querySelectorAll('[data-symmetry]')"), context);
+  for (const [id, key] of Object.entries({ highInput: 'high', lowInput: 'low', cyclesInput: 'cycles',
+    frequencyInput: 'frequency', phaseInput: 'phase', dutyInput: 'duty', symmetryInput: 'symmetry',
+    rcTauInput: 'rcTau', riseTimeInput: 'riseTime', fallTimeInput: 'fallTime' })) element(id).value = run(`state.${key}`);
+}
+
+test('property timing replacement confirms before mutation and creates one undo step', () => {
+  for (const edit of [ { frequencyInput: 1000 }, { frequencyInput: 1 / 0.001 }, { cyclesInput: 2 },
+    { frequencyInput: 0.001 }, { cyclesInput: 2, frequencyInput: 1000 } ]) {
+    const fixture = harness(40), { context, run, element } = fixture;
+    context.addSequenceSegment();
+    run('state.data[0] = 123; state.samplesEdited = true; pushHistory(); state.redo = [cloneWaveform()];');
+    context.currentEditorSelection = () => ({ left: 2, right: 4 });
+    loadPropertyEditing(fixture);
+    for (const [id, value] of Object.entries(edit)) element(id).value = value;
+    const before = run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo, active: state.activeSegment })');
+    assert.equal(context.applyProperties({ preview: true }), false);
+    assert.equal(run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo, active: state.activeSegment })'), before);
+    context.window.confirm = () => false;
+    assert.equal(context.applyProperties(), false);
+    assert.equal(run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo, active: state.activeSegment })'), before);
+    const historyLength = run('state.history.length');
+    context.window.confirm = () => true;
+    assert.equal(context.applyProperties(), true);
+    assert.equal(run('state.history.length'), historyLength + 1);
+    assert.notEqual(run('state.data[0]'), 123);
+    assert.equal(run('state.samples'), edit.frequencyInput === 0.001 || (edit.cyclesInput && edit.frequencyInput) ? 32 : 16);
+    run('undoWaveform();');
+    assert.equal(run('state.data[0]'), 123);
+    assert.equal(run('state.samples'), 8);
+  }
+});
+
+test('timing changes rounding to the existing count preserve selection and preview history', () => {
+  const fixture = harness(), { context, run, element, confirmations } = fixture;
+  context.addSequenceSegment();
+  run('state.data[0] = 123; state.samplesEdited = true; pushHistory();');
+  context.currentEditorSelection = () => ({ left: 2, right: 4 });
+  loadPropertyEditing(fixture);
+  element('frequencyInput').value = 2001;
+  const count = run('state.history.length');
+  assert.equal(context.applyProperties({ preview: true }), true);
+  assert.equal(run('state.data[0]'), 123);
+  assert.equal(run('state.samples'), 8);
+  context.applyProperties();
+  assert.equal(confirmations.length, 0);
+  assert.equal(run('state.history.length'), count + 1);
+});

@@ -47,6 +47,20 @@ function setSequenceField(key, value) {
   return true;
 }
 
+function proposedSequenceTiming(cycles, frequency) {
+  if (!sequenceSegments()?.[state.activeSegment]) return null;
+  const rate = projectDocument.waveform.sampleRateMSa * 1e6;
+  const sampleCount = Math.max(2, Math.min(Math.round(rate * cycles / frequency), sequenceCapacity()));
+  return { cycles, sampleCount, frequencyHz: rate * cycles / sampleCount, durationMs: sampleCount / rate * 1000 };
+}
+
+function setSequenceTiming(cycles, frequency) {
+  const timing = proposedSequenceTiming(cycles, frequency);
+  if (!timing) return false;
+  Object.assign(editableWaveform(), timing);
+  return true;
+}
+
 function selectSequenceSegment(index, commitDraft = true) {
   if (!sequenceSegments()) return false;
   // Commit any live field preview before changing its target.
@@ -251,6 +265,7 @@ globalThis.ARBDRAW_SEQUENCE = {
   hasSegments: () => Boolean(sequenceSegments()),
   sync: syncSequence, refresh: refreshSequence, setField: setSequenceField,
   capacity: sequenceCapacity,
+  proposedTiming: proposedSequenceTiming, setTiming: setSequenceTiming,
   updateOverviewWindow: updateSequenceOverviewWindow,
   isOverview: sequenceOverview, leave: leaveSequence,
   showOverview: () => {
