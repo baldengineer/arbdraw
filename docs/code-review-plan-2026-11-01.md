@@ -4,13 +4,48 @@ Reviewed: 2026-11-01. Source revision: `e570ae129cfad40b665a791a8b803d302095637f
 Review branch: `codex/full-code-review-plan`.
 Fork worktree: `C:/Users/balde/.codex/worktrees/0e45/ArbDraw`.
 
+## Implementation status — 2026-11-01
+
+All nine findings below have been implemented on `codex/full-code-review-plan`, with one commit per finding. The original findings and source line ranges are retained as historical review evidence; they are not line ranges in the repaired source.
+
+| Finding | Commit | Implemented repair |
+| --- | --- | --- |
+| H1 | `9a295ca` | Admission before API dispatch; exact trusted origins; JSON-only command bodies; no opaque-origin access; Origin-less REST clients require an environment-configured token. The local UI uses `--serve-app`; browser error messages and setup instructions explain the change. |
+| M1 | `738b2c3` | Predict the clamped segment count before confirmation; couple frequency/cycles updates; preserve selection-scoped generation only for compatible counts; prevent destructive live previews; one history step per preview transaction. |
+| M2 | `b0a7410` | Refresh Samples through document rendering, invalidate queued chunks, update readonly state, and reject stale/noninteger/out-of-bounds indices. |
+| M4 | `2e4e3d1` | Reject unknown sequence profiles atomically, resolve legacy IDs, and validate against the same profile restored by import. |
+| M3 | `4b502b5` | Store timing quantities in display units with schema version 1; migrate old canonical settings once; unify count-unit aliases; bound startup and unrestricted timing allocations. |
+| M6 | `73d481e` | Keep deadlines active through response-body consumption and map abort/transport failures consistently. |
+| M5 | `6d33dd1` | Cache aggregate samples using data/metadata revisions, invalidate in-place edits, cache card previews, and batch segment generation before rendering. |
+| L2 | `b381f89` | Share pure segment summaries and waveform/output projection between import, runtime and export. |
+| L1 | `1af7c05` | Update sequence help for shape selection, inherited settings, regeneration warnings, fixed totals, remainder distribution, and corrected timing examples. |
+
+### Final verification
+
+- Full JavaScript suite: `node --test tests/*.test.js` — **174 passed, 0 failed**.
+- Full Python suite: `python -m unittest discover -s tests -p 'test_*.py'` — **33 passed, 0 failed**. Full suites ran outside sandbox process/temporary-directory restrictions.
+- Added regression coverage in `tests/test_python_bridge.py`, `tests/sequence.test.js`, `tests/settings-persistence.test.js`, `tests/bridge-client.test.js`, and `tests/keyboard-shortcuts-help.test.js`. Existing waveform-warning assertions were updated for the proposed-range guard.
+- Security tests use fake VISA/adapter backends for query, IDN and send routes. Rejected origins, opaque origins, missing/invalid tokens, and non-JSON POSTs produce no backend calls. Approved browser origins, token-authenticated Origin-less clients, and preflights are covered.
+- Sequence tests cover canceled/accepted timing replacements, previews, clamping/rounding, history isolation, real Samples rendering across Undo/Redo, stale indices, pending chunks, profile import, cache invalidation, unchanged neighboring segments, and full/segment output behavior.
+- Local one-million-point probe: initial aggregation **32.91 ms**; **1,000 unchanged reads in 9.34 ms**, reusing the same sample array. This is a local measurement, not a CI threshold or a frame-rate claim.
+- Browser verification used the worktree served explicitly on `127.0.0.1:19287`: shape menu and segment cards; the 2,000-point example becoming two 1,000-point segments at 2 kHz with the full record still 1 ms; Samples **8 → 16 → 8** across menu Undo/Redo; selected-segment export dialog reporting 8 points; corrected help layout/encoding; and a one-million-point sequence with zoom/pan/full-record navigation. No console errors were reported during those checks.
+- Confirmation cancellation and exact history preservation are covered by automated application-function tests. Native browser confirmation cancel/accept behavior was not independently verified. No real instrument operations, native tray/menu-bar interaction, or screen-reader audit was performed.
+
+### Compatibility and follow-up
+
+Direct `file://` instrument control is intentionally replaced by the existing loopback `--serve-app` workflow. Other local servers require an exact `--allow-origin` including their port. Origin-less REST clients set `ARBDRAW_BRIDGE_TOKEN` in the bridge environment and send the same value in `X-ArbDraw-Token`; health and direct one-shot CLI operations remain available without it. This is a browser-origin boundary, not authentication against non-browser clients that forge an approved Origin, so the default loopback binding remains important.
+
+The finite application ceiling is 1,000,000 samples, including Other and URL/default startup values; smaller profile limits still apply. Direct in-place sequence sample writers must finish with `state.samplesEdited = true` (as pencil/table writers do), or explicitly invalidate sequence data. Undo snapshots retain independent arrays.
+
+The remaining work is verification on real instruments and native application surfaces, plus the browser confirmation interaction noted above; no reviewed code repair is intentionally deferred.
+
 ## Scope and result
 
 The source checkout was clean on `main`. With no PR or comparison revision supplied, this review uses `8eab7e1..e570ae1`: the complete sequence feature, export-scope menu, redistribution/overwrite warning, waveshape picker, and close-button changes. All 24 changed files were reviewed, together with the first-party code they depend on. Existing issues found in those dependencies are explicitly distinguished from regressions. The review covers correctness, boundary cases, unsafe inputs, dependent behavior, performance, and opportunities to combine duplicate functions.
 
 Result: **1 High, 6 Medium, and 2 Low findings**. Fix H1 before treating the local bridge's origin policy as a security boundary. Fix M1-M4 before relying on sequence editing and persistence for important work. L2 is a refactoring opportunity, not an independently reproduced malfunction.
 
-Only this plan is changed by the review commit. No application fixes, dependency upgrades, uploads, instrument operations, or releases were performed.
+Only this plan was changed by the original review commit. The implementation commits listed above subsequently repaired the findings. No dependency upgrades, uploads, instrument operations, or releases were performed.
 
 All line ranges below refer to the reviewed source revision, not to this document. Paths are absolute paths in the review fork; the suffix after `ArbDraw/` is the repository-relative path for another checkout.
 
