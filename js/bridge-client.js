@@ -59,6 +59,11 @@
     }
 
     async request(path, { method = 'GET', body, timeoutMs = this.timeoutMs } = {}) {
+      if (globalScope.location?.protocol === 'file:') {
+        throw new BridgeRequestError('Open ArbDraw at http://127.0.0.1:8876 after starting the bridge with --serve-app .; file:// pages cannot control instruments.', {
+          code: 'origin_not_allowed',
+        });
+      }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
       let response;

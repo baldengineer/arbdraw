@@ -2,6 +2,7 @@
 <article>
   <h1>Python bridge</h1>
   <p>The ArbDraw Python bridge is a small local server that connects the browser-based editor to VISA instruments and installed waveform adapters. It runs on your computer and listens only on <code>127.0.0.1</code> by default.</p>
+  <p>For a local checkout, run <code>python -m python_bridge --serve-app .</code> and open <code>http://127.0.0.1:8876</code>. Direct <code>file://</code> pages cannot control instruments. Other hosted deployments need an explicit <code>--allow-origin</code> with the exact origin and port.</p>
 
   <h2>Download and install</h2>
   <p>Open the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">latest ArbDraw bridge release</a> and download <code>arbdraw-bridge-with-adapters.zip</code>. It contains the bridge plus adapter packages for OWON XDG3000 / Multicomp MP750290, Rigol DG1022, and TekScope MSO2/MSO6 instruments. Python 3.11 or newer is required.</p>

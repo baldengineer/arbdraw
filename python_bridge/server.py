@@ -13,6 +13,7 @@ import importlib.metadata
 import json
 import math
 import os
+import secrets
 import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -321,12 +322,18 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
     service: BridgeService
     static_directory: str | None = None
     allowed_origins: tuple[str, ...] = ("https://baldengineer.github.io",)
+    api_token: str | None = None
     server_version = "ArbDrawBridge/1"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, directory=self.static_directory, **kwargs)
 
     def do_OPTIONS(self) -> None:
+        try:
+            self._admit_request(preflight=True)
+        except BridgeError as error:
+            self._send_json(error.status, {"error": {"code": error.code, "message": error.message}})
+            return
         self.send_response(HTTPStatus.NO_CONTENT)
         self._cors_headers()
         self.send_header("Access-Control-Max-Age", "600")
@@ -344,6 +351,7 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
 
     def _handle_request(self) -> None:
         try:
+            self._admit_request()
             payload = self._read_json() if self.command == "POST" else None
             status, response = self.service.dispatch(
                 self.command, urlsplit(self.path).path.rstrip("/") or "/", payload
@@ -356,6 +364,26 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 {"error": {"code": "internal_error", "message": f"Bridge error: {error}"}},
             )
+
+    def _admit_request(self, preflight: bool = False) -> None:
+        origin = self.headers.get("Origin")
+        if origin is not None and (origin == "null" or origin not in self.allowed_origins):
+            raise BridgeError(HTTPStatus.FORBIDDEN, "origin_not_allowed",
+                              "Open ArbDraw from the hosted app or the bridge's --serve-app URL.")
+        # Health is also consumed by the native tray controller. It performs no VISA work.
+        health = self.command == "GET" and urlsplit(self.path).path.rstrip("/") == "/api/v1/health"
+        if origin is None and not health:
+            token = self.headers.get("X-ArbDraw-Token", "")
+            if not self.api_token or not secrets.compare_digest(token.encode(), self.api_token.encode()):
+                raise BridgeError(HTTPStatus.UNAUTHORIZED, "bridge_token_required",
+                                  "Origin-less REST clients must supply X-ArbDraw-Token.")
+        if preflight:
+            method = self.headers.get("Access-Control-Request-Method", "GET")
+            headers = {part.strip().lower() for part in self.headers.get("Access-Control-Request-Headers", "").split(",") if part.strip()}
+            if method not in {"GET", "POST"} or not headers <= {"content-type", "x-arbdraw-token"}:
+                raise BridgeError(HTTPStatus.FORBIDDEN, "preflight_not_allowed", "Unsupported method or headers.")
+        elif self.command == "POST" and self.headers.get_content_type() != "application/json":
+            raise BridgeError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "json_required", "Content-Type must be application/json.")
 
     def _read_json(self) -> dict[str, Any]:
         try:
@@ -386,17 +414,11 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
 
     def _cors_headers(self) -> None:
         origin = self.headers.get("Origin")
-        parsed_origin = urlsplit(origin) if origin and origin != "null" else None
-        loopback_origin = parsed_origin is not None and parsed_origin.hostname in {
-            "127.0.0.1",
-            "localhost",
-            "::1",
-        }
-        if origin == "null" or loopback_origin or origin in self.allowed_origins:
+        if origin and origin != "null" and origin in self.allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-ArbDraw-Token")
 
     def log_message(self, format_string: str, *args: Any) -> None:
         print(f"{self.address_string()} - {format_string % args}")
@@ -408,12 +430,18 @@ def create_server(
     service: BridgeService | None = None,
     static_directory: str | None = None,
     allowed_origins: tuple[str, ...] = ("https://baldengineer.github.io",),
+    api_token: str | None = None,
 ) -> ThreadingHTTPServer:
     handler = type("ConfiguredBridgeRequestHandler", (BridgeRequestHandler,), {})
     handler.service = service or BridgeService()
     handler.static_directory = static_directory
-    handler.allowed_origins = allowed_origins
-    return ThreadingHTTPServer((host, port), handler)
+    handler.api_token = api_token or os.environ.get("ARBDRAW_BRIDGE_TOKEN")
+    server = ThreadingHTTPServer((host, port), handler)
+    local_origins = ()
+    if static_directory is not None and host in {"127.0.0.1", "localhost"}:
+        local_origins = (f"http://127.0.0.1:{server.server_port}", f"http://localhost:{server.server_port}")
+    handler.allowed_origins = (*allowed_origins, *local_origins)
+    return server
 
 
 def load_waveform_handler(specification: str | None) -> WaveformHandler | None:

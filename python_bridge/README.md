@@ -160,7 +160,7 @@ The bridge listens only on `http://127.0.0.1:8876` by default.
 
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
 
-Keep the default loopback host unless you deliberately want to expose instrument control to another machine. Browser access is limited to local/file origins and the ArbDraw GitHub Pages origin. Use repeatable `--allow-origin https://example.test` arguments for another trusted deployment.
+Keep the default loopback host unless you deliberately want to expose instrument control to another machine. Browser access is limited to the ArbDraw GitHub Pages origin and the exact loopback URLs served by `--serve-app`. Local `file://` pages (opaque `null` origins) are rejected; run `python -m python_bridge --serve-app .` from the checkout and open `http://127.0.0.1:8876` instead. Use repeatable `--allow-origin https://example.test` arguments for another trusted deployment.
 
 ## TekScope quick start
 
@@ -384,4 +384,4 @@ Returning `None` uses a generic success message. Raise an exception to return an
 - `POST /api/v1/visa/query` with `resource`, `command`, and optional `timeout_ms`
 - `POST /api/v1/waveforms/send` with `resource`, complete `waveform` document, and optional `options`
 
-Errors use `{ "error": { "code": "...", "message": "..." }`. CORS is enabled for the hosted ArbDraw app, loopback web servers, and a local `file://` copy.
+Errors use `{ "error": { "code": "...", "message": "..." }`. Origin checks run before API dispatch, and command POSTs require `application/json`. Other local web servers need an explicit `--allow-origin` including the port. Origin-less REST clients must send `X-ArbDraw-Token` matching a strong secret set in the bridge process environment as `ARBDRAW_BRIDGE_TOKEN`; without that configuration they are denied. The read-only health endpoint and direct `--idn`/`--list-resources` CLI commands need no token. Keep the token private; do not put it in URLs. This is a browser-origin boundary, not authentication against clients that can forge an approved Origin: keep the bridge on loopback.

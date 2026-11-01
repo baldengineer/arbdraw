@@ -57,13 +57,13 @@ class PythonBridgeTests(unittest.TestCase):
         cls.server.server_close()
         cls.thread.join(timeout=2)
 
-    def request(self, path, payload=None, method=None, origin="null"):
+    def request(self, path, payload=None, method=None, origin=None):
         data = None if payload is None else json.dumps(payload).encode()
         request = Request(
             self.base_url + path,
             data=data,
             method=method or ("POST" if data else "GET"),
-            headers={"Content-Type": "application/json", "Origin": origin},
+            headers={"Content-Type": "application/json", "Origin": origin or self.base_url},
         )
         try:
             with urlopen(request, timeout=2) as response:
@@ -74,7 +74,7 @@ class PythonBridgeTests(unittest.TestCase):
     def test_health_and_cors(self):
         status, headers, body = self.request("/api/v1/health")
         self.assertEqual(status, 200)
-        self.assertEqual(headers["Access-Control-Allow-Origin"], "null")
+        self.assertEqual(headers["Access-Control-Allow-Origin"], self.base_url)
         self.assertEqual(body["api_version"], "1")
         self.assertEqual(body["service"], "arbdraw-python-bridge")
         self.assertEqual(body["pid"], os.getpid())
@@ -83,6 +83,58 @@ class PythonBridgeTests(unittest.TestCase):
 
         _, headers, _ = self.request("/api/v1/health", origin="https://untrusted.example")
         self.assertNotIn("Access-Control-Allow-Origin", headers)
+
+    def test_admission_precedes_every_instrument_endpoint(self):
+        routes = {
+            "/api/v1/visa/query": {"resource": "FAKE", "command": "*IDN?"},
+            "/api/v1/visa/idn": {"resource": "FAKE"},
+            "/api/v1/waveforms/send": {"resource": "FAKE", "waveform": {"schema": "arbdraw.waveform"}},
+        }
+        handler = self.server.RequestHandlerClass
+        handler.api_token = "test-capability"
+        try:
+            for route, payload in routes.items():
+                for origin, token, content_type, expected in [
+                    ("https://untrusted.example", None, "text/plain", 403),
+                    ("null", "test-capability", "application/json", 403),
+                    (self.base_url + "/", None, "application/json", 403),
+                    ("http://localhost:1", None, "application/json", 403),
+                    (None, None, "application/json", 401),
+                    (None, "wrong", "application/json", 401),
+                    (self.base_url, None, "text/plain", 415),
+                    (self.base_url, None, "application/json", 200),
+                    ("https://baldengineer.github.io", None, "application/json", 200),
+                    (None, "test-capability", "application/json", 200),
+                ]:
+                    with self.subTest(route=route, origin=origin, expected=expected):
+                        before = len(self.visa.queries) + len(self.sent)
+                        headers = {"Content-Type": content_type}
+                        if origin is not None:
+                            headers["Origin"] = origin
+                        if token:
+                            headers["X-ArbDraw-Token"] = token
+                        request = Request(self.base_url + route, data=json.dumps(payload).encode(), headers=headers)
+                        try:
+                            with urlopen(request, timeout=2) as response:
+                                status = response.status
+                        except HTTPError as error:
+                            status = error.code
+                            error.close()
+                        self.assertEqual(status, expected)
+                        self.assertEqual(len(self.visa.queries) + len(self.sent) - before, int(expected == 200))
+                for origin, expected in [(self.base_url, 204), ("null", 403), ("https://untrusted.example", 403)]:
+                    request = Request(self.base_url + route, method="OPTIONS", headers={
+                        "Origin": origin, "Access-Control-Request-Method": "POST",
+                        "Access-Control-Request-Headers": "Content-Type"})
+                    try:
+                        with urlopen(request, timeout=2) as response:
+                            status = response.status
+                    except HTTPError as error:
+                        status = error.code
+                        error.close()
+                    self.assertEqual(status, expected)
+        finally:
+            handler.api_token = None
 
     def test_can_serve_the_app(self):
         with urlopen(self.base_url + "/", timeout=2) as response:
