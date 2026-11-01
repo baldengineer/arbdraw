@@ -64,7 +64,7 @@ function selectSequenceSegment(index, commitDraft = true) {
   return true;
 }
 
-function addSequenceSegment() {
+function addSequenceSegment(type = null) {
   document.activeElement?.blur();
   finishWaveformPreview();
   const segments = sequenceSegments(), source = segments
@@ -87,6 +87,7 @@ function addSequenceSegment() {
     original.durationMs = original.sampleCount / (original.sampleRateMSa * 1000);
     projectDocument.waveform.segments = [original, cloneWaveform(original)];
   } else segments.push(cloneWaveform(source));
+  if (type) sequenceSegments().at(-1).type = type;
   // Keep the record length and shared clock; distribute leftover whole points.
   const points = Math.floor(total / count), remainder = total % count,
     rate = projectDocument.waveform.sampleRateMSa * 1e6;
@@ -217,7 +218,8 @@ function refreshSequence() {
     });
     const add = document.createElement('button'); add.type = 'button';
     add.className = 'segment-add'; add.textContent = '+';
-    add.setAttribute('aria-label', 'Add segment'); add.onclick = addSequenceSegment;
+    add.setAttribute('aria-label', 'Add segment');
+    bindSegmentAddButton(add);
     strip.append(add); segmentCardCount = segments.length;
   }
   [...strip.querySelectorAll('.segment-card')].forEach((card, index) => {
@@ -256,4 +258,17 @@ globalThis.ARBDRAW_SEQUENCE = {
     return selectSequenceSegment(null);
   },
 };
-$('addSegmentsBtn').onclick = addSequenceSegment;
+function bindSegmentAddButton(button) {
+  button.title = 'Choose a waveshape for the new segment';
+  button.setAttribute('aria-haspopup', 'menu');
+  button.setAttribute('aria-controls', 'functionSelectMenu');
+  button.setAttribute('aria-expanded', 'false');
+  const openMenu = () => openFunctionSelectMenu(button, (type) => addSequenceSegment(type));
+  button.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    openMenu();
+  });
+  button.onclick = openMenu;
+}
+bindSegmentAddButton($('addSegmentsBtn'));

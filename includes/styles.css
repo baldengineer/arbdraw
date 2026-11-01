@@ -226,14 +226,15 @@ button { color:inherit; }
 .segment-card{position:relative;flex:0 0 168px;padding:5px;background:var(--scope);border:1px solid var(--line);border-radius:5px;color:var(--muted)}
 .segment-card.active{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
 .segment-select{display:grid;gap:3px;width:100%;padding:2px;color:var(--ink);background:transparent;text-align:left;font-size:10px;cursor:pointer}
-.segment-select>span:first-child{padding-right:20px;font-weight:800}
+.segment-select>span:first-child{display:flex;align-items:center;min-height:40px;padding-right:44px;font-weight:800}
 .segment-select canvas{display:block;width:100%;height:36px}
 .segment-shape{font-size:9px;color:var(--muted)}
 .segment-card>label{display:flex;align-items:center;gap:5px;margin-top:5px;font:10px ui-monospace,monospace}
 .segment-card input{width:110px;min-width:0;padding:3px 5px;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:3px;font:inherit}
-.segment-remove{position:absolute;right:5px;top:5px;background:transparent;color:var(--muted);cursor:pointer}
+.segment-remove{position:absolute;right:5px;top:5px;display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:50%;background:#c62828;color:#fff;font-size:26px;line-height:1;cursor:pointer}
 .segment-add{flex:0 0 46px;border:1px dashed var(--muted);border-radius:5px;background:var(--scope);color:var(--ink);font-size:26px;cursor:pointer}
-.segment-add:hover,.segment-remove:hover{color:var(--orange);border-color:var(--orange)}
+.segment-add:hover{color:var(--orange);border-color:var(--orange)}
+.segment-remove:hover{background:#a51f1f}
 .sequence-hint{color:var(--muted);font-size:10px}
 [data-sequence-overview="true"] #toolrail{visibility:hidden}
 @media(max-width:560px){.canvas-area:has(.editor-sequence-controls:not([hidden])){grid-template-rows:auto minmax(0,1fr) auto 38px auto}}

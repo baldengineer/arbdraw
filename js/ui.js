@@ -33,7 +33,7 @@ document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest?.('#scopeTimeUnitMenu,#scopeTimeUnitBtn')) closeScopeTimeUnitMenu();
   if (!event.target.closest?.('#scopeDivisionMenu,#scopeVerticalControl')) closeScopeDivisionMenu();
   if (!event.target.closest?.('#scopeZoomMenu')) closeScopeZoomMenu();
-  if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn')) closeFunctionSelectMenu();
+  if (!event.target.closest?.('#functionSelectMenu,#functionSelectBtn,#addSegmentsBtn,.segment-add')) closeFunctionSelectMenu();
   if (!event.target.closest?.('#audioVolumeControl')) globalThis.closeAudioVolumeControl?.();
 });
 function closePropertyMenus() {

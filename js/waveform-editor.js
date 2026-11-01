@@ -991,19 +991,35 @@ function updateFunctionSelect(type) {
     .querySelectorAll('[data-wave]')
     .forEach((option) => option.setAttribute('aria-checked', String(option.dataset.wave === type)));
 }
+let functionSelectTrigger = null;
+let functionSelectAction = null;
 function closeFunctionSelectMenu() {
   $('functionSelectMenu').classList.remove('open');
   $('functionSelectBtn').setAttribute('aria-expanded', 'false');
+  functionSelectTrigger?.setAttribute('aria-expanded', 'false');
+  functionSelectTrigger = null;
+  functionSelectAction = null;
+}
+// Both source selection and segment creation use this same menu and icons.
+function openFunctionSelectMenu(button, onSelect = null) {
+  closeFunctionSelectMenu();
+  functionSelectTrigger = button;
+  functionSelectAction = onSelect;
+  const menu = $('functionSelectMenu'),
+    rect = button.getBoundingClientRect();
+  menu.querySelectorAll('[data-wave]').forEach((option) => {
+    drawMini(option.querySelector('canvas'), option.dataset.wave);
+    option.setAttribute('aria-checked', String(option.dataset.wave === state.type));
+  });
+  menu.style.left = Math.max(8, Math.min(rect.left, innerWidth - 180)) + 'px';
+  menu.classList.add('open');
+  menu.style.top = Math.max(8, Math.min(rect.bottom + 4, innerHeight - menu.offsetHeight - 8)) + 'px';
+  button.setAttribute('aria-expanded', 'true');
+  menu.querySelector('[aria-checked="true"]')?.focus();
 }
 $('functionSelectBtn').onclick = (event) => {
   event.stopPropagation();
-  const button = $('functionSelectBtn'),
-    menu = $('functionSelectMenu'),
-    rect = button.getBoundingClientRect();
-  menu.style.left = Math.min(rect.left, innerWidth - 180) + 'px';
-  menu.classList.add('open');
-  menu.style.top = Math.min(rect.bottom + 4, innerHeight - menu.offsetHeight - 8) + 'px';
-  button.setAttribute('aria-expanded', 'true');
+  openFunctionSelectMenu($('functionSelectBtn'));
 };
 $('functionSelectMenu')
   .querySelectorAll('[data-wave]')
@@ -1011,6 +1027,12 @@ $('functionSelectMenu')
     drawMini(option.querySelector('canvas'), option.dataset.wave);
     option.onclick = () => {
       const type = option.dataset.wave;
+      if (functionSelectAction) {
+        const onSelect = functionSelectAction;
+        closeFunctionSelectMenu();
+        onSelect(type);
+        return;
+      }
       if (!generate(type)) {
         renderWaveformProperties(state.type);
         closeFunctionSelectMenu();
@@ -1021,6 +1043,24 @@ $('functionSelectMenu')
       closeFunctionSelectMenu();
     };
   });
+$('functionSelectMenu').addEventListener('keydown', (event) => {
+  const options = [...$('functionSelectMenu').querySelectorAll('[data-wave]')],
+    index = options.indexOf(document.activeElement);
+  let next;
+  if (event.key === 'ArrowDown') next = (index + 1) % options.length;
+  else if (event.key === 'ArrowUp') next = (index + options.length - 1) % options.length;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = options.length - 1;
+  else if (event.key === 'Escape' || event.key === 'Tab') {
+    const trigger = functionSelectTrigger;
+    closeFunctionSelectMenu();
+    trigger?.focus();
+    if (event.key === 'Escape') event.preventDefault();
+    return;
+  } else return;
+  event.preventDefault();
+  options[next]?.focus();
+});
 function setEditorTool(tool, persist = true) {
   if (tool !== 'pointer' && globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   const button = document.querySelector(`.tool[data-tool="${tool}"]`);

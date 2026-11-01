@@ -15,6 +15,7 @@ function harness(maximum = 100000) {
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, {
       value: '', hidden: false, classList: { contains: () => true },
+      setAttribute() {}, addEventListener() {},
     });
     return elements.get(id);
   };
@@ -78,6 +79,21 @@ test('canceling Add Segments preserves arbitrary samples, selection, mode, and u
   assert.equal(context.mode, undefined);
   assert.equal(confirmations.length, 1);
   assert.match(confirmations[0], /lose any arbitrary edits/);
+});
+
+test('choosing a waveshape changes only the new segment and adds a single undo step', () => {
+  const { context, run } = harness();
+  const historyLength = run('state.history.length');
+  context.addSequenceSegment('square');
+  assert.deepEqual(Array.from(run('sequenceSegments().map(segment => segment.type)')), ['sine', 'square']);
+  assert.equal(run('state.history.length'), historyLength + 1);
+  const before = run('JSON.stringify(projectDocument.waveform)');
+  context.addSequenceSegment('triangle');
+  assert.deepEqual(Array.from(run('sequenceSegments().map(segment => segment.type)')), ['sine', 'square', 'triangle']);
+  assert.equal(run('state.type'), 'triangle');
+  assert.equal(run('state.samples'), 5);
+  run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument.waveform)'), before);
 });
 
 test('accepting Add Segments regenerates edited samples and undo restores them', () => {
