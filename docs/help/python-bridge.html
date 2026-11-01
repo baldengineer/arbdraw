@@ -2,7 +2,6 @@
 <article>
   <h1>Python bridge</h1>
   <p>The ArbDraw Python bridge is a small local server that connects the browser-based editor to VISA instruments and installed waveform adapters. It runs on your computer and listens only on <code>127.0.0.1</code> by default.</p>
-  <p>For a local checkout, run <code>python -m python_bridge --serve-app .</code> and open <code>http://127.0.0.1:8876</code>. Direct <code>file://</code> pages cannot control instruments. Other hosted deployments need an explicit <code>--allow-origin</code> with the exact origin and port.</p>
 
   <h2>Download and install</h2>
   <p>Open the <a href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">latest ArbDraw bridge release</a> and download <code>arbdraw-bridge-with-adapters.zip</code>. It contains the bridge plus adapter packages for OWON XDG3000 / Multicomp MP750290, Rigol DG1022, and TekScope MSO2/MSO6 instruments. Python 3.11 or newer is required.</p>
@@ -15,10 +14,18 @@ python -m python_bridge</code></pre>
 
   <p>Individual <code>.whl</code> assets are also available for manual installation. Install a chosen adapter wheel with the same interpreter that runs the bridge. The <code>.tar.gz</code> assets are source distributions for developers and packaging tools. Leave the bridge terminal open while using an instrument; press <code>Ctrl+C</code> to stop it.</p>
 
+  <h2 id="local-copy">Use instruments with a local copy</h2>
+  <p>Opening <code>index.html</code> directly as a <code>file://</code> page still supports waveform editing, saving, and exporting. Instrument discovery, Identify, and Send to AWG require the hosted app or a trusted web origin. Browsers give local files an opaque origin that the bridge cannot distinguish from untrusted pages, so it rejects these requests before running instrument commands.</p>
+  <p>After installing the bridge and the required adapter, open a terminal in the ArbDraw source folder containing <code>index.html</code> and run:</p>
+  <pre><code>python -m python_bridge --serve-app .</code></pre>
+  <p>Open <a href="http://127.0.0.1:8876" target="_blank" rel="noopener noreferrer">http://127.0.0.1:8876</a> in your browser. The <code>.</code> means the current source folder, not the extracted bridge installer folder. Keep the terminal running. If a tray/menu-bar bridge is already using port 8876, stop it before starting this command.</p>
+  <p>Save your current waveform as JSON before switching pages, then reopen it in the served app. Browser preferences are stored separately for different origins.</p>
+  <p>The <a href="https://baldengineer.github.io/arbdraw/" target="_blank" rel="noopener noreferrer">hosted ArbDraw app</a> remains supported with <code>python -m python_bridge</code> or the tray/menu-bar launcher; it does not require <code>--serve-app</code>. Other web servers need an explicit trusted <code>--allow-origin</code> with the exact origin and port.</p>
+
   <h2>Connect from ArbDraw</h2>
   <ol>
     <li>Start the bridge and wait for it to report <code>http://127.0.0.1:8876</code>.</li>
-    <li>In ArbDraw, choose <strong>File → Send to AWG</strong>.</li>
+    <li>Open the hosted app or the local served app described above, then choose <strong>File → Send to AWG</strong>.</li>
     <li>Use the default bridge URL, then connect or refresh the instrument list.</li>
     <li>Select a VISA resource and use <strong>Identify</strong> to confirm the connection.</li>
     <li>Choose the matching AWG Profile before opening the dialog. ArbDraw selects its preferred installed backend automatically; verify it before sending.</li>
@@ -29,11 +36,12 @@ python -m python_bridge</code></pre>
   <pre><code>python -m python_bridge --visa-library @py</code></pre>
 
   <h2>Instrument adapters</h2>
-  <p>Adapters add model-specific waveform transfer support. The ZIP installs their separate wheels into the bridge's Python environment. Once the bridge is running, <a href="http://127.0.0.1:8876/api/v1/adapters" target="_blank" rel="noopener noreferrer">view the installed adapter list</a> to confirm they loaded. Without an adapter, the bridge can still discover VISA resources and identify instruments, but it cannot send a waveform.</p>
+  <p>Adapters add model-specific waveform transfer support. The ZIP installs their separate wheels into the bridge's Python environment. Confirm they loaded in the bridge startup output or the backend list in <strong>File → Send to AWG</strong> after connecting. Without an adapter, the bridge can still discover VISA resources and identify instruments, but it cannot send a waveform.</p>
   <p>For supported Tektronix models, installation checks, the ArbDraw send workflow, file behavior, and MSO2/MSO6 limitations, open the <a href="tekscope-adapter.html">TekScope adapter guide</a>.</p>
 
   <h2>Troubleshooting</h2>
   <ul>
+    <li><strong>Local file cannot connect:</strong> A <code>file://</code> address cannot access instruments. Follow <a href="#local-copy">Use instruments with a local copy</a> and reopen the app at <code>http://127.0.0.1:8876</code>.</li>
     <li><strong>Bridge offline:</strong> Confirm the terminal is still running and the URL is <code>http://127.0.0.1:8876</code>.</li>
     <li><strong>No VISA resources:</strong> Confirm your vendor VISA software or <code>pyvisa-py</code> is installed and can see the instrument.</li>
     <li><strong>No waveform adapter:</strong> Run <code>install.py</code> from the release ZIP with the same Python interpreter used to start the bridge, then restart it.</li>

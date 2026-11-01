@@ -122,7 +122,7 @@ On macOS, that editable install also installs the Cocoa dependency and menu bar
 launcher. Start it with `arbdraw-bridge-menubar` instead of the second command
 when you want the menu bar controller.
 
-Add `--serve-app .` when running from a source checkout if you also want the bridge to serve the local ArbDraw web app.
+For instrument access from a local source checkout, start with `python -m python_bridge --serve-app .` and open `http://127.0.0.1:8876`. Run this from the ArbDraw folder containing `index.html`; direct `file://` pages cannot call the bridge. See [Connect ArbDraw](#connect-arbdraw) below.
 
 Instrument waveform sending also requires the corresponding adapter package.
 For TekScope development, clone and install the separate package into the same Python
@@ -155,8 +155,17 @@ bridge server.
 
 ## Connect ArbDraw
 
-Open [ArbDraw](https://baldengineer.github.io/arbdraw/) and use **Send to AWG**.
-The bridge listens only on `http://127.0.0.1:8876` by default.
+For the [hosted ArbDraw app](https://baldengineer.github.io/arbdraw/), start the bridge normally with `python -m python_bridge` or the tray/menu-bar launcher, then choose **File → Send to AWG**. The bridge listens only on `http://127.0.0.1:8876` by default; the hosted app does not need `--serve-app`.
+
+For a local copy, open a terminal in the ArbDraw source folder containing `index.html` and run:
+
+```powershell
+python -m python_bridge --serve-app .
+```
+
+Open [http://127.0.0.1:8876](http://127.0.0.1:8876) in your browser and use that same URL in **Send to AWG**. Keep the terminal running. Stop an existing bridge on port 8876 before starting this command. The `.` selects the current source folder, not the extracted bridge installer folder.
+
+Opening `index.html` directly still supports editing, saving, and exporting, but instrument discovery, Identify, and waveform transfer are blocked. Browsers assign `file://` pages an opaque origin shared with other untrusted documents; the bridge rejects these requests before dispatching instrument commands. Save your waveform as JSON before moving from a file page to the served app, then reopen it there. Browser preferences are stored separately for different origins.
 
 If you use the pure-Python backend, install `pyvisa-py` too and start with `--visa-library @py`. A vendor VISA installation such as NI-VISA normally does not need that selector.
 

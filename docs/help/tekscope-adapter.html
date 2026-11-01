@@ -29,6 +29,7 @@ python -m python_bridge --idn 192.168.128.233</code></pre>
   <pre><code>python -m python_bridge</code></pre>
 
   <h2>Send a waveform from ArbDraw</h2>
+  <p>Use the hosted ArbDraw app with the bridge running as above. For a local copy, start the bridge with <code>python -m python_bridge --serve-app .</code> from the ArbDraw source folder containing <code>index.html</code>, then open <code>http://127.0.0.1:8876</code>. Opening <code>index.html</code> as a <code>file://</code> page still supports editing and export, but cannot discover, identify, or send to instruments. See <a href="python-bridge.html#local-copy">local-copy setup</a>.</p>
   <ol>
     <li>Select <strong>TekScope MSO2 (files)</strong> or <strong>TekScope MSO6 (files)</strong> in <strong>AWG Profile</strong>.</li>
     <li>Create the waveform and choose its sample count, frequency, and voltage levels.</li>

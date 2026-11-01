@@ -12,6 +12,8 @@ Access the GitHub-hosted version at [baldengineer.github.io/arbdraw](https://bal
 
 No build step or dependency installation is required to open `index.html` directly from disk. The GitHub Pages workflow stamps the published copy's CSS and JavaScript URLs with the deployment commit SHA, so browsers fetch updated assets after each deployment.
 
+Opening `index.html` as a `file://` page supports waveform editing, saving, and exporting, but cannot connect to the Python instrument bridge. For instrument discovery, Identify, and Send to AWG, use the hosted app or serve your local copy as described below.
+
 For GitHub Pages publication, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The `Publish ArbDraw` workflow builds and deploys the stamped site on each push to `main`.
 
 ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from jsDelivr for its first-run product tour. If the CDN is unavailable, it automatically falls back to the vendored copy, so the tour also works when `index.html` is opened directly from disk. The upstream license is retained in [`vendor/driver.js/1.8.0/LICENSE`](vendor/driver.js/1.8.0/LICENSE).
@@ -21,6 +23,20 @@ ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from 
 The **Send to AWG** command connects ArbDraw to a local Python REST service. From the app, users can discover VISA resources, issue `*IDN?`, and send the current waveform to a configured instrument adapter.
 
 Download `arbdraw-bridge-with-adapters-<version>.zip` from the [Python bridge releases](https://github.com/baldengineer/arbdraw/releases), extract it, and run `python install.py` with Python 3.11 or newer. This installs the bridge and all supported instrument adapters into the same Python environment. On Windows, run `arbdraw-bridge-tray.exe` for notification-area controls. On macOS, run `arbdraw-bridge-menubar` for equivalent menu bar controls. Both status menus report the bridge version and available adapters. Their icons are grey while inactive and blue after confirming the bridge is running. On other platforms, use `python -m python_bridge`. See [python_bridge/README.md](python_bridge/README.md) for platform-specific setup, single-adapter installation, VISA setup, source installation, and API details.
+
+### Use instruments with a local copy
+
+After installing the bridge and the required instrument adapter, open a terminal in the ArbDraw source folder containing `index.html` and run:
+
+```powershell
+python -m python_bridge --serve-app .
+```
+
+Open [http://127.0.0.1:8876](http://127.0.0.1:8876) in your browser, then choose **File → Send to AWG** and connect using the same bridge URL. Keep the terminal running while using the app. The `.` means the current ArbDraw source folder, not the extracted bridge installer folder. If a tray/menu-bar bridge is already using port 8876, stop it before starting this command.
+
+This replaces direct `file://` instrument access: browsers give local files an opaque origin that the bridge cannot distinguish from untrusted pages, so it rejects them before any instrument command runs. Save your current waveform as JSON before switching pages, then reopen it in the served app. Browser preferences are stored separately for different origins.
+
+The [hosted ArbDraw app](https://baldengineer.github.io/arbdraw/) remains supported with the usual `python -m python_bridge` command or tray/menu-bar launcher; it does not require `--serve-app`. Other web servers require an explicit trusted `--allow-origin` including the port. See the [bridge connection instructions](python_bridge/README.md#connect-arbdraw).
 
 ### TekScope MSO2 and MSO6
 

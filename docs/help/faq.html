@@ -1,6 +1,9 @@
 <link rel="stylesheet" href="help.css">
 <article>
   <h1>Frequently Asked Questions</h1>
+  <h2>Why can't a local file connect to my instrument?</h2>
+  <p>Waveform editing, saving, and exporting still work when you open <code>index.html</code> directly. Instrument access from <code>file://</code> pages is blocked because their opaque browser origin cannot distinguish a trusted local copy from an untrusted page.</p>
+  <p>After installing the bridge and adapter, run <code>python -m python_bridge --serve-app .</code> from the ArbDraw source folder containing <code>index.html</code>, then open <a href="http://127.0.0.1:8876" target="_blank" rel="noopener noreferrer">http://127.0.0.1:8876</a>. Save your current waveform as JSON before switching pages and reopen it there. The hosted ArbDraw app continues to work with the usual bridge launcher. See <a href="python-bridge.html#local-copy">Python bridge setup</a>.</p>
   <h2>Where is my waveform stored?</h2>
   <p>The active waveform exists in the open browser tab until you save it. Use File → Save JSON Waveform to create an editable project file.</p>
   <h2>What does the Default button do?</h2>

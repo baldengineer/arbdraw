@@ -20,6 +20,7 @@
     <li>Download a CSV file and load it with the AWG's software or storage workflow.</li>
     <li>Use the <a href="python-bridge.html">Python bridge</a> to transfer the waveform directly to a supported AWG. Install the bridge and an instrument adapter from the release ZIP first.</li>
   </ul>
+  <p>For direct instrument transfer, use the hosted app or serve your local copy with <code>python -m python_bridge --serve-app .</code> from the ArbDraw folder containing <code>index.html</code>, then open <code>http://127.0.0.1:8876</code>. Direct <code>file://</code> pages can still edit and export, but cannot access the bridge. See <a href="python-bridge.html#local-copy">local-copy setup</a>.</p>
   <p>Choose the transfer method that matches your AWG and connection. The CSV contains the waveform points; the instrument timing and voltage settings are configured in the next step.</p>
 
   <h2>3. Generate</h2>
