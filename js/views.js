@@ -7,6 +7,11 @@ function formatSampleTime(index) {
   return seconds === 0 ? '0' : seconds.toExponential(9);
 }
 let sampleRenderToken = 0;
+function refreshDocumentSamples() {
+  ++sampleRenderToken;
+  if (!$('samplesView').classList.contains('hidden')) renderSamples();
+}
+globalThis.ARBDRAW_SAMPLES = { refresh: refreshDocumentSamples };
 function renderSamples() {
   const token = ++sampleRenderToken,
     total = state.samples,
@@ -205,12 +210,13 @@ $('copyJsonBtn').onclick = async () => {
   }
 };
 function updateSampleVoltage(input, recordHistory = false) {
-  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return;
+  if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false || globalThis.ARBDRAW_SEQUENCE?.isOverview()) return;
+  const index = Number(input.dataset.index),
+    value = Number(input.value);
+  if (!Number.isFinite(value) || !Number.isInteger(index) || index < 0
+    || index >= state.samples || index >= state.data.length) return;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
-  const index = +input.dataset.index,
-    value = Number(input.value);
-  if (!Number.isFinite(value)) return;
   state.data[index] = value;
   state.high = Math.max(state.high, value);
   state.low = Math.min(state.low, value);

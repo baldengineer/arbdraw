@@ -424,3 +424,58 @@ test('timing changes rounding to the existing count preserve selection and previ
   assert.equal(confirmations.length, 0);
   assert.equal(run('state.history.length'), count + 1);
 });
+
+function loadSampleEditing(fixture) {
+  const { context, element } = fixture;
+  const frames = [];
+  Object.assign(context, {
+    requestAnimationFrame(fn) { frames.push(fn); },
+    displayVoltage: (_, value) => value, displayAmplitude: value => value,
+    renderTransitionTimes() {}, renderWaveformProperties() {}, renderSerialProperties() {}, renderFilterControls() {},
+    ARBDRAW_FIELDS: { formatInputs() {} },
+    ARBDRAW_EDITOR_MODES: { isAdvanced: () => !context.sequenceOverview(), refresh() {} },
+  });
+  context.document.querySelector = () => element('name');
+  for (const id of ['name', 'samplesLoading']) element(id).classList = { add() {}, remove() {} };
+  element('samplesView').classList = { contains: () => false };
+  element('samplesTableBody').insertAdjacentHTML = (_, text) => { element('samplesTableBody').innerHTML += text; };
+  vm.runInContext(slice('js/views.js', 'function formatSampleTime(', 'function renderJson(')
+    + slice('js/views.js', 'function updateSampleVoltage(', "$('samplesTableBody').addEventListener"), context);
+  vm.runInContext(slice('js/project.js', 'function renderDocument()', 'const defaultIncludeCsvTimestamps'), context);
+  return { flush() { while (frames.length) frames.shift()(); }, frames };
+}
+
+test('Samples follows actual Undo/Redo and rejects stale or invalid indices', () => {
+  const fixture = harness(), { context, run, element } = fixture;
+  context.addSequenceSegment();
+  const { flush } = loadSampleEditing(fixture);
+  context.renderSamples(); flush();
+  const rows = () => (element('samplesTableBody').innerHTML.match(/data-index=/g) || []).length;
+  assert.equal(rows(), 8);
+  context.undoWaveform(); flush(); assert.equal(rows(), 16);
+  context.redoWaveform(); flush(); assert.equal(rows(), 8);
+  const before = run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })');
+  for (const index of [12, -1, 1.5, 8, NaN, Infinity])
+    context.updateSampleVoltage({ dataset: { index: String(index) }, value: '123' }, true);
+  assert.equal(run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })'), before);
+  context.ARBDRAW_SEQUENCE.showOverview(); flush();
+  assert.equal(rows(), 16);
+  assert.equal((element('samplesTableBody').innerHTML.match(/ readonly/g) || []).length, 16);
+  const record = run('JSON.stringify(recordState().data)');
+  context.updateSampleVoltage({ dataset: { index: '0' }, value: '123' }, true);
+  assert.equal(run('JSON.stringify(recordState().data)'), record);
+  context.selectSequenceSegment(0); flush(); assert.equal(rows(), 8);
+  assert.ok(!element('samplesTableBody').innerHTML.includes(' readonly'));
+});
+
+test('restoration invalidates queued Samples chunks from the previous target', () => {
+  const fixture = harness(), { context, run, element } = fixture;
+  run('state.samples = 1800; generate();');
+  context.addSequenceSegment();
+  const { frames, flush } = loadSampleEditing(fixture);
+  context.renderSamples(); frames.shift()();
+  assert.equal((element('samplesTableBody').innerHTML.match(/data-index=/g) || []).length, 400);
+  context.undoWaveform(); flush();
+  assert.equal((element('samplesTableBody').innerHTML.match(/data-index=/g) || []).length, 1800);
+  assert.equal(element('samplesProgress').textContent, '1,800 of 1,800');
+});

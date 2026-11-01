@@ -73,7 +73,6 @@ function selectSequenceSegment(index, commitDraft = true) {
   clearEditorSelection(false);
   Object.assign(editorViewport, { start: 0, pointsPerScreen: null, total: null });
   renderDocument();
-  if (!$('samplesView').classList.contains('hidden')) renderSamples();
   refreshScope();
   return true;
 }
