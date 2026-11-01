@@ -26,9 +26,10 @@ function nextUpper125(value) {
   return 10 * power;
 }
 function fittedVerticalScale() {
-  let dataLow = state.low,
-    dataHigh = state.high;
-  for (const value of state.data) {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
+  let dataLow = output.low,
+    dataHigh = output.high;
+  for (const value of output.data) {
     if (Number.isFinite(value)) {
       dataLow = Math.min(dataLow, value);
       dataHigh = Math.max(dataHigh, value);
@@ -67,7 +68,7 @@ function renderScopeTime() {
 function fittedScopeTime() {
   return Math.min(
     1000,
-    Math.max(1e-9, nextUpper125((waveformDurationMs() * scopeFitCycleCount) / 10)),
+    Math.max(1e-9, nextUpper125(((globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState().duration : waveformDurationMs()) * scopeFitCycleCount) / 10)),
   );
 }
 function refreshScopeTime() {
@@ -89,6 +90,7 @@ function refreshScope() {
   drawScope();
 }
 function drawScope() {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
   const w = scopeCanvas.width,
     h = scopeCanvas.height,
     d = devicePixelRatio || 1;
@@ -139,7 +141,7 @@ function drawScope() {
     scopeCtx.fillStyle = '#718083';
     scopeCtx.fillText(Number(time.toPrecision(4)), px, h - pad.b + 10 * d);
   }
-  if (!state.data.length) return;
+  if (!output.data.length) return;
   scopeCtx.save();
   scopeCtx.beginPath();
   scopeCtx.rect(pad.l, pad.t, pw, ph);
@@ -147,7 +149,7 @@ function drawScope() {
   scopeCtx.strokeStyle = DEFAULT_VALUES.waveformColor;
   scopeCtx.shadowColor = DEFAULT_VALUES.waveformColor;
   scopeCtx.lineWidth = 1.5 * d;
-  const waveformDuration = waveformDurationMs();
+  const waveformDuration = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? output.duration : waveformDurationMs();
   const firstVisibleCycle = Math.max(0, Math.floor(scopeState.timeStartMs / waveformDuration));
   const lastVisibleCycle = Math.ceil((scopeState.timeStartMs + timeSpan) / waveformDuration);
   const visibleCycleCount = Math.max(1, lastVisibleCycle - firstVisibleCycle);
@@ -157,7 +159,7 @@ function drawScope() {
   const maximumSamplesPerCycle = Math.max(2, Math.ceil(cycleWidthPixels * 2));
   const sampleStep = Math.max(
     1,
-    Math.ceil((state.data.length - 1) / maximumSamplesPerCycle),
+    Math.ceil((output.data.length - 1) / maximumSamplesPerCycle),
   );
 
   for (let cycle = firstVisibleCycle; cycle < lastVisibleCycle; cycle += cycleStep) {
@@ -165,16 +167,16 @@ function drawScope() {
     scopeCtx.shadowBlur = cycle % 2 === 0 ? 5 * d : 2 * d;
     scopeCtx.beginPath();
     const drawSample = (index) => {
-      const value = state.data[index];
+      const value = output.data[index];
       const time =
           cycle * waveformDuration +
-          (index / (state.data.length - 1)) * waveformDuration,
+          (index / (globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? output.data.length : output.data.length - 1)) * waveformDuration,
         x = pad.l + ((time - scopeState.timeStartMs) / timeSpan) * pw,
         y = pad.t + ((mid + voltageSpan / 2 - value) / voltageSpan) * ph;
       index ? scopeCtx.lineTo(x, y) : scopeCtx.moveTo(x, y);
     };
-    for (let index = 0; index < state.data.length; index += sampleStep) drawSample(index);
-    if ((state.data.length - 1) % sampleStep !== 0) drawSample(state.data.length - 1);
+    for (let index = 0; index < output.data.length; index += sampleStep) drawSample(index);
+    if ((output.data.length - 1) % sampleStep !== 0) drawSample(output.data.length - 1);
     scopeCtx.stroke();
   }
   scopeCtx.globalAlpha = 1;

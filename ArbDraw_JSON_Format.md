@@ -1,6 +1,6 @@
 # ArbDraw JSON Format
 
-ArbDraw project files contain a single waveform and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
+ArbDraw project files contain a waveform record, optionally composed of sequence segments, and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
 
 The current format identifier is:
 
@@ -10,6 +10,16 @@ The current format identifier is:
   "version": 1
 }
 ```
+
+## Sequence extension
+
+Version 1 supports an optional `waveform.segments` array containing at least two waveform objects. Each segment stores its own source properties, serial settings, filters, `samplesEdited`, `sampleCount`, and finite voltage `values`. Nested sequences are not supported. Segment selection is transient and is not saved.
+
+`waveform.values` contains the segments' samples concatenated in array order. `waveform.sampleCount` and `AWG.sampleCount` are the sum of all segment counts. Imports validate each segment's values and the total count, then reconstruct the combined buffer from the segments. Readers that do not understand segments can still read the flattened voltage record.
+
+All segments share `AWG.sampleRateMSa`. At sample rate `R` in samples/second, a segment with `N` points and `C` cycles has duration `N / R` seconds and source frequency `C * R / N` Hz. The combined waveform has `cycles = 1`, `frequencyHz = R / totalSampleCount`, and `durationMs = totalSampleCount / R * 1000`. `AWG.frequencyHz` and `AWG.periodSeconds` describe repetition of that combined record. `AWG.tsResolutionSeconds` is `1 / R`. Sequence sample `i` occurs at `i / R` seconds; the last sample precedes the next record's first sample by one sample interval.
+
+For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `serial`, and `filters`) are retained for compatibility and do not describe every segment. Use the segment objects to inspect or regenerate individual sources. The top-level voltage levels describe the combined record.
 
 ## Complete example
 

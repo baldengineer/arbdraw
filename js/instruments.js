@@ -292,7 +292,10 @@
   sendButton.addEventListener('click', () =>
     runBridgeAction(async () => {
       const resource = selectedResource();
-      setResult(`Sending ${state.data.length.toLocaleString()} samples to ${resource}…`);
+      globalThis.ARBDRAW_SEQUENCE?.sync();
+      if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
+      const sampleCount = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState().samples : state.data.length;
+      setResult(`Sending ${sampleCount.toLocaleString()} samples to ${resource}…`);
       const response = await bridgeClient.sendWaveform(
         resource,
         JSON.parse(JSON.stringify(projectDocument)),

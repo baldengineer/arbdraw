@@ -53,9 +53,10 @@ $('playWaveformBtn').onclick = async () => {
     return;
   }
   try {
-    await ARBDRAW_AUDIO_PLAYBACK.play(state.data, {
-      sampleRateHz: state.sampleRate * 1e6,
-      durationSeconds: Math.max(1, state.cycles) / state.frequency,
+    const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
+    await ARBDRAW_AUDIO_PLAYBACK.play(output.data, {
+      sampleRateHz: output.sampleRate * 1e6,
+      durationSeconds: Math.max(1, output.cycles) / output.frequency,
       onEnded: updateAudioPlaybackButton,
     });
     updateAudioPlaybackButton();

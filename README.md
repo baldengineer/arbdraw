@@ -54,6 +54,7 @@ troubleshooting.
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
 - Optional noise and smoothing filters with checkbox and value controls in Advanced mode Properties
 - Undo and redo for waveform changes
+- Sequences with independent segment sources, sample counts, and waveform previews
 - Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
@@ -62,6 +63,16 @@ troubleshooting.
 ## Editing modes
 
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
+
+## Sequences
+
+Select **Add Segments** beside **Full Record** to enter Arbitrary mode and create two segments: the current waveform and a copy. The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input; the **+** card appends a copy of the selected segment (or the last segment while viewing the full record). Use **×** to remove a segment.
+
+Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, file exports, browser playback, and Send to AWG always use the complete sequence. Undo/redo and project JSON preserve the segments and their sources.
+
+A sequence uses one sample clock, established from the original waveform's sample count and AWG output period. Changing a segment's sample count changes its frequency; changing its frequency or cycle count adjusts its sample count at that clock. Timing is rounded to whole samples and constrained by the AWG profile's total record limit. The AWG frequency and period describe repetition of the complete sequence. Choose the AWG profile before adding segments; it remains fixed until the sequence is removed. WAV export still requires a supported sample rate.
+
+Removing all but one segment returns to a single waveform. Switching to Basic asks before discarding the sequence and keeps the selected segment, or the first segment in full-record view.
 
 ## Menu styling
 

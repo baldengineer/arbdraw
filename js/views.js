@@ -2,6 +2,7 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // View menu, sample table, JSON view, and sample-point editing.
 function formatSampleTime(index) {
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) return (index / (state.sampleRate * 1e6)).toExponential(9);
   const seconds = ((index / (state.samples - 1)) * waveformDurationMs()) / 1000;
   return seconds === 0 ? '0' : seconds.toExponential(9);
 }
@@ -33,6 +34,8 @@ function renderSamples() {
   requestAnimationFrame(appendChunk);
 }
 function renderJson() {
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
   const text = JSON.stringify(projectDocument, null, 2),
     lines = text.split('\n').length,
     bytes = new TextEncoder().encode(text).byteLength;
@@ -93,6 +96,7 @@ function setEditorTab(tab) {
       refreshScope();
     });
   if (tab === 'json') renderJson();
+  globalThis.ARBDRAW_SEQUENCE?.refresh();
 }
 $('viewerControls').append(document.querySelector('.scope-controls'));
 for (const name of ['editor', 'waveform', 'samples', 'json']) {
@@ -180,6 +184,8 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeViewPicker();
 });
 $('copyJsonBtn').onclick = async () => {
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
   const text = JSON.stringify(projectDocument, null, 2);
   try {
     if (navigator.clipboard && isSecureContext) await navigator.clipboard.writeText(text);

@@ -84,7 +84,7 @@ function parseProject(raw) {
       lowVoltage = Math.min(lowVoltage, value);
     }
   }
-  return {
+  const parsed = {
     schema: 'arbdraw.waveform',
     version: 1,
     name: String(raw.name || 'Imported waveform').slice(0, 120),
@@ -130,9 +130,43 @@ function parseProject(raw) {
       values,
     },
   };
+  if (source.segments !== undefined) {
+    if (!Array.isArray(source.segments) || source.segments.length < 2)
+      throw new Error('A sequence must contain at least two segments.');
+    const segments = source.segments.map((segment) => {
+      if (!segment || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
+        || segment.sampleCount < 2 || !Array.isArray(segment.values)
+        || segment.values.length !== segment.sampleCount || !segment.values.every(Number.isFinite))
+        throw new Error('Each sequence segment must contain its declared finite voltage samples.');
+      const normalized = parseProject({
+        schema: raw.schema, version: raw.version,
+        AWG: { ...parsed.AWG, sampleCount: segment.sampleCount }, waveform: segment,
+      }).waveform;
+      normalized.frequencyHz = sampleRateMSa * 1e6 * normalized.cycles / normalized.sampleCount;
+      return normalized;
+    });
+    if (segments.reduce((sum, segment) => sum + segment.sampleCount, 0) !== sampleCount)
+      throw new Error('Sequence sample counts must add up to the AWG record length.');
+    parsed.waveform.segments = segments;
+    parsed.waveform.values = segments.flatMap((segment) => segment.values);
+    parsed.waveform.frequencyHz = sampleRateMSa * 1e6 / sampleCount;
+    parsed.waveform.cycles = 1;
+    parsed.waveform.highVoltage = segments.reduce((high, segment) => Math.max(high, segment.highVoltage), -Infinity);
+    parsed.waveform.lowVoltage = segments.reduce((low, segment) => Math.min(low, segment.lowVoltage), Infinity);
+    parsed.AWG.frequencyHz = parsed.waveform.frequencyHz;
+    parsed.AWG.periodSeconds = 1 / parsed.AWG.frequencyHz;
+    parsed.AWG.highVoltage = parsed.waveform.highVoltage;
+    parsed.AWG.lowVoltage = parsed.waveform.lowVoltage;
+    parsed.AWG.tsResolutionSeconds = 1 / (sampleRateMSa * 1e6);
+  }
+  return parsed;
 }
 function loadProject(raw) {
-  projectDocument = parseProject(raw);
+  const parsed = parseProject(raw), profile = profileById(parsed.AWG.profileId);
+  if (parsed.waveform.segments && parsed.waveform.sampleCount > (profile?.sampleDepth?.max ?? 1000000))
+    throw new Error('This sequence exceeds its AWG profile’s sample limit.');
+  projectDocument = parsed;
+  state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
@@ -184,6 +218,7 @@ $('confirmNewBtn').onclick = () => {
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   resetPropertyPanels();
   projectDocument = createDefaultDocument();
+  state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
   state.history = [];
@@ -237,6 +272,8 @@ $('confirmSaveBtn').onclick = () => {
     projectDocument.name = savedName;
     document.querySelector('.document-name').value = savedName;
   }
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  renderAwgTiming();
   const json = JSON.stringify(projectDocument, null, 2);
   downloadBlob(new Blob([json], { type: 'application/json' }), filename);
   $('saveDialog').close();
@@ -272,7 +309,8 @@ function buildCsvRows({ values, durationSeconds, metadata = [], includeHeader, i
   return rows;
 }
 function downloadCsv(includeHeader, filename, includeTimestamps = true) {
-  const values = state.data.map((value) => Number(value ?? 0));
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
+  const values = output.data.map((value) => Number(value ?? 0));
   // Iterate instead of spreading samples into Math.min/max: large records exceed
   // the browser's function-argument limit.
   let voltageMin = Infinity, voltageMax = -Infinity;
@@ -282,26 +320,27 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   }
   if (!values.length) voltageMin = voltageMax = 0;
   const sampleCount = values.length,
-    durationSeconds = state.duration / 1000,
+    durationSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+      ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
       ['Generated', new Date().toISOString()],
-      ['Waveform type', titles[state.type] || state.type],
-      ['High level (V)', state.high],
-      ['Low level (V)', state.low],
-      ['Amplitude (Vpp)', state.high - state.low],
-      ['Offset (V)', (state.high + state.low) / 2],
-      ['Frequency (Hz)', state.frequency],
-      ['Period (s)', 1 / state.frequency],
-      ['Cycles', state.cycles],
-      ['Phase (degrees)', state.phase],
-      ['Duty cycle (%)', state.duty],
-      ['Symmetry (%)', state.symmetry],
-      ['Rise time (s)', state.riseTime],
-      ['Fall time (s)', state.fallTime],
-      ['Noise color', state.noiseColor],
-      ['Sample rate (MSa/s)', state.sampleRate],
+      ['Waveform type', globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? 'Sequence' : titles[output.type] || output.type],
+      ['High level (V)', output.high],
+      ['Low level (V)', output.low],
+      ['Amplitude (Vpp)', output.high - output.low],
+      ['Offset (V)', (output.high + output.low) / 2],
+      ['Frequency (Hz)', output.frequency],
+      ['Period (s)', 1 / output.frequency],
+      ['Cycles', output.cycles],
+      ['Phase (degrees)', output.phase],
+      ['Duty cycle (%)', output.duty],
+      ['Symmetry (%)', output.symmetry],
+      ['Rise time (s)', output.riseTime],
+      ['Fall time (s)', output.fallTime],
+      ['Noise color', output.noiseColor],
+      ['Sample rate (MSa/s)', output.sampleRate],
       ['Sample count', sampleCount],
       ['Time min (s)', 0],
       ['Time max (s)', timeMax],
@@ -314,20 +353,23 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true) {
   showToast(`Waveform exported as ${includeHeader ? 'CSV with header' : 'CSV'}`);
 }
 function downloadSvg(filename) {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
   const svg = ARBDRAW_SVG_EXPORT.waveformSvg({
-    values: state.data,
+    values: output.data,
     name: projectDocument.name,
     includeAxes: $('includeSvgAxes').checked,
-    durationSeconds: state.duration / 1000,
+    durationSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+      ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
   });
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   downloadBlob(blob, filename);
   showToast('Waveform exported as SVG');
 }
 function downloadWav(filename) {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
   const buffer = ARBDRAW_WAV_EXPORT.waveformWav({
-    values: state.data,
-    sampleRateHz: state.sampleRate * 1e6,
+    values: output.data,
+    sampleRateHz: output.sampleRate * 1e6,
   });
   downloadBlob(new Blob([buffer], { type: 'audio/wav' }), filename);
   showToast('Waveform exported as WAV');

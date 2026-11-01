@@ -12,6 +12,11 @@
     <li>When the highlighted window fills the navigator, the editor is showing the full record.</li>
   </ul>
 
+  <h2>Sequences</h2>
+  <p>Select <strong>Add Segments</strong> next to Full Record to enter Arbitrary mode and create two copies of the current waveform. The cards above the navigator show each segment's waveform and sample count. Select a card to edit only that segment. The <strong>+</strong> card appends a copy of the selected segment; in full-record view it copies the last segment. Use <strong>×</strong> to remove a segment.</p>
+  <p>Click the navigator or Full Record to display the complete sequence. This view is read only; select a segment card to edit again. Point indices and selection markers refer to the selected segment while editing. Exports, playback, Send to AWG, and the Viewer always use the complete record.</p>
+  <p>Segments share one sample clock. Changing a segment's sample count changes its frequency; changing frequency or cycle count adjusts its sample count. The AWG frequency and period describe the complete sequence. Choose an AWG profile before creating segments; its sample limit applies to the combined record.</p>
+
   <h2>Points and Position controls</h2>
   <ul>
     <li><strong>Points / Screen</strong> is the number of waveform samples visible at once. The minus button halves the value to zoom in. The plus button doubles it to zoom out. You can also enter an exact value.</li>
