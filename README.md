@@ -86,6 +86,8 @@ Select **Add Segments** beside **Full Record**, then choose a waveshape to enter
 
 The segment cards sit above the full-record overview. Select a card to edit that segment's waveshape, voltage levels, timing, filters, or individual points. Each segment has its own sample-count input. Use **×** to remove a segment.
 
+Drag a card's label or waveform preview to reorder segments; the insertion marker shows the drop position. You can also focus a card and press **Alt+Left/Right** to move it one position. Reordering preserves every segment's samples (including arbitrary edits), source settings, and sample count, and keeps the same segment selected. Only the order in the combined record changes. Undo/redo includes reordering.
+
 Both **+** and **Add Segments** use the same waveshape menu as the waveform source dropdown. Clicking a button or focusing it and pressing **↓** opens the menu; a segment is added only after choosing a shape. Dismissing the menu leaves the sequence unchanged.
 
 Click the full-record overview or **Full Record** to see the combined sequence. This view is read only; select a card to resume editing. The Viewer, browser playback, and Send to AWG use the complete sequence. Under **File → Export Waveform**, choose **Full Record** to export everything or **Segment X** to export the selected segment as CSV, SVG, or WAV. The segment choice appears only while a segment is selected. Undo/redo and project JSON preserve the segments and their sources.

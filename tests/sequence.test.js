@@ -262,6 +262,76 @@ test('adding segments at the profile limit redistributes all points without exce
   assert.equal(run('recordState().samples'), 40);
 });
 
+test('reordering preserves edited segment objects, buffers, settings, timing, and selection', () => {
+  const { context, run, confirmations } = harness();
+  context.addSequenceSegment('square');
+  context.addSequenceSegment('noise');
+  run(`sequenceSegments().forEach((segment, index) => {
+    state.activeSegment = index;
+    state.data[0] = 0.125 + index;
+    state.samplesEdited = true;
+    segment.serial.payload = 'segment-' + index;
+    segment.filters.smoothingEnabled = index === 1;
+  }); pushHistory();`);
+  const segments = Array.from(run('sequenceSegments()'));
+  const snapshots = segments.map((segment) => JSON.stringify(segment));
+  const buffers = segments.map((segment) => segment.values);
+  const timing = run('JSON.stringify([recordState().samples, recordState().sampleRate, recordState().frequency, recordState().duration])');
+  const history = run('state.history.length');
+  const viewport = { start: 1, pointsPerScreen: 3, total: 5 };
+  Object.assign(context.editorViewport, viewport);
+  context.clearEditorSelection = () => assert.fail('A reorder must keep the segment selection range');
+  context.generate = () => assert.fail('A reorder must not regenerate samples');
+  let stopped = 0;
+  context.ARBDRAW_AUDIO_PLAYBACK = { stop() { stopped++; } };
+  assert.equal(context.moveSequenceSegment(2, 0), true);
+  assert.equal(run('state.activeSegment'), 0);
+  assert.equal(run('state.history.length'), history + 1);
+  [2, 0, 1].forEach((original, index) => {
+    const segment = run(`sequenceSegments()[${index}]`);
+    assert.equal(segment, segments[original]);
+    assert.equal(segment.values, buffers[original]);
+    assert.equal(JSON.stringify(segment), snapshots[original]);
+  });
+  assert.deepEqual(Array.from(run('recordState().data')), [2, 0, 1].flatMap((index) => Array.from(buffers[index])));
+  assert.equal(run('JSON.stringify([recordState().samples, recordState().sampleRate, recordState().frequency, recordState().duration])'), timing);
+  assert.deepEqual(context.editorViewport, viewport);
+  assert.equal(confirmations.length, 0);
+  assert.equal(stopped, 1);
+  // Moving another segment across the selection also follows the selected object.
+  context.moveSequenceSegment(2, 0);
+  assert.equal(run('state.activeSegment'), 1);
+  assert.equal(run('editableWaveform()'), segments[2]);
+});
+
+test('reordering in overview survives undo, redo, and a saved JSON round trip', () => {
+  const { context, run } = harness();
+  context.addSequenceSegment('square');
+  run('state.data[2] = 1.2345; state.samplesEdited = true; pushHistory();');
+  context.ARBDRAW_SEQUENCE.showOverview();
+  const before = run('JSON.stringify(projectDocument.waveform)');
+  assert.equal(context.moveSequenceSegment(0, 1), true);
+  const after = run('JSON.stringify(projectDocument.waveform)');
+  assert.notEqual(after, before);
+  assert.equal(context.sequenceOverview(), true);
+  run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument.waveform)'), before);
+  run('redoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument.waveform)'), after);
+  assert.equal(run('JSON.stringify(parseProject(JSON.parse(JSON.stringify(projectDocument))).waveform)'), after);
+});
+
+test('invalid and unchanged reorder positions do not commit drafts or alter history', () => {
+  const { context, run } = harness();
+  assert.equal(context.moveSequenceSegment(0, 1), false);
+  context.addSequenceSegment();
+  context.finishWaveformPreview = () => assert.fail('No-op must not commit a draft');
+  const before = run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })');
+  for (const [from, to] of [[0, 0], [-1, 0], [0, 2], [null, 1], [0, 0.5]])
+    assert.equal(context.moveSequenceSegment(from, to), false);
+  assert.equal(run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })'), before);
+});
+
 test('removing the penultimate segment keeps the surviving waveform and can be undone', () => {
   const { context, run } = harness();
   context.addSequenceSegment();

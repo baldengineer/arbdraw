@@ -131,6 +131,103 @@ function addSequenceSegment(type = null) {
   pushHistory();
 }
 
+function moveSequenceSegment(from, to) {
+  const segments = sequenceSegments();
+  if (!Number.isInteger(from) || !Number.isInteger(to) || !segments?.[from]
+    || !segments[to] || from === to) return false;
+  document.activeElement?.blur();
+  finishWaveformPreview();
+  globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+  const selected = segments[state.activeSegment];
+  // Move the existing source and sample buffer intact. Only the record is rebuilt.
+  segments.splice(to, 0, segments.splice(from, 1)[0]);
+  state.activeSegment = selected ? segments.indexOf(selected) : null;
+  invalidateSequence(true, null);
+  renderDocument();
+  renderAwgTiming();
+  refreshScope();
+  pushHistory();
+  return true;
+}
+
+let segmentDrag = null;
+function clearSegmentDropIndicators(strip) {
+  strip.querySelectorAll('.segment-card').forEach((card) => {
+    card.classList.remove('segment-drop-before', 'segment-drop-after');
+  });
+}
+
+function finishSegmentDrag() {
+  const strip = $('editorSegments');
+  clearSegmentDropIndicators(strip);
+  strip.querySelectorAll('.segment-dragging').forEach((card) => card.classList.remove('segment-dragging'));
+  segmentDrag = null;
+}
+
+function bindSequenceSegmentDrag(select, index) {
+  select.draggable = true;
+  select.title = 'Drag to reorder. Alt+Left/Right moves this segment one position.';
+  select.setAttribute('aria-keyshortcuts', 'Alt+ArrowLeft Alt+ArrowRight');
+  select.ondragstart = (event) => {
+    document.activeElement?.blur();
+    finishWaveformPreview();
+    segmentDrag = { segments: sequenceSegments(), segment: sequenceSegments()[index] };
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `Segment ${index + 1}`);
+    select.parentElement.classList.add('segment-dragging');
+  };
+  select.ondragend = finishSegmentDrag;
+  select.addEventListener('keydown', (event) => {
+    if (!event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const to = index + (event.key === 'ArrowLeft' ? -1 : 1);
+    if (moveSequenceSegment(index, to)) {
+      const moved = $('editorSegments').querySelectorAll('.segment-select')[to];
+      moved.focus();
+      moved.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      showToast(`Segment moved to position ${to + 1}`);
+    }
+  });
+}
+
+function bindSequenceReordering(strip) {
+  const dropPosition = (event) => {
+    if (!segmentDrag || segmentDrag.segments !== sequenceSegments()) return null;
+    const from = sequenceSegments().indexOf(segmentDrag.segment);
+    if (from < 0) return null;
+    const cards = [...strip.querySelectorAll('.segment-card')];
+    let boundary = cards.findIndex((card) => {
+      const rect = card.getBoundingClientRect();
+      return event.clientX < rect.left + rect.width / 2;
+    });
+    if (boundary < 0) boundary = cards.length;
+    return { cards, boundary, from, to: boundary > from ? boundary - 1 : boundary };
+  };
+  strip.ondragover = (event) => {
+    const position = dropPosition(event);
+    if (!position) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    clearSegmentDropIndicators(strip);
+    const { cards, boundary } = position;
+    (cards[boundary] || cards.at(-1)).classList.add(
+      boundary === cards.length ? 'segment-drop-after' : 'segment-drop-before');
+    const rect = strip.getBoundingClientRect();
+    if (event.clientX < rect.left + 28) strip.scrollLeft -= 20;
+    else if (event.clientX > rect.right - 28) strip.scrollLeft += 20;
+  };
+  strip.ondragleave = (event) => {
+    if (!strip.contains(event.relatedTarget)) clearSegmentDropIndicators(strip);
+  };
+  strip.ondrop = (event) => {
+    const position = dropPosition(event);
+    if (!position) return;
+    event.preventDefault();
+    finishSegmentDrag();
+    moveSequenceSegment(position.from, position.to);
+  };
+}
+
 function removeSequenceSegment(index) {
   const segments = sequenceSegments();
   if (!segments?.[index]) return;
@@ -211,6 +308,7 @@ function refreshSequence() {
       card.className = 'segment-card';
       const select = document.createElement('button');
       select.type = 'button'; select.className = 'segment-select';
+      bindSequenceSegmentDrag(select, index);
       const label = document.createElement('span'); label.textContent = `Segment ${index + 1}`;
       const preview = document.createElement('canvas'); preview.setAttribute('aria-hidden', 'true');
       const shape = document.createElement('span'); shape.className = 'segment-shape';
@@ -250,6 +348,7 @@ function refreshSequence() {
     add.setAttribute('aria-label', 'Add segment');
     bindSegmentAddButton(add);
     strip.append(add); segmentCardCount = segments.length;
+    bindSequenceReordering(strip);
   }
   [...strip.querySelectorAll('.segment-card')].forEach((card, index) => {
     const segment = segments[index], selected = index === state.activeSegment;
