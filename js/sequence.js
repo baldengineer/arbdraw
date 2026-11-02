@@ -192,7 +192,6 @@ function refreshSequence() {
   const segments = sequenceSegments(), overview = sequenceOverview(), strip = $('editorSegments');
   strip.hidden = !segments;
   $('editorSequenceControls').hidden = !segments;
-  $('addSegmentsBtn').hidden = Boolean(segments);
   document.documentElement.dataset.sequenceOverview = String(overview);
   $('inspectorControls').disabled = overview || !$('waveformView').classList.contains('hidden');
   $('samplesEdit').disabled = overview;
