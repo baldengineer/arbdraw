@@ -41,12 +41,20 @@ function applyFilters(values, limits = {}) {
     filtered = applyNoiseFilter(filtered, state.filters.noisePercent, limits);
   if (state.filters.smoothingEnabled)
     filtered = applySmoothingFilter(filtered, state.filters.smoothingWindowPoints);
+  // Clamp last so noise and smoothing cannot push the output beyond the limits.
+  if (state.filters.clampEnabled)
+    filtered = filtered.map(value => Math.min(state.filters.clampMaxV, Math.max(state.filters.clampMinV, value)));
   return filtered;
 }
 
 const filterControls = {
   noise: { checkbox: $('noiseFilterEnabled'), input: $('noiseFilterInput'), enabledKey: 'noiseEnabled', valueKey: 'noisePercent' },
   smoothing: { checkbox: $('smoothingFilterEnabled'), input: $('smoothingFilterInput'), enabledKey: 'smoothingEnabled', valueKey: 'smoothingWindowPoints' },
+};
+const clampControls = {
+  checkbox: $('clampFilterEnabled'),
+  min: $('clampMinInput'),
+  max: $('clampMaxInput'),
 };
 
 function renderFilterControls() {
@@ -63,6 +71,15 @@ function renderFilterControls() {
     ? filters.noisePercent : DEFAULT_VALUES.noisePercent;
   filterControls.smoothing.input.value = Number.isFinite(filters.smoothingWindowPoints)
     ? filters.smoothingWindowPoints : SMOOTHING_INITIAL_WINDOW;
+  const clampEnabled = filters.enabled !== false && filters.clampEnabled === true;
+  clampControls.checkbox.checked = clampEnabled;
+  clampControls.min.value = filters.clampMinV ?? -1;
+  clampControls.max.value = filters.clampMaxV ?? 1;
+  for (const input of [clampControls.min, clampControls.max]) {
+    input.disabled = !clampEnabled;
+    input.setCustomValidity('');
+    input.removeAttribute('aria-invalid');
+  }
 }
 
 function regenerateWithFilters(nextFilters) {
@@ -84,6 +101,7 @@ function nextFilterSettings() {
   const filters = { ...state.filters, enabled: true };
   for (const control of Object.values(filterControls))
     filters[control.enabledKey] = control.checkbox.checked;
+  filters.clampEnabled = clampControls.checkbox.checked;
   return filters;
 }
 
@@ -138,6 +156,55 @@ for (const [kind, control] of Object.entries(filterControls)) {
   control.input.addEventListener('input', () => {
     control.input.setCustomValidity('');
     control.input.removeAttribute('aria-invalid');
+  });
+}
+
+function commitClampFilter() {
+  const next = nextFilterSettings();
+  if (next.clampEnabled) {
+    for (const input of [clampControls.min, clampControls.max]) {
+      if (input.value === '' || !Number.isFinite(Number(input.value))) {
+        input.setCustomValidity('Enter a finite voltage.');
+        input.setAttribute('aria-invalid', 'true');
+        input.reportValidity();
+        return false;
+      }
+    }
+    const min = Number(clampControls.min.value), max = Number(clampControls.max.value);
+    if (min > max) {
+      clampControls.min.setCustomValidity('Minimum must be less than or equal to maximum.');
+      clampControls.min.setAttribute('aria-invalid', 'true');
+      clampControls.min.reportValidity();
+      return false;
+    }
+    next.clampMinV = min;
+    next.clampMaxV = max;
+  }
+  if (next.clampEnabled === state.filters.clampEnabled &&
+      next.clampMinV === state.filters.clampMinV && next.clampMaxV === state.filters.clampMaxV) return true;
+  return regenerateWithFilters(next);
+}
+
+clampControls.checkbox.addEventListener('change', () => {
+  if (!commitClampFilter()) clampControls.checkbox.checked = state.filters.enabled !== false && state.filters.clampEnabled === true;
+});
+for (const input of [clampControls.min, clampControls.max]) {
+  input.addEventListener('change', () => {
+    if (!input.disabled) commitClampFilter();
+  });
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') input.blur();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      renderFilterControls();
+      input.blur();
+    }
+  });
+  input.addEventListener('input', () => {
+    for (const control of [clampControls.min, clampControls.max]) {
+      control.setCustomValidity('');
+      control.removeAttribute('aria-invalid');
+    }
   });
 }
 

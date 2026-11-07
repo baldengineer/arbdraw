@@ -74,7 +74,7 @@ function parseProject(raw) {
     frequencyHz = Math.max(0.000001, number('frequencyHz', defaults.frequencyHz)),
     filters = normalizeFilterSettings(source.filters),
     filtersActive = filters.enabled !== false &&
-      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled);
+      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled || filters.clampEnabled);
   let highVoltage = Math.max(declaredHighVoltage, declaredLowVoltage),
     lowVoltage = Math.min(declaredHighVoltage, declaredLowVoltage);
   if (filtersActive && values.length) {

@@ -68,7 +68,7 @@ troubleshooting.
 - SVG export with black lines on a transparent background and optional time/voltage axes and grid
 - WAV export as mono 16-bit PCM at the current sample rate, with peak normalization (use the Audio profile for 48 kHz)
 - Browser audio playback with a Play/Stop control and automatic output-rate conversion
-- Optional noise and smoothing filters with checkbox and value controls in Advanced mode Properties
+- Optional noise, smoothing, and voltage clamp filters with checkbox and value controls in Properties
 - Undo and redo for waveform changes
 - Sequences with independent segment sources, sample counts, and waveform previews
 - Freehand and erase editing within optional selection markers
@@ -79,6 +79,8 @@ troubleshooting.
 ## Editing modes
 
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
+
+In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to clip the waveform to that range. Clamp runs after noise and smoothing. Equal limits produce a constant voltage; the minimum cannot exceed the maximum. Turning Clamp off regenerates from the source with the remaining filters. Clamp settings are saved in the project and participate in undo/redo.
 
 ## Sequences
 

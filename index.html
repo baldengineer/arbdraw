@@ -173,6 +173,11 @@
             <label class="filter-toggle" for="smoothingFilterEnabled"><input id="smoothingFilterEnabled" type="checkbox"><span>Smoothing</span></label>
             <div class="unit-input filter-setting-input"><input id="smoothingFilterInput" type="number" min="3" max="101" step="2" value="5" aria-label="Smoothing window" disabled><span>pts</span></div>
           </div>
+          <div class="filter-setting">
+            <label class="filter-toggle" for="clampFilterEnabled"><input id="clampFilterEnabled" type="checkbox"><span>Clamp</span></label>
+          </div>
+          <label class="filter-setting" for="clampMinInput">Minimum <div class="unit-input filter-setting-input"><input id="clampMinInput" type="number" step="any" value="-1" aria-label="Clamp minimum voltage" disabled><span>V</span></div></label>
+          <label class="filter-setting" for="clampMaxInput">Maximum <div class="unit-input filter-setting-input"><input id="clampMaxInput" type="number" step="any" value="1" aria-label="Clamp maximum voltage" disabled><span>V</span></div></label>
         </details>
         </fieldset>
       </aside>

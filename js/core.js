@@ -296,6 +296,8 @@ function normalizeFilterSettings(source = {}) {
   const noisePercent = Number(source.noisePercent);
   const smoothingWindow = Number(source.smoothingWindowPoints);
   const roundedSmoothingWindow = Math.round(smoothingWindow);
+  const clampMin = Number.isFinite(source.clampMinV) ? source.clampMinV : -1;
+  const clampMax = Number.isFinite(source.clampMaxV) ? source.clampMaxV : 1;
   return {
     enabled: source.enabled !== false,
     noiseEnabled: source.noiseEnabled === true,
@@ -309,6 +311,9 @@ function normalizeFilterSettings(source = {}) {
           Math.max(3, roundedSmoothingWindow % 2 ? roundedSmoothingWindow : roundedSmoothingWindow + 1),
         )
       : 5,
+    clampEnabled: source.clampEnabled === true,
+    clampMinV: Math.min(clampMin, clampMax),
+    clampMaxV: Math.max(clampMin, clampMax),
   };
 }
 
@@ -353,6 +358,9 @@ function createDefaultDocument() {
         noisePercent: DEFAULT_VALUES.noisePercent,
         smoothingEnabled: false,
         smoothingWindowPoints: 5,
+        clampEnabled: false,
+        clampMinV: -1,
+        clampMaxV: 1,
       },
       serial: {
         protocol: DEFAULT_VALUES.serialProtocol,

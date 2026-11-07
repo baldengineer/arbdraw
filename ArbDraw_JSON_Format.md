@@ -61,7 +61,10 @@ For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `ser
       "noiseEnabled": false,
       "noisePercent": 1,
       "smoothingEnabled": false,
-      "smoothingWindowPoints": 5
+      "smoothingWindowPoints": 5,
+      "clampEnabled": false,
+      "clampMinV": -1,
+      "clampMaxV": 1
     },
     "samplesEdited": false,
     "sampleCount": 8,
@@ -120,10 +123,18 @@ Unknown top-level fields are ignored.
 All waveform numbers use canonical units. UI display prefixes such as mV, kHz, and µs are not stored in the project JSON.
 
 The `filters` object contains `enabled`, `noiseEnabled`, `noisePercent`,
-`smoothingEnabled`, and `smoothingWindowPoints`. Smoothing uses a centered,
-odd-sized moving-average window. After the complete filter chain, `highVoltage`
+`smoothingEnabled`, `smoothingWindowPoints`, `clampEnabled`, `clampMinV`, and
+`clampMaxV`. Smoothing uses a centered, odd-sized moving-average window.
+Clamp runs last, after noise and smoothing, limiting each sample to the inclusive
+minimum and maximum voltages. It defaults to disabled with limits of −1 V and +1 V.
+Equal limits produce a constant voltage. Missing or non-finite imported limits use
+the defaults; reversed imported limits are put in ascending order. The controls
+reject non-finite values and a minimum greater than the maximum.
+After the complete filter chain, `highVoltage`
 and `lowVoltage` are recalculated from the final samples. The source levels remain
-unchanged so repeated regeneration does not compound noise or smoothing changes.
+unchanged so repeated regeneration does not compound filter changes. Disabling
+Clamp regenerates from the source and remaining enabled filters. In a sequence,
+each segment has independent clamp settings.
 
 ## AWG fields
 

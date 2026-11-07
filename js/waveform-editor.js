@@ -147,7 +147,7 @@ function generatedVoltageLevels(values) {
     sourceLow = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
     filters = state.filters || {},
     filtersActive = filters.enabled !== false &&
-      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled);
+      ((filters.noiseEnabled && filters.noisePercent > 0) || filters.smoothingEnabled || filters.clampEnabled);
   if (!filtersActive) return { high: sourceHigh, low: sourceLow };
   let high = -Infinity,
     low = Infinity;
