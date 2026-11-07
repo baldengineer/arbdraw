@@ -294,7 +294,7 @@ function renderVoltageLevels({ preserveActiveDraft = false } = {}) {
   $('amplitudeInput').value = displayAmplitude(state.high - state.low);
   $('offsetInput').value = displayVoltage('offsetInput', (state.high + state.low) / 2);
 }
-function syncInputs(updateSourceLevels = false) {
+function syncInputs(updateSourceLevels = false, { preserveActiveDraft = false } = {}) {
   if (updateSourceLevels) {
     state.sourceHigh = inputVoltage('highInput');
     state.sourceLow = inputVoltage('lowInput');
@@ -315,7 +315,7 @@ function syncInputs(updateSourceLevels = false) {
   state.rcTau = Math.max(0.000001, +$('rcTauInput').value);
   state.riseTime = Math.max(0, inputTransitionTime('riseTimeInput'));
   state.fallTime = Math.max(0, inputTransitionTime('fallTimeInput'));
-  renderVoltageLevels();
+  renderVoltageLevels({ preserveActiveDraft });
   $('cyclesInput').value = state.cycles;
   $('dutyValue').textContent = state.duty + '%';
   renderTransitionTimes();
@@ -578,7 +578,7 @@ function applyProperties({ preview = false } = {}) {
     }
   }
   if (preview && differs) beginWaveformPreview();
-  syncInputs(amplitudeChanged);
+  syncInputs(amplitudeChanged, { preserveActiveDraft: preview });
   if (waveformChanged) {
     generate(
       state.type,
@@ -642,6 +642,9 @@ $('amplitudeInput').oninput = () => {
   $('lowInput').value = displayVoltage('lowInput', mid - a);
 };
 $('offsetInput').oninput = () => {
+  // Number inputs can report an empty value while a sign or decimal is being typed.
+  // Leave the coupled levels intact until the draft contains a finite number.
+  if (!ARBDRAW_FIELDS.validNumber($('offsetInput').value).valid) return;
   const a = (inputVoltage('highInput') - inputVoltage('lowInput')) / 2,
     m = inputVoltage('offsetInput');
   $('highInput').value = displayVoltage('highInput', m + a);
