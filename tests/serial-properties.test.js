@@ -77,6 +77,31 @@ test('post-idle changes resize and regenerate the serial waveform', () => {
   assert.deepEqual(calls.generate, ['serial']);
 });
 
+test('derived serial frequencies are concise, stable, and retain the complete payload duration', () => {
+  for (const [bitCount, baud, expected] of [
+    [121, 57600, 475.9638],
+    [3, 1000, 333.3333],
+    [12, 1000, 83.33333],
+    [16, 1000, 62.5],
+    [1, 3000000, 1000000],
+    [121, 1, 0.008264462],
+  ]) {
+    const { calls, context } = createSerialHarness();
+    Object.assign(context.projectDocument.waveform.serial, { baud, binaryPattern: '1'.repeat(bitCount) });
+    context.ensureSerialPeriodCoversPayload();
+    assert.equal(context.state.frequency, expected);
+    const roundedPeriod = Math.ceil(bitCount / baud * 1e6) / 1e6;
+    const actualPeriod = 1 / context.state.frequency;
+    assert.ok(actualPeriod >= bitCount / baud, 'the payload must fit');
+    assert.ok(actualPeriod >= roundedPeriod, 'normalization must not shorten the rounded period');
+    assert.ok((actualPeriod - roundedPeriod) / roundedPeriod < 1e-6,
+      'period error must stay below one part per million');
+    context.ensureSerialPeriodCoversPayload();
+    assert.equal(context.state.frequency, expected);
+    assert.equal(calls.renderFrequency, 1, 'repeating the calculation must not change the frequency');
+  }
+});
+
 test('UART emits per-word start, data, parity, and stop bits between idle periods', () => {
   const { context } = createSerialHarness();
   Object.assign(context.projectDocument.waveform.serial, {

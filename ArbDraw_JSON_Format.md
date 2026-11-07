@@ -240,6 +240,9 @@ payload is treated as an ASCII-compatible UTF-8 string and transmitted in full, 
 a time, before the selected word-size mask is applied.
 
 Each generated serial bit occupies `1 / baud` seconds on the frequency-derived waveform time axis.
+When serial settings determine a standalone waveform's frequency, ArbDraw rounds the required
+period up to whole microseconds and stores its reciprocal rounded down to 7 significant digits.
+This keeps `frequencyHz` stable and readable while retaining enough time for the complete payload.
 If the complete serial frame ends before the waveform buffer, all remaining samples are set to the
 high-level serial idle state. Frames longer than the available time span are clipped at the end of
 the buffer.

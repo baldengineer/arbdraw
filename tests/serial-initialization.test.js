@@ -86,6 +86,25 @@ test('File New initializes timing when Serial is already the default waveshape',
   assert.equal(f.run('state.history.length'), 1);
 });
 
+test('serial JSON preserves normalized timing and samples through save, import, and regeneration', () => {
+  const f = harness('serial');
+  f.element('confirmNewBtn').onclick();
+  assertCompletePayload(f);
+  const originalSamples = f.run('JSON.stringify(state.data)');
+  const json = f.run('JSON.stringify(projectDocument)');
+  assert.equal(JSON.parse(json).waveform.frequencyHz, 475.9638);
+  assert.ok(json.includes('"frequencyHz":475.9638'));
+  vm.runInContext(slice('js/project.js', 'function parseProject(', 'function loadProject('), f.context);
+  f.context.savedJson = json;
+  f.run('projectDocument = parseProject(JSON.parse(savedJson));');
+  assert.equal(f.run('state.frequency'), 475.9638);
+  assert.equal(f.run('JSON.stringify(state.data)'), originalSamples);
+  f.run('ensureSerialPeriodCoversPayload(); generate();');
+  assert.equal(f.run('projectDocument.waveform.frequencyHz'), 475.9638);
+  assert.equal(f.run('JSON.stringify(state.data)'), originalSamples);
+  assertCompletePayload(f);
+});
+
 test('canceling Serial selection preserves waveform, timing, and history', () => {
   const f = harness();
   f.element('confirmNewBtn').onclick();

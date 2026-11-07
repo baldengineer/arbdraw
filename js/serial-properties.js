@@ -77,7 +77,11 @@ function ensureSerialPeriodCoversPayload() {
     baud = serialSettings().baud,
     requiredPeriodSeconds = Math.max(1, bits.length) / baud,
     roundedPeriodSeconds = Math.ceil(requiredPeriodSeconds * 1e6) / 1e6,
-    requiredFrequency = 1 / roundedPeriodSeconds;
+    frequency = 1 / roundedPeriodSeconds,
+    // Keep derived JSON values to 7 significant digits at any frequency scale.
+    // Round down so normalization cannot shorten the time available for the payload.
+    precisionScale = 10 ** (6 - Math.floor(Math.log10(frequency))),
+    requiredFrequency = Number((Math.floor(frequency * precisionScale) / precisionScale).toPrecision(7));
   if (state.frequency !== requiredFrequency) {
     state.frequency = requiredFrequency;
     renderFrequency();
