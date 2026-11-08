@@ -20,16 +20,17 @@
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
-        <div class="signals-panel" role="region" aria-label="Project signals">
-          <div class="signal-toolbar">
-            <strong>Signals</strong>
-            <button id="addSignalBtn" class="ghost" type="button">+ Add signal</button>
-            <button id="duplicateSignalBtn" class="ghost" type="button">Duplicate</button>
-            <label>Name <input id="signalNameInput" maxlength="120" aria-label="Selected signal name"></label>
-            <button id="removeSignalBtn" class="ghost" type="button">Remove</button>
-          </div>
-          <div id="signalList" class="signal-list" role="group" aria-label="Select a signal"></div>
-          <p class="signal-hint">Edit, play, and export the selected signal. Project JSON saves all signals.</p>
+        <div class="signal-toolbar" role="group" aria-label="Project signals">
+          <select id="signalSelect" class="menu-select" aria-label="Selected signal"></select>
+          <button id="addSignalBtn" class="ghost" type="button">+ Signal</button>
+          <details id="signalActions" class="signal-actions">
+            <summary aria-label="Signal actions" title="Rename, duplicate, or remove the selected signal">⋯</summary>
+            <div class="signal-actions-panel">
+              <label>Name <input id="signalNameInput" maxlength="120" aria-label="Selected signal name"></label>
+              <button id="duplicateSignalBtn" class="ghost" type="button">Duplicate signal</button>
+              <button id="removeSignalBtn" class="ghost" type="button">Remove signal</button>
+            </div>
+          </details>
         </div>
 
         <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
@@ -421,6 +422,7 @@
   <script src="js/editor-modes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/sequence.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/signals.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signal-grid.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/help.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/ui.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/instruments.js?v=__ARBDRAW_BUILD_SHA__"></script>

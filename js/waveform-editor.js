@@ -180,7 +180,8 @@ function currentEditorViewport() {
     requestedViewport = followsFullRecord
       ? { start: 0, pointsPerScreen: null }
       : editorViewport,
-    normalized = normalizeEditorViewport(requestedViewport, editorRecordLength());
+    normalized = normalizeEditorViewport(requestedViewport,
+      globalThis.ARBDRAW_SIGNAL_GRID?.recordLength() || editorRecordLength());
   editorViewport.start = normalized.start;
   editorViewport.pointsPerScreen = normalized.pointsPerScreen;
   editorViewport.total = normalized.total;
@@ -541,7 +542,7 @@ function updateEditorNavigation(view = currentEditorViewport()) {
     'aria-valuetext',
     fullRecord ? 'Full record' : `${editorCoordinateText(view.start)} through ${editorCoordinateText(view.end)}`,
   );
-  globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
+  if (!globalThis.ARBDRAW_SIGNAL_GRID?.enabled()) globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
 }
 
 function drawEditorOverview() {
@@ -552,6 +553,7 @@ function drawEditorOverview() {
     d = devicePixelRatio || 1;
   updateEditorNavigation(view);
   if (!w || !h) return;
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.drawOverview(editorOverviewContext, w, h, d)) return;
   editorOverviewContext.clearRect(0, 0, w, h);
   editorOverviewContext.fillStyle = '#090d0f';
   editorOverviewContext.fillRect(0, 0, w, h);
@@ -589,6 +591,10 @@ function draw() {
   updateEditorAxisControls();
   updateEditorSelectionReadout();
   if (!w || !h) return;
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.draw(ctx, w, h, d, view)) {
+    if (!$('waveformView').classList.contains('hidden')) drawScope();
+    return;
+  }
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#090d0f';
   ctx.fillRect(0, 0, w, h);
@@ -680,6 +686,8 @@ function setWaveformRenderMode(mode) {
   draw();
 }
 function canvasPoint(e) {
+  const signalPoint = globalThis.ARBDRAW_SIGNAL_GRID?.canvasPoint(e);
+  if (signalPoint) return signalPoint;
   const r = canvas.getBoundingClientRect(),
     d = devicePixelRatio || 1,
     p = { l: 58 * d, r: 18 * d, t: 20 * d, b: 39 * d },
@@ -700,6 +708,7 @@ function canvasPoint(e) {
 }
 
 function pointerIsNearWaveform(e) {
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.enabled()) return globalThis.ARBDRAW_SIGNAL_GRID.nearWaveform(e);
   if (!state.data.length) return false;
   const r = canvas.getBoundingClientRect();
   const d = devicePixelRatio || 1;
@@ -739,6 +748,7 @@ function editorEditIndexRange(firstIndex, secondIndex = firstIndex, selection = 
 }
 
 function editAt(pt, last) {
+  if (pt.outsideLane) return false;
   if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
   if (last) {
@@ -862,6 +872,7 @@ function finishEditorSelection() {
   editorSelection.origin = null;
 }
 canvas.addEventListener('pointerdown', (e) => {
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.selectLane(e)) return;
   if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return;
   if (state.tool === 'pointer') return;
   if (state.tool === 'selection') {
@@ -887,6 +898,11 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
+  if (p.outsideLane && !state.drawing && !editorSelection.dragging) {
+    canvas.classList.remove('waveform-hover');
+    $('cursorReadout').style.display = 'none';
+    return;
+  }
   editorCursorPoint = p;
   canvas.classList.toggle(
     'waveform-hover',
@@ -899,7 +915,7 @@ canvas.addEventListener('pointermove', (e) => {
   } else if (state.drawing) {
     const changed = editAt(p, state.lastPoint);
     state.drawingChanged = changed || state.drawingChanged;
-    state.lastPoint = p;
+    state.lastPoint = p.outsideLane ? null : p;
   }
 });
 canvas.addEventListener('pointerup', (e) => {

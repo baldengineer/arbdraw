@@ -2,7 +2,7 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // Independent signal records; editor history and navigation stay local to each.
 let signalSessions = new WeakMap();
-let signalCards = new Map();
+let signalOptions = new Map();
 
 function activeSignal() {
   return projectDocument.signals.find(signal => signal.id === projectDocument.activeSignalId);
@@ -14,8 +14,8 @@ function resetSignals() {
     { id: 'signal-1', name: 'Signal 1', AWG: projectDocument.AWG, waveform: projectDocument.waveform },
   ], projectDocument.name);
   signalSessions = new WeakMap();
-  signalCards = new Map();
-  $('signalList').replaceChildren();
+  signalOptions = new Map();
+  $('signalSelect').replaceChildren();
 }
 
 function finishSignalEdit() {
@@ -34,14 +34,16 @@ function rememberSignalSession() {
 function activateSignal(id) {
   if (!projectDocument.signals.some(signal => signal.id === id)) return false;
   if (id === projectDocument.activeSignalId) return true;
+  $('signalActions').open = false;
   finishSignalEdit();
   rememberSignalSession();
+  const gridView = globalThis.ARBDRAW_SIGNAL_GRID?.captureView();
   projectDocument.activeSignalId = id;
-  restoreSignalSession();
+  restoreSignalSession(gridView);
   return true;
 }
 
-function restoreSignalSession() {
+function restoreSignalSession(gridView) {
   const session = signalSessions.get(activeSignal());
   // Restore AWG counts against the full record before selecting a segment.
   state.activeSegment = null;
@@ -51,10 +53,12 @@ function restoreSignalSession() {
   state.history = session?.history || [];
   state.redo = session?.redo || [];
   Object.assign(editorViewport, session?.viewport || { start: 0, pointsPerScreen: null, total: null });
+  if (gridView) globalThis.ARBDRAW_SIGNAL_GRID.restoreView(gridView);
   setEditorMode(session?.mode || (hasArbitraryEdits() ? 'advanced' : 'basic'), { render: false });
   if (!state.data.length) generate();
   else if (!state.history.length) pushHistory();
   renderDocument();
+  globalThis.ARBDRAW_SIGNAL_GRID?.revealActive();
   refreshScope();
   refreshSignalJson();
 }
@@ -71,7 +75,7 @@ function addSignal(duplicate = false) {
   projectDocument.signals.push(signal);
   projectDocument.activeSignalId = signal.id;
   restoreSignalSession();
-  signalCards.get(signal.id)?.button.focus();
+  $('signalSelect').focus();
 }
 
 function removeSignal() {
@@ -84,7 +88,7 @@ function removeSignal() {
   signalSessions.delete(signal);
   projectDocument.activeSignalId = projectDocument.signals[Math.min(index, projectDocument.signals.length - 1)].id;
   restoreSignalSession();
-  signalCards.get(projectDocument.activeSignalId)?.button.focus();
+  $('signalSelect').focus();
   return true;
 }
 
@@ -96,62 +100,36 @@ function renameSignal(name) {
   const value = String(name).trim().slice(0, 120);
   if (value) activeSignal().name = value;
   $('signalNameInput').value = activeSignal().name;
-  refreshSignals();
+  draw();
   refreshSignalJson();
 }
 
-function drawSignalPreview(canvas, waveform) {
-  const context = canvas.getContext('2d'), values = waveform.values;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  if (!values.length) return;
-  const low = waveform.lowVoltage, span = Math.max(0.000001, waveform.highVoltage - low);
-  context.strokeStyle = '#7bffb2';
-  context.lineWidth = 1.5;
-  context.beginPath();
-  for (let x = 0; x < canvas.width; x++) {
-    const value = values[Math.round(x / (canvas.width - 1) * (values.length - 1))];
-    const y = waveform.highVoltage === low ? canvas.height / 2
-      : 3 + (1 - (value - low) / span) * (canvas.height - 6);
-    if (x === 0) context.moveTo(x, y);
-    else context.lineTo(x, y);
-  }
-  context.stroke();
-}
-
 function refreshSignals() {
-  const list = $('signalList'), signals = projectDocument.signals;
-  for (const [id, card] of signalCards) {
-    if (!signals.some(signal => signal.id === id)) { card.button.remove(); signalCards.delete(id); }
+  const select = $('signalSelect'), signals = projectDocument.signals;
+  for (const [id, option] of signalOptions) {
+    if (!signals.some(signal => signal.id === id)) { option.remove(); signalOptions.delete(id); }
   }
   for (const signal of signals) {
-    let card = signalCards.get(signal.id);
-    if (!card) {
-      const button = document.createElement('button'), name = document.createElement('span'),
-        preview = document.createElement('canvas'), detail = document.createElement('small');
-      button.type = 'button';
-      button.className = 'signal-card';
-      button.onclick = () => activateSignal(signal.id);
-      preview.width = 140;
-      preview.height = 32;
-      preview.setAttribute('aria-hidden', 'true');
-      button.append(name, preview, detail);
-      list.append(button);
-      card = { button, name, preview, detail };
-      signalCards.set(signal.id, card);
+    let option = signalOptions.get(signal.id);
+    if (!option) {
+      option = document.createElement('option');
+      option.value = signal.id;
+      select.append(option);
+      signalOptions.set(signal.id, option);
     }
-    card.button.setAttribute('aria-pressed', String(signal === activeSignal()));
-    card.name.textContent = signal.name;
-    card.detail.textContent = `${signal.waveform.sampleCount.toLocaleString()} pts · ${signal.waveform.segments ? 'Sequence' : titles[signal.waveform.type]}`;
-    drawSignalPreview(card.preview, signal.waveform);
+    option.textContent = signal.name;
   }
+  select.value = projectDocument.activeSignalId;
   if (document.activeElement !== $('signalNameInput')) $('signalNameInput').value = activeSignal().name;
   $('removeSignalBtn').disabled = signals.length === 1;
+  globalThis.ARBDRAW_SIGNAL_GRID?.refreshLayout();
 }
 
 globalThis.ARBDRAW_SIGNALS = { active: activeSignal, reset: resetSignals, refresh: refreshSignals };
+$('signalSelect').onchange = event => activateSignal(event.target.value);
 $('addSignalBtn').onclick = () => addSignal();
-$('duplicateSignalBtn').onclick = () => addSignal(true);
-$('removeSignalBtn').onclick = removeSignal;
+$('duplicateSignalBtn').onclick = () => { $('signalActions').open = false; addSignal(true); };
+$('removeSignalBtn').onclick = () => { $('signalActions').open = false; removeSignal(); };
 $('signalNameInput').onchange = event => renameSignal(event.target.value);
 $('signalNameInput').onkeydown = event => {
   if (event.key === 'Enter') { event.preventDefault(); event.target.blur(); }

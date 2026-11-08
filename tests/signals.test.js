@@ -159,23 +159,111 @@ test('rename treats names as text, removal can be canceled, and the last signal 
   assert.equal(run('removeSignal()'), false);
 });
 
-test('signal controls display every named preview and keep exactly one signal selected', () => {
+test('compact signal selector lists names and keeps one signal selected without preview cards', () => {
   const { run, element } = harness();
   element('addSignalBtn').onclick();
   element('addSignalBtn').onclick();
   element('duplicateSignalBtn').onclick();
-  const list = element('signalList');
+  const list = element('signalSelect');
   assert.equal(list.children.length, 4);
-  assert.equal(list.children.filter(button => button.attributes['aria-pressed'] === 'true').length, 1);
-  assert.equal(list.children[3].children[0].textContent, 'Signal 3 copy');
-  list.children[0].onclick();
+  assert.equal(list.value, 'signal-4');
+  assert.equal(list.children[3].textContent, 'Signal 3 copy');
+  list.onchange({ target: { value: 'signal-1' } });
   element('signalNameInput').onchange({ target: { value: 'Clock' } });
-  assert.equal(list.children[0].children[0].textContent, 'Clock');
-  assert.equal(list.children[0].attributes['aria-pressed'], 'true');
+  assert.equal(list.children[0].textContent, 'Clock');
+  assert.equal(list.value, 'signal-1');
   assert.equal(run('activeSignal().name'), 'Clock');
   element('removeSignalBtn').onclick();
   assert.equal(list.children.length, 3);
   run('projectDocument = createDefaultDocument(); resetSignals(); generate();');
-  assert.equal(element('signalList').children.length, 1);
+  assert.equal(element('signalSelect').children.length, 1);
   assert.equal(element('removeSignalBtn').disabled, true);
+  assert.doesNotMatch(read('index.html'), /signalList|signal-card|signals-panel/);
+});
+
+function gridHarness() {
+  const fixture = harness(), { context, run } = fixture;
+  const listeners = {}, draws = [];
+  const context2d = new Proxy({}, { get: (target, key) => target[key]
+    || ((...args) => draws.push({ method: key, args })) });
+  Object.assign(context, { devicePixelRatio: 1, editorAxisMode: 'absolute', editorSelection: {},
+    ctx: context2d, drawEditorSelection() {},
+    editorWaveformColor: () => '#7bffb2',
+    canvas: { width: 1000, height: 459, parentElement: { style: {}, parentElement: { classList: { toggle() {} } } },
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 459 }),
+      setAttribute() {}, setPointerCapture() {},
+      addEventListener(name, handler) { listeners[name] = handler; } },
+    displayVoltage: (_, value) => value, displayAmplitude: value => value,
+  });
+  run(slice('js/waveform-editor.js', 'function editorTimeTicks(', 'function updateEditorCursorReadout('));
+  run(slice('js/waveform-editor.js', 'function editorPointTicks(', 'function editorPointCanvasX('));
+  run(slice('js/waveform-editor.js', 'function normalizeEditorViewport(', 'function normalizeEditorSelection('));
+  run(slice('js/waveform-editor.js', 'function editorRecordLength()', 'function waveformGenerationRange('));
+  run(slice('js/waveform-editor.js', 'function canvasPoint(', 'const dutyDisabledTypes'));
+  run(slice('js/waveform-editor.js', "canvas.addEventListener('pointerdown'", "canvas.addEventListener('pointermove'"));
+  run(read('js/signal-grid.js'));
+  run(`state.samples = 100; state.frequency = 10000; generate('sine');
+    addSignal(true); state.samples = 200; state.frequency = 1000; generate('triangle');
+    activateSignal('signal-1');`);
+  return { ...fixture, listeners, draws };
+}
+
+test('stacked grid aligns actual sample positions or elapsed time, including unequal records', () => {
+  const { run, context } = gridHarness();
+  assert.equal(run('currentEditorViewport().total'), 200);
+  assert.equal(run('editorRecordLength()'), 100);
+  context.editorAxisMode = 'time';
+  assert.equal(run('currentEditorViewport().total'), 996);
+  const before = run('JSON.stringify(projectDocument.signals)');
+  run('Object.assign(editorViewport, { start: 100, pointsPerScreen: 401, total: 996 }); activateSignal("signal-2");');
+  assert.equal(run('currentEditorViewport().start'), 20);
+  assert.equal(run('currentEditorViewport().end'), 100);
+  run('activateSignal("signal-1");');
+  assert.equal(run('currentEditorViewport().start'), 100);
+  assert.equal(run('currentEditorViewport().end'), 500);
+  assert.equal(run('JSON.stringify(projectDocument.signals)'), before);
+});
+
+test('grid renders two vertically separated traces and one shared horizontal axis', () => {
+  const { run, draws, element, context } = gridHarness();
+  run('ARBDRAW_SIGNAL_GRID.draw(ctx, 1000, 459, 1, currentEditorViewport());');
+  const clips = draws.filter(call => call.method === 'rect');
+  assert.equal(clips.length, 2);
+  assert.equal(clips[0].args[0], clips[1].args[0]);
+  assert.ok(clips[0].args[1] + clips[0].args[3] < clips[1].args[1]);
+  assert.ok(draws.some(call => call.method === 'fillText' && call.args[0] === 'Signal 1'));
+  assert.ok(draws.some(call => call.method === 'fillText' && call.args[0] === 'Signal 1 copy'));
+  assert.equal(element('editorPointAxisLabel').textContent, 'POINTS');
+  assert.equal(context.canvas.parentElement.style.minHeight, '227px');
+  for (const call of draws) for (const arg of call.args)
+    if (typeof arg === 'number') assert.ok(Number.isFinite(arg), `${call.method} received ${arg}`);
+});
+
+test('clicking another lane selects it without editing and point edits use that lane’s voltage scale', () => {
+  const { run, listeners } = gridHarness();
+  const first = run('JSON.stringify(projectDocument.signals[0].waveform.values)');
+  const second = run('JSON.stringify(projectDocument.signals[1].waveform.values)');
+  listeners.pointerdown({ clientX: 500, clientY: 320, pointerId: 1 });
+  assert.equal(run('projectDocument.activeSignalId'), 'signal-2');
+  assert.equal(run('JSON.stringify(projectDocument.signals[1].waveform.values)'), second);
+  const point = run('canvasPoint({clientX: 500, clientY: 320})');
+  assert.ok(Math.abs(point.v) < 1e-12);
+  assert.equal(point.outsideLane, false);
+  run('state.tool = "pencil";');
+  listeners.pointerdown({ clientX: 500, clientY: 250, pointerId: 2 });
+  assert.notEqual(run('JSON.stringify(projectDocument.signals[1].waveform.values)'), second);
+  assert.equal(run('JSON.stringify(projectDocument.signals[0].waveform.values)'), first);
+  const changed = run('JSON.stringify(projectDocument.signals[1].waveform.values)');
+  run('editAt(canvasPoint({ clientX: 500, clientY: 100 }), { i: 90, v: 0 });');
+  assert.equal(run('JSON.stringify(projectDocument.signals[1].waveform.values)'), changed);
+});
+
+test('blank record tails and signal labels cannot write samples', () => {
+  const { run, listeners } = gridHarness();
+  const before = run('JSON.stringify(projectDocument.signals)');
+  run('state.tool = "pencil";');
+  listeners.pointerdown({ clientX: 950, clientY: 100, pointerId: 1 });
+  listeners.pointerdown({ clientX: 20, clientY: 100, pointerId: 2 });
+  assert.equal(run('JSON.stringify(projectDocument.signals)'), before);
+  assert.equal(run('state.drawing'), false);
 });

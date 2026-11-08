@@ -82,7 +82,9 @@ troubleshooting.
 
 ## Multiple signals
 
-Use **+ Add signal** to create another independent signal, or **Duplicate** to copy the selected signal, including its segments and sample edits. There is no two-signal limit. The signal cards show previews; select one to edit it in Editor, Viewer, or Samples. Rename it with **Name**. **Remove** asks for confirmation and cannot remove the last signal.
+Use **+ Signal** to create another independent signal. Multiple signals appear as stacked rows in one Editor grid, sharing a horizontal axis and zoom. Click a row to select it, then edit that row; the first click on another row only selects it. The compact signal dropdown also selects the signal used by Properties, Viewer, Samples, playback, and export. The **⋯** menu contains the name field, **Duplicate signal** (including segments and sample edits), and **Remove signal**. Removal asks for confirmation and cannot remove the last signal.
+
+In **Absolute**, rows align by sample index. In **Relative (Time)**, they align by elapsed time using each signal’s timing. Full Record fits all displayed signals; shorter records leave blank space at the right. Each row has its own labeled voltage range. With many signals, scroll the grid vertically. Selecting a different signal preserves the shared horizontal window. The Viewer and its measurement cursors continue to show the selected signal.
 
 Each signal keeps its own waveform properties, filters, sample count, sample rate, AWG profile, and sequence. Undo/redo belongs to the selected signal and survives switching signals. **Save JSON** saves every signal in a version 2 project; **Open** also accepts existing version 1 single-waveform projects. Browser settings remember defaults, not complete projects, so save JSON to retain your signals.
 
