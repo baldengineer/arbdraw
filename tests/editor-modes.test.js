@@ -45,6 +45,7 @@ function createHarness({ url = 'https://example.test/arbdraw/' } = {}) {
   const context = vm.createContext({
     $: element,
     state,
+    projectDocument: { waveform: state },
     document: {
       documentElement: { dataset: {} },
       addEventListener(type, listener) { listeners[type] = listener; },

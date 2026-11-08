@@ -64,6 +64,7 @@ troubleshooting.
 ## Features
 
 - Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and serial (UART) waveform types
+- Math waveforms from user expressions, with harmonic, damped sine, Gaussian, and other presets
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Generator profiles, including Audio at 48 kHz with 1,000 default points and a 100,000-point maximum
 - CSV export with optional waveform metadata headers
@@ -84,6 +85,16 @@ troubleshooting.
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
 
 In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to clip the waveform to that range. Clamp runs after noise and smoothing. Equal limits produce a constant voltage; the minimum cannot exceed the maximum. Turning Clamp off regenerates from the source with the remaining filters. Clamp settings are saved in the project and participate in undo/redo.
+
+## Math waveforms
+
+Choose **Math** in the Waveshape menu, enter an expression or choose a preset, then select **Apply expression** (or press **Ctrl/Command+Enter**). Selecting a preset only fills the draft. **Escape** restores the applied expression. Expressions participate in undo/redo and are saved in project JSON, browser settings, and individual sequence segments.
+
+`x` is cycle position from 0 up to, but excluding, 1. Cycles and Phase work as they do for the other periodic sources; Frequency controls playback timing. For example, `sin(2*pi*x)` is a sine and `exp(-4*x)*sin(8*pi*x)` is a damped oscillation repeated each cycle. In Arbitrary mode, an active selection receives its own complete cycle span; points outside it are preserved.
+
+The result is clipped to −1…1, then converted to volts as **Offset + Amplitude/2 × result**. Filters run afterward. Use `/` to scale a sum of harmonics if you want to avoid clipping. Expressions use radians, constants `pi` and `e`, operators `+ - * / % ^`, and parentheses. Multiplication must be explicit (`2*x`); `^` is exponentiation, with `-2^2 = -4` and `2^3^2 = 512`.
+
+Supported functions are `sin`, `cos`, `tan`, `abs`, `sqrt`, `exp`, `log` (natural logarithm), `floor`, `ceil`, `round`, `sign`, and the two-argument functions `min`, `max`, and `pow`. Expressions are limited to 512 characters, 128 tokens, and 32 parsing levels. JavaScript code, property access, assignments, and implicit multiplication are not supported. Syntax errors and non-finite sampled results leave the current waveform unchanged and show an explanation. Timing changes that hit an undefined value are rejected too. Validation checks the actual discrete samples, not every point between them; this first version has no antialiasing or automatic normalization.
 
 ## Viewer measurements
 

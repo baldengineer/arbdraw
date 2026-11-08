@@ -83,6 +83,10 @@ function renderFilterControls() {
 }
 
 function regenerateWithFilters(nextFilters) {
+  if (state.type === 'math' && !validateMathGeneration({}, false)) {
+    renderFilterControls();
+    return false;
+  }
   if (!confirmWaveformReplacement(false)) {
     renderFilterControls();
     return false;

@@ -83,6 +83,12 @@ function requestBasicMode() {
 
 function convertToBasic() {
   $('basicModeConfirmDialog').close();
+  const source = projectDocument.waveform.segments?.[state.activeSegment]
+    || projectDocument.waveform.segments?.[0] || projectDocument.waveform;
+  if (source.type === 'math') {
+    try { ARBDRAW_MATH.samples(source); }
+    catch (error) { showToast(error.message); return; }
+  }
   const hadSequence = globalThis.ARBDRAW_SEQUENCE?.hasSegments();
   globalThis.ARBDRAW_SEQUENCE?.leave();
   if (hadSequence) renderDocument();

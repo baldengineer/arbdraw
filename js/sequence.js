@@ -99,6 +99,17 @@ function addSequenceSegment(type = null) {
     showToast(`Each segment needs at least 2 points. Increase the total sample count to at least ${count * 2} before adding a segment.`);
     return;
   }
+  // A redistribution can land on a singularity that was absent at the old sample count.
+  const candidates = [...(segments || [source]), { ...source, type: type || source.type }];
+  try {
+    candidates.forEach((segment, index) => {
+      if (segment.type === 'math') ARBDRAW_MATH.samples({ ...segment,
+        sampleCount: Math.floor(total / count) + (index < total % count ? 1 : 0) });
+    });
+  } catch (error) {
+    showToast(error.message);
+    return;
+  }
   if ((segments || [source]).some((segment) => segment.samplesEdited)
     && !window.confirm('Adding a segment will divide the AWG’s total points equally among all segments and regenerate their waveforms. You will lose any arbitrary edits to the existing waveform samples. Continue?')) return;
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();

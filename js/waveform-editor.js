@@ -187,6 +187,15 @@ function generate(
   deferRender = false,
 ) {
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
+  let mathSamples = null;
+  if (type === 'math') {
+    try {
+      mathSamples = mathGenerationSamples({}, scopeSelection);
+    } catch (error) {
+      showToast(error.message);
+      return false;
+    }
+  }
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   globalThis.updateAudioPlaybackButton?.();
   if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
@@ -236,6 +245,8 @@ function generate(
     // first so repeated cycles also share exactly the same edge positions.
     const p = (((i * state.cycles) % generatedPointCount) / generatedPointCount + state.phase / 360) % 1;
     switch (type) {
+      case 'math':
+        return mid + amp * mathSamples[i];
       case 'sine':
         return mid + amp * Math.sin(2 * Math.PI * p);
       case 'square':
@@ -303,6 +314,23 @@ function generate(
   if (!$('samplesView').classList.contains('hidden')) renderSamples();
   if (persist) persistCurrentSettings();
   return true;
+}
+// Validate proposed timing before property controls or sequence operations mutate it.
+function mathGenerationSamples(overrides = {}, scopeSelection = true) {
+  const waveform = { ...editableWaveform(), ...overrides };
+  const range = waveformGenerationRange(waveform.sampleCount,
+    scopeSelection ? currentEditorSelection() : null, state.data.length);
+  return ARBDRAW_MATH.samples({ ...waveform, sampleCount: range.right - range.left + 1 });
+}
+function validateMathGeneration(overrides = {}, scopeSelection = true) {
+  if ((overrides.type || state.type) !== 'math') return true;
+  try {
+    mathGenerationSamples(overrides, scopeSelection);
+    return true;
+  } catch (error) {
+    showToast(error.message);
+    return false;
+  }
 }
 function cloneWaveform(source = projectDocument.waveform) {
   if (source === projectDocument.waveform) globalThis.ARBDRAW_SEQUENCE?.sync();
@@ -646,6 +674,7 @@ function editAt(pt, last) {
   return true;
 }
 const dutyDisabledTypes = new Set([
+  'math',
   'sine',
   'triangle',
   'rc',
@@ -702,6 +731,7 @@ function renderWaveformProperties(type) {
   updateNoisePropertiesVisibility(type);
   updateSymmetryVisibility(type);
   updateRcVisibility(type);
+  globalThis.ARBDRAW_MATH_PROPERTIES?.render(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
 }
@@ -960,6 +990,14 @@ function drawMini(c, type) {
     h = (c.height = 42);
   x.strokeStyle = '#ff6b2c';
   x.lineWidth = 2;
+  if (type === 'math') {
+    x.fillStyle = '#ff6b2c';
+    x.font = 'italic 22px Georgia, serif';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText('f(x)', w / 2, h / 2);
+    return;
+  }
   if (type === 'serial') {
     x.fillStyle = '#ff6b2c';
     x.font = 'bold 18px ui-monospace, monospace';
@@ -1046,6 +1084,7 @@ $('functionSelectMenu')
       }
       if (!generate(type)) {
         renderWaveformProperties(state.type);
+        if (type === 'math' && state.type !== 'math') globalThis.ARBDRAW_MATH_PROPERTIES?.edit();
         closeFunctionSelectMenu();
         return;
       }

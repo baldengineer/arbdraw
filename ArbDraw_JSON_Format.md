@@ -109,6 +109,7 @@ Unknown top-level fields are ignored.
 | `cycles` | integer | cycles | Number of waveform cycles represented by the sample array. Minimum value is 1. |
 | `symmetryPercent` | number | % | Triangle rise time as a percentage of the cycle, from 0 to 100. Default: 50. 0 produces a falling ramp; 100 produces a rising ramp. |
 | `rcTau` | number | — | Unitless RC curve parameter. Default: 5. |
+| `mathExpression` | string | — | Math source expression; default `sin(2*pi*x)`. Up to 512 characters. Retained when another source is selected. |
 | `phaseDegrees` | number | degrees | Nominal phase offset. |
 | `dutyCyclePercent` | number | % | High-state percentage for square and pulse waveforms. |
 | `riseTimeSeconds` | number | s | Linear low-to-high transition time for square and pulse waveforms. `0` means an ideal step. |
@@ -219,6 +220,7 @@ Version 1 recognizes:
 - `dc`
 - `noise`
 - `serial`
+- `math`
 
 The `noise` waveform generates independent, uniformly distributed samples for white noise. Pink
 noise passes white samples through a seven-pole approximation of a 1/f spectrum. Both variants are
@@ -227,6 +229,8 @@ centered on the configured offset and scaled to the configured high/low voltage 
 Triangle symmetry is saved in `waveform.symmetryPercent`. Missing values use 50%; imported values are clamped to 0–100. The editable default is `symmetryPercent` in `js/defaults.js`.
 
 The `rc` waveform is a capacitor charging curve, `V(t) = Vhigh - (Vhigh - Vlow)e^(-t/τ)`. `waveform.rcTau` sets how many time constants are represented in each cycle; it defaults to 5, which reaches about 99.3% of the high level before the next cycle begins. Here, `τ = R × C`.
+
+For `math`, `mathExpression` defines a dimensionless periodic function of `x`, where `x = fractionalPart(i * cycles / sampleCount + phaseDegrees / 360)`. Each result is clipped to −1…1 and converted to volts using the source midpoint plus half the source voltage range times the result; filters run afterward. `x` resets per segment (or per selected range during scoped generation). Supported syntax: explicit `+ - * / % ^`, parentheses, `pi`, `e`, and `sin`, `cos`, `tan`, `abs`, `sqrt`, `exp`, `log`, `floor`, `ceil`, `round`, `sign`, `min(a,b)`, `max(a,b)`, `pow(a,b)`. Angles use radians. The parser permits at most 128 tokens and 32 nesting levels and never evaluates JavaScript. Invalid Math syntax rejects import. Valid saved sample arrays remain authoritative, including arbitrary edits; when samples must be generated, non-finite results reject the operation. Missing expressions use the default expression. Sequence segments store their own `mathExpression`.
 
 The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved, marked as edited, and remains the waveform's authoritative sample data.
 

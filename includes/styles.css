@@ -269,3 +269,9 @@ button { color:inherit; }
 .segment-select,.segment-remove{border:0}
 .segment-select:focus-visible,.segment-remove:focus-visible,.segment-add:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .bridge-connection-actions{display:flex;gap:8px}.bridge-connection-actions button{height:37px}.bridge-connection-group .bridge-backend-help{overflow-wrap:anywhere}.bridge-status::before{flex-shrink:0}.bridge-status[data-status="failed"]::before{background:#e25b5b}@media(max-width:520px){.bridge-connection-row{grid-template-columns:minmax(0,1fr)}.bridge-connection-actions{justify-content:flex-end}}
+.math-expression-label{display:flex!important;flex-direction:column;align-items:stretch!important;gap:6px}
+#mathExpressionInput{width:100%;box-sizing:border-box;resize:vertical;min-height:64px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--field);color:var(--ink);font:12px ui-monospace,monospace}
+#mathExpressionInput:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#mathExpressionInput[aria-invalid="true"]{border-color:#e25b5b}
+.math-help,.math-error{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.math-help{color:var(--muted)}.math-error{color:#e25b5b}.math-error:empty{display:none}

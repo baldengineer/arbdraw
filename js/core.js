@@ -72,7 +72,7 @@ function normalizeDefaults(source = {}) {
   const sampleRateUnit = unit('sampleRateUnit', sampleRateUnits, 'MSa/s');
   const countUnit = unit('sampleCountUnit', sampleCountUnits, 'pts');
   const sampleCountUnit = countUnit === 'kpts' ? 'Kpts' : countUnit;
-  const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'serial'];
+  const waveformTypes = ['sine', 'square', 'triangle', 'rc', 'pulse', 'dc', 'noise', 'serial', 'math'];
 
   const offsetV = finite('offsetV', 0) * voltageUnits[offsetUnit];
   const amplitudeVpp = Math.max(0, finite('amplitudeVpp', 10) * amplitudeUnits[amplitudeUnit]);
@@ -105,6 +105,8 @@ function normalizeDefaults(source = {}) {
     sampleRateUnit,
     sampleCountUnit,
     waveformType: waveformTypes.includes(source.waveformType) ? source.waveformType : 'sine',
+    mathExpression: typeof source.mathExpression === 'string' && source.mathExpression.length <= 512
+      ? source.mathExpression : 'sin(2*pi*x)',
     phaseUnit: String(source.phaseUnit || '°'),
     dutyCycleUnit: String(source.dutyCycleUnit || '%'),
     sampleRateMSa: Math.max(
@@ -319,6 +321,17 @@ function normalizeFilterSettings(source = {}) {
 
 function createDefaultDocument() {
   const durationMs = DEFAULT_VALUES.sampleCount / (DEFAULT_VALUES.sampleRateMSa * 1000);
+  let mathExpression = DEFAULT_VALUES.mathExpression;
+  if (globalThis.ARBDRAW_MATH) {
+    try {
+      ARBDRAW_MATH.compile(mathExpression);
+      if (DEFAULT_VALUES.waveformType === 'math')
+        ARBDRAW_MATH.samples({ mathExpression, sampleCount: DEFAULT_VALUES.sampleCount,
+          cycles: DEFAULT_VALUES.nCycles, phaseDegrees: DEFAULT_VALUES.phaseDegrees });
+    } catch {
+      mathExpression = ARBDRAW_MATH.defaultExpression;
+    }
+  }
 
   return {
     schema: 'arbdraw.waveform',
@@ -349,6 +362,7 @@ function createDefaultDocument() {
       dutyCyclePercent: DEFAULT_VALUES.dutyCyclePercent,
       symmetryPercent: DEFAULT_VALUES.symmetryPercent,
       rcTau: DEFAULT_VALUES.rcTau,
+      mathExpression,
       riseTimeSeconds: DEFAULT_VALUES.riseTimeSeconds,
       fallTimeSeconds: DEFAULT_VALUES.fallTimeSeconds,
       noiseColor: DEFAULT_VALUES.noiseColor,
@@ -413,6 +427,7 @@ const documentFields = {
   duty: 'dutyCyclePercent',
   symmetry: 'symmetryPercent',
   rcTau: 'rcTau',
+  mathExpression: 'mathExpression',
   riseTime: 'riseTimeSeconds',
   fallTime: 'fallTimeSeconds',
   noiseColor: 'noiseColor',
@@ -481,6 +496,7 @@ const titles = {
   dc: 'DC level',
   noise: 'Noise',
   serial: 'Serial data',
+  math: 'Math function',
 };
 
 function normalizeSerialSettings(source = {}, fallback = DEFAULT_VALUES) {

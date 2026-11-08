@@ -48,12 +48,13 @@
   <table>
     <thead><tr><th>Field</th><th>Unit</th><th>Meaning</th></tr></thead>
     <tbody>
-      <tr><td><code>type</code></td><td>—</td><td><code>sine</code>, <code>square</code>, <code>triangle</code>, <code>rc</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, or <code>serial</code>.</td></tr>
+      <tr><td><code>type</code></td><td>—</td><td><code>sine</code>, <code>square</code>, <code>triangle</code>, <code>rc</code>, <code>pulse</code>, <code>dc</code>, <code>noise</code>, <code>serial</code>, or <code>math</code>.</td></tr>
       <tr><td><code>highVoltage</code>, <code>lowVoltage</code></td><td>V</td><td>Final waveform levels. With active filters, these are the maximum and minimum saved samples.</td></tr>
       <tr><td><code>sourceHighVoltage</code>, <code>sourceLowVoltage</code></td><td>V</td><td>Clean waveform levels used for regeneration and percentage-based noise. Older files fall back to <code>highVoltage</code> and <code>lowVoltage</code>.</td></tr>
       <tr><td><code>sampleRateMSa</code></td><td>MSa/s</td><td>Samples per second in millions. <code>1</code> means 1,000,000 samples/second.</td></tr>
       <tr><td><code>frequencyHz</code></td><td>Hz</td><td>Nominal waveform frequency metadata.</td></tr>
       <tr><td><code>rcTau</code></td><td>—</td><td>Unitless RC curve parameter. Default: 5.</td></tr>
+      <tr><td><code>mathExpression</code></td><td>—</td><td>Math source expression (up to 512 characters), default <code>sin(2*pi*x)</code>. Each segment stores its own expression. x is cycle position in [0,1); results are clipped to −1…1 and scaled by source voltage levels before filters. Invalid syntax rejects Math imports; valid saved samples remain authoritative.</td></tr>
       <tr><td><code>cycles</code></td><td>cycles</td><td>Number of waveform cycles represented by the samples.</td></tr>
       <tr><td><code>phaseDegrees</code></td><td>degrees</td><td>Nominal phase offset.</td></tr>
       <tr><td><code>dutyCyclePercent</code></td><td>%</td><td>High-state percentage for square and pulse waveforms, from 1 through 99.</td></tr>

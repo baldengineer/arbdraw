@@ -121,6 +121,7 @@ function parseProject(raw) {
       ),
       symmetryPercent: Math.min(100, Math.max(0, number('symmetryPercent', 50))),
       rcTau: Math.max(0.000001, number('rcTau', defaults.rcTau)),
+      mathExpression: source.mathExpression === undefined ? defaults.mathExpression : source.mathExpression,
       riseTimeSeconds: Math.max(0, number('riseTimeSeconds', defaults.riseTimeSeconds)),
       fallTimeSeconds: Math.max(0, number('fallTimeSeconds', defaults.fallTimeSeconds)),
       noiseColor: source.noiseColor === 'pink' ? 'pink' : 'white',
@@ -131,6 +132,13 @@ function parseProject(raw) {
       values,
     },
   };
+  if (parsed.waveform.type === 'math') {
+    ARBDRAW_MATH.compile(parsed.waveform.mathExpression);
+    if (!values.length && source.segments === undefined) ARBDRAW_MATH.samples(parsed.waveform);
+  } else if (typeof parsed.waveform.mathExpression !== 'string'
+    || parsed.waveform.mathExpression.length > 512) {
+    parsed.waveform.mathExpression = defaults.mathExpression;
+  }
   if (source.segments !== undefined) {
     if (!Array.isArray(source.segments) || source.segments.length < 2)
       throw new Error('A sequence must contain at least two segments.');

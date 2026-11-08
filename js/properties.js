@@ -76,6 +76,12 @@ function applyAwgProfile(profile) {
     awgProfileSelect.value = selectedAwgProfile?.id || '';
     return false;
   }
+  if (!preserveSamples && state.type === 'math' && !validateMathGeneration({
+    sampleCount: Math.min(profile.sampleDepth?.default || state.samples, maximumSamples),
+  }, false)) {
+    awgProfileSelect.value = selectedAwgProfile?.id || '';
+    return false;
+  }
   selectedAwgProfile = profile;
   globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
   if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
@@ -158,6 +164,7 @@ function persistCurrentSettings() {
     dutyCyclePercent: state.duty,
     symmetryPercent: state.symmetry,
     rcTau: state.rcTau,
+    mathExpression: state.mathExpression,
     riseTimeSeconds: state.riseTime,
     riseTimeUnit: document.querySelector(
       '.transition-time-unit-button[data-input="riseTimeInput"]',
@@ -424,8 +431,15 @@ function commitTimingInput(kind, { preview = false } = {}) {
         return;
       }
     }
+    const nextSamples = Math.min(Math.max(2, samples), maximumSamples);
+    if (state.type === 'math' && !validateMathGeneration({
+      sampleCount: globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? Math.min(nextSamples, sequenceCapacity()) : nextSamples,
+    }, false)) {
+      renderTiming();
+      return;
+    }
     if (preview) beginWaveformPreview();
-    state.samples = Math.min(Math.max(2, samples), maximumSamples);
+    state.samples = nextSamples;
     renderTiming();
     generate(
       state.type,
@@ -451,6 +465,12 @@ function commitTimingInput(kind, { preview = false } = {}) {
         renderTiming();
         return;
       }
+    }
+    if (state.type === 'math' && !validateMathGeneration({
+      sampleCount: globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? Math.min(samples, sequenceCapacity()) : samples,
+    }, false)) {
+      renderTiming();
+      return;
     }
     if (preview) beginWaveformPreview();
     state.samples = samples;
@@ -587,6 +607,12 @@ function applyProperties({ preview = false } = {}) {
     +$('cyclesInput').value, Math.max(0.000001, inputFrequency()),
   );
   const scopeSelection = !proposedTiming || proposedTiming.sampleCount === state.samples;
+  if (waveformChanged && state.type === 'math' && !validateMathGeneration({
+    ...(proposedTiming || {}), cycles: +$('cyclesInput').value, phaseDegrees: +$('phaseInput').value,
+  }, scopeSelection)) {
+    renderDocument();
+    return false;
+  }
   if (waveformChanged && waveformReplacementNeedsConfirmation(scopeSelection)) {
     if (preview) return false;
     if (!confirmWaveformReplacement(scopeSelection)) {

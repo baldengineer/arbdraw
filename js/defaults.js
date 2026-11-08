@@ -29,6 +29,7 @@ globalThis.ARBDRAW_DEFAULTS = {
   sampleCount: 1000,
   sampleCountUnit: 'pts',
   waveformType: 'serial',
+  mathExpression: 'sin(2*pi*x)',
   nCycles: 1,
   frequencyHz: 2.5,
   frequencyUnit: 'kHz',
