@@ -107,7 +107,7 @@ function applyAwgProfile(profile) {
   return true;
 }
 
-function restoreAwgSettingsFromDocument(awg = {}) {
+function restoreAwgSettingsFromDocument(awg = {}, { preserveWaveform = false } = {}) {
   const profile = profileById(awg.profileId);
   if (profile) {
     selectedAwgProfile = profile;
@@ -116,6 +116,7 @@ function restoreAwgSettingsFromDocument(awg = {}) {
     if (Number.isFinite(profile.sampleDepth?.max)) $('samplesEdit').max = profile.sampleDepth.max;
     else $('samplesEdit').removeAttribute('max');
   }
+  if (preserveWaveform) return;
   const rate = Number(awg.sampleRateMSa),
     samples = Number(awg.sampleCount),
     maximumSamples = sampleLimitForProfile(selectedAwgProfile);

@@ -80,6 +80,14 @@ troubleshooting.
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 - Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
 
+## Multiple signals
+
+Use **+ Add signal** to create another independent signal, or **Duplicate** to copy the selected signal, including its segments and sample edits. There is no two-signal limit. The signal cards show previews; select one to edit it in Editor, Viewer, or Samples. Rename it with **Name**. **Remove** asks for confirmation and cannot remove the last signal.
+
+Each signal keeps its own waveform properties, filters, sample count, sample rate, AWG profile, and sequence. Undo/redo belongs to the selected signal and survives switching signals. **Save JSON** saves every signal in a version 2 project; **Open** also accepts existing version 1 single-waveform projects. Browser settings remember defaults, not complete projects, so save JSON to retain your signals.
+
+CSV, SVG, WAV, browser playback, and Send to AWG use **one selected signal at a time**. For a sequence, export its Full Record or selected segment. The export dialog identifies the signal and includes its name in the suggested filename. Signals are independent records; they do not share a clock or imply simultaneous hardware output. The hardware channel in Send to AWG is the destination for the selected signal.
+
 ## Editing modes
 
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.

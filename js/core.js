@@ -399,6 +399,26 @@ function createDefaultDocument() {
 
 let projectDocument = createDefaultDocument();
 
+// The existing editor operates on one signal. These non-serialized aliases keep
+// every sample writer (including sequences and undo) pointed at that signal.
+function createSignalDocument(signals, name, activeSignalId = signals[0].id) {
+  const project = { schema: 'arbdraw.waveform', version: 2, name, signals,
+    activeSignalId: signals.some(signal => signal.id === activeSignalId) ? activeSignalId : signals[0].id };
+  for (const key of ['AWG', 'waveform']) Object.defineProperty(project, key, {
+    get: () => project.signals.find(signal => signal.id === project.activeSignalId)[key],
+    set: value => { project.signals.find(signal => signal.id === project.activeSignalId)[key] = value; },
+  });
+  return project;
+}
+
+function selectedSignalDocument() {
+  globalThis.ARBDRAW_SEQUENCE?.sync();
+  const signal = projectDocument.signals?.find(signal => signal.id === projectDocument.activeSignalId);
+  return { schema: 'arbdraw.waveform', version: 1,
+    name: signal ? `${projectDocument.name} - ${signal.name}` : projectDocument.name,
+    AWG: projectDocument.AWG, waveform: projectDocument.waveform };
+}
+
 const state = {
   tool: {
     Pointer: 'pointer',

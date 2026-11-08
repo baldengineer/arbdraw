@@ -278,3 +278,16 @@ button { color:inherit; }
 #mathExpressionInput[aria-invalid="true"]{border-color:#e25b5b}
 .math-help,.math-error{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 .math-help{color:var(--muted)}.math-error{color:#e25b5b}.math-error:empty{display:none}
+/* Signals remain available in every project view. */
+.signals-panel { flex: none; padding: 8px 14px; border-bottom: 1px solid var(--line); min-width: 0; background: var(--panel); }
+.signal-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.signal-toolbar label { display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; }
+.signal-toolbar input { width: 160px; min-width: 0; padding: 4px 6px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 4px; }
+.signal-list { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 3px; }
+.signal-card { display: flex; flex: 0 0 158px; flex-direction: column; gap: 4px; padding: 7px 8px; text-align: left; border: 1px solid #536563; border-radius: 6px; background: #152120; color: #e3eeeb; }
+.signal-card[aria-pressed="true"] { border-color: #7bffb2; box-shadow: inset 0 0 0 1px #7bffb2; }
+.signal-card:focus-visible { outline: 2px solid #7bffb2; outline-offset: 2px; }
+.signal-card span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signal-card canvas { width: 140px; height: 32px; }
+.signal-card small { font-size: 10px; color: #b1c5be; }
+.signal-hint { margin: 5px 0 0; font-size: 11px; opacity: .75; }

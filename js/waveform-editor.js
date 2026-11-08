@@ -580,6 +580,7 @@ function drawEditorOverview() {
 }
 function draw() {
   globalThis.ARBDRAW_SEQUENCE?.refresh();
+  globalThis.ARBDRAW_SIGNALS?.refresh();
   const w = canvas.width,
     h = canvas.height,
     d = devicePixelRatio || 1,

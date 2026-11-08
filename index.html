@@ -16,8 +16,20 @@
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false">File</button><div id="fileMenu" class="context-menu menu-surface file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Send to AWG</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false">File</button><div id="fileMenu" class="context-menu menu-surface file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Send to AWG</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>All signals in the current project will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
+        </div>
+
+        <div class="signals-panel" role="region" aria-label="Project signals">
+          <div class="signal-toolbar">
+            <strong>Signals</strong>
+            <button id="addSignalBtn" class="ghost" type="button">+ Add signal</button>
+            <button id="duplicateSignalBtn" class="ghost" type="button">Duplicate</button>
+            <label>Name <input id="signalNameInput" maxlength="120" aria-label="Selected signal name"></label>
+            <button id="removeSignalBtn" class="ghost" type="button">Remove</button>
+          </div>
+          <div id="signalList" class="signal-list" role="group" aria-label="Select a signal"></div>
+          <p class="signal-hint">Edit, play, and export the selected signal. Project JSON saves all signals.</p>
         </div>
 
         <div id="editorView" class="editor-wrap panel view-panel" role="tabpanel" aria-labelledby="editorTab">
@@ -320,6 +332,7 @@
     <form method="dialog">
       <div class="dialog-heading"><div><div class="bridge-heading-row"><span class="eyebrow">PYTHON BRIDGE</span><a class="bridge-download-link" href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">Download Bridge ↗</a></div><h2>Send to AWG</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
       <p>Connect ArbDraw to the local Python service that owns VISA and instrument-specific waveform transfers.</p>
+      <p id="bridgeSignalSummary"></p>
       <fieldset class="bridge-control-group bridge-connection-group">
         <legend>Bridge connection</legend>
         <div class="bridge-connection-row">
@@ -407,6 +420,7 @@
   <script src="js/project.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/editor-modes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/sequence.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signals.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/help.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/ui.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/instruments.js?v=__ARBDRAW_BUILD_SHA__"></script>

@@ -35,6 +35,31 @@ function setIncludeCsvTimestampsPreference(value, save = true) {
   if (save) persistSettings({ includeCsvTimestamps: includeCsvTimestampsPreference });
 }
 function parseProject(raw) {
+  if (raw?.schema === 'arbdraw.waveform' && raw.version === 2) {
+    if (!Array.isArray(raw.signals) || !raw.signals.length)
+      throw new Error('A project must contain at least one signal.');
+    const ids = new Set();
+    const signals = raw.signals.map((signal) => {
+      if (!signal || typeof signal.id !== 'string' || !signal.id.trim() || ids.has(signal.id))
+        throw new Error('Each signal must have a unique, nonempty ID.');
+      ids.add(signal.id);
+      if (!signal.AWG || !Number.isInteger(signal.AWG.sampleCount)
+        || signal.AWG.sampleCount < 2 || signal.AWG.sampleCount > APPLICATION_SAMPLE_LIMIT
+        || !signal.waveform || typeof signal.waveform !== 'object' || Array.isArray(signal.waveform))
+        throw new Error('Each signal must declare a valid AWG sample count and waveform.');
+      const parsed = parseProject({ schema: raw.schema, version: 1,
+        AWG: signal.AWG, waveform: signal.waveform });
+      const profile = profileById(parsed.AWG.profileId);
+      if (!profile || parsed.AWG.sampleCount > sampleLimitForProfile(profile))
+        throw new Error('Each signal must use a supported AWG profile and fit its sample limit.');
+      if (!parsed.waveform.values.length)
+        throw new Error('Each signal must contain its declared finite voltage samples.');
+      parsed.AWG.profileId = profile.id;
+      return { id: signal.id, name: String(signal.name || 'Signal').slice(0, 120),
+        AWG: parsed.AWG, waveform: parsed.waveform };
+    });
+    return createSignalDocument(signals, String(raw.name || 'Imported project').slice(0, 120), raw.activeSignalId);
+  }
   if (!raw || raw.schema !== 'arbdraw.waveform' || raw.version !== 1 || !raw.waveform)
     throw new Error('This is not a supported ArbDraw project.');
   const source = raw.waveform,
@@ -176,6 +201,7 @@ function loadProject(raw) {
     parsed.AWG.profileId = profile.id;
   }
   projectDocument = parsed;
+  globalThis.ARBDRAW_SIGNALS?.reset();
   state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
@@ -228,6 +254,7 @@ $('confirmNewBtn').onclick = () => {
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   resetPropertyPanels();
   projectDocument = createDefaultDocument();
+  globalThis.ARBDRAW_SIGNALS?.reset();
   state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
@@ -425,16 +452,19 @@ $('includeCsvTimestamps').addEventListener('change', () => {
 });
 function openExportDialog(segmentIndex = null) {
   const output = exportWaveformData(segmentIndex),
-    label = segmentIndex === null ? 'Full Record' : `Segment ${segmentIndex + 1}`;
+    signalName = globalThis.ARBDRAW_SIGNALS?.active()?.name,
+    scope = segmentIndex === null ? 'Full Record' : `Segment ${segmentIndex + 1}`,
+    label = signalName ? `${signalName} · ${scope}` : scope;
   exportTarget = { output, label };
   closeFileMenu();
   const projectName = projectNameFromFilename(document.querySelector('.document-name').value);
   $('exportScopeTitle').textContent = `Export ${label}`;
   $('exportScopeDescription').textContent = `${label} · ${output.data.length.toLocaleString()} samples. Choose the file format and filename.`;
   $('exportFormatSelect').value = 'csv';
-  $('exportFilenameInput').value = projectName + (segmentIndex === null ? '' : `-segment-${segmentIndex + 1}`) + '.csv';
+  const signalSuffix = signalName ? '-' + signalName.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') : '';
+  $('exportFilenameInput').value = projectName + signalSuffix + (segmentIndex === null ? '' : `-segment-${segmentIndex + 1}`) + '.csv';
   updateExportFormat();
-  $('updateProjectNameOnExport').checked = segmentIndex === null;
+  $('updateProjectNameOnExport').checked = !signalName && segmentIndex === null;
   $('includeCsvHeaders').checked = false;
   setIncludeCsvTimestampsPreference(includeCsvTimestampsPreference, false);
   $('exportDialog').showModal();

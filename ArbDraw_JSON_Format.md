@@ -1,15 +1,50 @@
 # ArbDraw JSON Format
 
-ArbDraw project files contain a waveform record, optionally composed of sequence segments, and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
+ArbDraw project files contain one or more independent signals, each optionally composed of sequence segments, and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
 
 The current format identifier is:
 
 ```json
 {
   "schema": "arbdraw.waveform",
-  "version": 1
+  "version": 2
 }
 ```
+
+## Multiple signals (version 2)
+
+Version 2 stores a nonempty `signals` array, a project `name`, and `activeSignalId`. Each signal has a unique nonempty string `id`, a display `name` (up to 120 characters), an `AWG` object, and a `waveform` object. There is no fixed two-signal limit. Each signal uses the record fields documented below and has independent samples, timing, profile, filters, and optional sequence segments.
+
+```json
+{
+  "schema": "arbdraw.waveform",
+  "version": 2,
+  "name": "Two independent signals",
+  "activeSignalId": "signal-1",
+  "signals": [
+    {
+      "id": "signal-1", "name": "Clock",
+      "AWG": { "profileId": "audio", "sampleRateMSa": 0.048, "sampleCount": 4 },
+      "waveform": { "type": "square", "frequencyHz": 1000, "cycles": 1,
+        "highVoltage": 1, "lowVoltage": -1, "values": [1, 1, -1, -1] }
+    },
+    {
+      "id": "signal-2", "name": "Ramp",
+      "AWG": { "profileId": "audio", "sampleRateMSa": 0.048, "sampleCount": 4 },
+      "waveform": { "type": "triangle", "frequencyHz": 500, "cycles": 1,
+        "highVoltage": 1, "lowVoltage": -1, "values": [-1, -0.5, 0, 0.5] }
+    }
+  ]
+}
+```
+
+Missing or unknown `activeSignalId` selects the first signal. All signals are validated before replacing the open project: IDs must be unique, profiles supported, record lengths within profile/application limits, and samples finite and equal in count to `AWG.sampleCount`. For sequences, validated segments reconstruct the full sample buffer. Version 2 does not regenerate missing samples. Undo history, zoom, and selected segments are not serialized.
+
+Version 1 files with top-level `AWG` and `waveform` remain readable and become one signal. New saves use version 2, even for one signal. Older ArbDraw releases cannot open version 2 projects. CSV/SVG/WAV exports and audio playback use only the selected signal (or selected segment for file export). Send to AWG converts the selected signal into a version 1 document, preserving compatibility with existing bridges and instrument adapters. A signal ID is not a hardware output channel number.
+
+## Single-signal record (version 1 and version 2 signal entries)
+
+The remaining field descriptions apply to the `AWG` and `waveform` objects inside each signal, or at the top level of a legacy version 1 document.
 
 ## Sequence extension
 
@@ -21,7 +56,7 @@ All segments share `AWG.sampleRateMSa`. At sample rate `R` in samples/second, a 
 
 For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `serial`, and `filters`) are retained for compatibility and do not describe every segment. Use the segment objects to inspect or regenerate individual sources. The top-level voltage levels describe the combined record.
 
-## Complete example
+## Complete legacy version 1 example
 
 ```json
 {
@@ -82,7 +117,7 @@ For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `ser
 }
 ```
 
-## Top-level fields
+## Legacy version 1 top-level fields
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -283,7 +318,7 @@ protocol, framing, and payload settings. Its Binary editor is hidden by default;
 
 `type` describes how ArbDraw should regenerate the waveform when valid sample data is unavailable. When `values` is valid, it remains the statement of record for the actual waveform points.
 
-## Import validation and normalization
+## Version 1 import validation and normalization
 
 ArbDraw applies the following rules while opening a file:
 
@@ -312,15 +347,24 @@ import math
 from pathlib import Path
 
 
-def load_arbdraw(path):
+def load_arbdraw(path, signal_id=None):
     project = json.loads(Path(path).read_text(encoding="utf-8"))
 
     if project.get("schema") != "arbdraw.waveform":
         raise ValueError("Unsupported ArbDraw schema")
-    if project.get("version") != 1:
+    if project.get("version") not in (1, 2):
         raise ValueError("Unsupported ArbDraw version")
 
-    waveform = project.get("waveform")
+    record = project
+    if project["version"] == 2:
+        signals = project.get("signals", [])
+        if not signals:
+            raise ValueError("Missing signals")
+        selected_id = signal_id or project.get("activeSignalId") or signals[0]["id"]
+        record = next((s for s in signals if s["id"] == selected_id), None)
+        if record is None:
+            raise ValueError("Unknown signal ID")
+    waveform = record.get("waveform")
     if not isinstance(waveform, dict):
         raise ValueError("Missing waveform object")
 
@@ -337,7 +381,7 @@ def load_arbdraw(path):
     sample_interval_s = 1 / sample_rate_sa
 
     return {
-        "name": project.get("name", "Imported waveform"),
+        "name": record.get("name", "Imported waveform"),
         "type": waveform.get("type", "sine"),
         "sample_rate_sa": sample_rate_sa,
         "sample_interval_s": sample_interval_s,
