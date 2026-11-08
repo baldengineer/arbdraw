@@ -91,6 +91,8 @@ Choose **View → Viewer**, then enable **Time** or **Voltage** under **Cursors*
 
 Select a readout and use Left/Right for time or Up/Down for voltage. Each step is one screen pixel; hold **Shift** for ten pixels. **Home** and **End** move the selected cursor to the minimum and maximum visible values. **Escape** cancels a cursor drag. Dragging elsewhere in the plot still zooms the Viewer.
 
+For exact placement, use **X (time)** and **Y (voltage)** below the readouts. Choose T1/T2 and V1/V2, enter coordinates with the desired units, then select **Apply coordinates** or press **Enter**. X uses time (ps, ns, µs, ms, or s); Y uses volts or millivolts. Both enabled coordinates must be finite and within the current visible ranges; an invalid field leaves both cursors unchanged. Disabled cursor pairs are excluded. Unit changes preserve the entered coordinate without moving a cursor until Apply. **Escape** in either field restores the actual cursor values. Dragging or choosing a different cursor updates the fields; ordinary redraws preserve pending edits. These controls position measurement cursors, not waveform samples.
+
 Positions stay in time and voltage units when the waveform, zoom, or scale changes. Hidden lines are marked **outside view** in their readouts; **Reset cursors** places the enabled pairs at 25% and 75% of the current ranges. Toggling a pair off and on retains its positions for the session. Cursors never modify samples, undo history, exports, or saved project JSON.
 
 ## Sequences

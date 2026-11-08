@@ -54,6 +54,7 @@
   }
 
   function formatInput(input, decimalPlaces) {
+    if (input?.dataset?.numberFormat === 'manual') return;
     if (!input || input.type !== 'number' || input.closest?.('#samplesView, .samples-view')) return;
     if (input.ownerDocument?.activeElement === input) return;
     const value = Number(input.value);

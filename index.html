@@ -105,6 +105,23 @@
               <button id="scopeV2Btn" type="button" aria-pressed="false">V2</button>
               <output id="scopeVoltageDelta" title="V2 minus V1"></output>
             </div>
+            <div id="scopeCoordinateControls" class="scope-coordinate-controls" hidden>
+              <div class="scope-coordinate-field">
+                <label for="scopeXInput">X (time)</label>
+                <select id="scopeXCursor" class="menu-select" aria-label="Time cursor to position"><option value="T1">T1</option><option value="T2">T2</option></select>
+                <input id="scopeXInput" type="number" step="any" data-number-format="manual" aria-label="Cursor X time" aria-describedby="scopeCoordinateHelp scopeCoordinateError">
+                <select id="scopeXUnit" class="menu-select" aria-label="Cursor X time unit"><option value="1e-9">ps</option><option value="1e-6">ns</option><option value="0.001">µs</option><option value="1" selected>ms</option><option value="1000">s</option></select>
+              </div>
+              <div class="scope-coordinate-field">
+                <label for="scopeYInput">Y (voltage)</label>
+                <select id="scopeYCursor" class="menu-select" aria-label="Voltage cursor to position"><option value="V1">V1</option><option value="V2">V2</option></select>
+                <input id="scopeYInput" type="number" step="any" data-number-format="manual" aria-label="Cursor Y voltage" aria-describedby="scopeCoordinateHelp scopeCoordinateError">
+                <select id="scopeYUnit" class="menu-select" aria-label="Cursor Y voltage unit"><option value="0.001">mV</option><option value="1" selected>V</option></select>
+              </div>
+              <button id="scopeApplyCoordinatesBtn" type="button">Apply coordinates</button>
+              <span id="scopeCoordinateHelp">Use coordinates within the current view. Enter applies; Escape restores cursor values.</span>
+              <span id="scopeCoordinateError" role="alert" hidden></span>
+            </div>
           </div>
           <div class="scope-display-area">
             <div class="scope-frame scope-readonly"><canvas id="scopeCanvas" tabindex="0" aria-label="Waveform Viewer. Drag to zoom, or drag a measurement cursor. Arrow keys move the selected cursor." aria-describedby="scopeCursorHint"></canvas><div id="scopeZoomSelection" class="scope-zoom-selection" aria-hidden="true"></div><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>

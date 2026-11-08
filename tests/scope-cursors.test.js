@@ -22,6 +22,8 @@ function harness(dpr = 1) {
         width: 480 * dpr, height: 259 * dpr,
         classList: { add: key => classes.add(key), remove: key => classes.delete(key), contains: key => classes.has(key) },
         setAttribute(key, value) { attributes[key] = value; }, getAttribute: key => attributes[key],
+        removeAttribute(key) { delete attributes[key]; },
+        setCustomValidity(message) { this.validationMessage = message; }, reportValidity() { this.reportedValidity = true; },
         querySelectorAll: () => [], getContext: () => ctx,
         getBoundingClientRect: () => ({ left: 100, top: 50, width: 480, height: 259 }),
         focus() {},
@@ -57,6 +59,8 @@ function harness(dpr = 1) {
   const point = (x, y) => ({ clientX: 100 + 62 + 400 * x, clientY: 50 + 20 + 200 * y });
   return { $, context, state, projectDocument, run, point, labels, strokes,
     click: id => $(id).dispatch('click'),
+    input: (id, value) => { $(id).value = String(value); $(id).dispatch('input'); },
+    change: (id, value) => { $(id).value = String(value); $(id).dispatch('change'); },
     pointer: (type, x, y, extras = {}) => $('scopeCanvas').dispatch(type, { ...point(x, y), ...extras }),
     key: (id, key, extras = {}) => $(id).dispatch('keydown', { key, ...extras }),
     cursorLabels: () => labels.filter(label => /^(T|V)[12]$/.test(label.text)),
@@ -238,4 +242,138 @@ test('cursor labels act as drag handles and selected coincident cursors remain m
   f.pointer('pointerup', 0.9, 0.5);
   assert.equal(f.$('scopeT1Btn').textContent, 'T1: 750 µs');
   assert.equal(f.$('scopeT2Btn').textContent, 'T2: 900 µs');
+});
+
+test('X/Y Apply moves the selected cursor pair atomically without editing samples or view settings', () => {
+  const f = harness(), original = JSON.stringify(f.projectDocument), view = f.run('JSON.stringify(scopeState)');
+  assert.equal(f.$('scopeCoordinateControls').hidden, true);
+  f.click('scopeTimeCursorsBtn');
+  assert.equal(f.$('scopeYInput').disabled, true);
+  assert.equal(f.$('scopeXInput').value, '0.25');
+  f.click('scopeVoltageCursorsBtn');
+  assert.equal(f.$('scopeYInput').value, '-2');
+  f.change('scopeXCursor', 'T2');
+  f.change('scopeYCursor', 'V2');
+  f.input('scopeXInput', '0.6');
+  f.input('scopeYInput', '-0.5');
+  assert.equal(f.$('scopeT2Btn').textContent, 'T2: 750 µs');
+  f.click('scopeApplyCoordinatesBtn');
+  assert.equal(f.$('scopeT2Btn').textContent, 'T2: 600 µs');
+  assert.equal(f.$('scopeV2Btn').textContent, 'V2: -500 mV');
+  assert.equal(f.$('scopeTimeDelta').textContent, 'Δt: 350 µs');
+  assert.equal(f.$('scopeVoltageDelta').textContent, 'ΔV: 1.5 V');
+  assert.equal(JSON.stringify(f.projectDocument), original);
+  assert.equal(f.run('JSON.stringify(scopeState)'), view);
+});
+
+test('unit changes preserve both applied positions and precise drafts until Enter applies', () => {
+  const f = harness();
+  f.click('scopeTimeCursorsBtn');
+  f.click('scopeVoltageCursorsBtn');
+  f.change('scopeXUnit', '0.001');
+  f.change('scopeYUnit', '0.001');
+  assert.equal(f.$('scopeXInput').value, '250');
+  assert.equal(f.$('scopeYInput').value, '-2000');
+  assert.equal(f.$('scopeXInput').max, '1000');
+  assert.equal(f.$('scopeYInput').min, '-4000');
+  f.input('scopeXInput', '123.45678901234567');
+  f.input('scopeYInput', '-125');
+  for (let i = 0; i < 3; i++) {
+    for (const unit of ['1e-9', '1e-6', '1', '1000', '0.001']) f.change('scopeXUnit', unit);
+    for (const unit of ['1', '0.001']) f.change('scopeYUnit', unit);
+  }
+  assert.equal(f.$('scopeT1Btn').textContent, 'T1: 250 µs');
+  assert.equal(f.$('scopeV1Btn').textContent, 'V1: -2 V');
+  f.key('scopeYInput', 'Enter');
+  assert.equal(f.$('scopeT1Btn').textContent, 'T1: 123.457 µs');
+  assert.equal(f.$('scopeV1Btn').textContent, 'V1: -125 mV');
+  const line = f.strokes.find(stroke => stroke.color === '#7edcff' && stroke.dash[0] === 2);
+  assert.equal(line.path[0][0], 62 + (123.45678901234567 * 0.001) * 400);
+});
+
+test('invalid or out-of-range coordinates reject the whole Apply and show an actionable error', () => {
+  for (const bad of ['', ' ', '-', 'NaN', 'Infinity', '1e309', '0x10', '4.01', '-4.01']) {
+    const f = harness();
+    f.click('scopeTimeCursorsBtn');
+    f.click('scopeVoltageCursorsBtn');
+    f.input('scopeXInput', '0.4');
+    f.input('scopeYInput', bad);
+    f.click('scopeApplyCoordinatesBtn');
+    assert.equal(f.$('scopeT1Btn').textContent, 'T1: 250 µs', bad);
+    assert.equal(f.$('scopeV1Btn').textContent, 'V1: -2 V', bad);
+    assert.equal(f.$('scopeYInput').getAttribute('aria-invalid'), 'true');
+    assert.equal(f.$('scopeCoordinateError').hidden, false);
+    assert.match(f.$('scopeCoordinateError').textContent, /^Y \(V1\): .*finite|^Y \(V1\): .*current view/);
+    assert.equal(f.$('scopeYInput').reportedValidity, true);
+    f.input('scopeYInput', '-1');
+    f.click('scopeApplyCoordinatesBtn');
+    assert.equal(f.$('scopeCoordinateError').hidden, true);
+    assert.equal(f.$('scopeT1Btn').textContent, 'T1: 400 µs');
+  }
+});
+
+test('range validation uses the current view and ignores disabled coordinate axes', () => {
+  const f = harness();
+  f.click('scopeTimeCursorsBtn');
+  f.run('scopeState.timeStartMs = 2; scopeState.timePerDivMs = 0.2; drawScope()');
+  assert.equal(f.$('scopeXInput').min, '2');
+  assert.equal(f.$('scopeXInput').max, '4');
+  for (const bad of ['1.9', '4.1']) {
+    f.input('scopeXInput', bad);
+    f.click('scopeApplyCoordinatesBtn');
+    assert.match(f.$('scopeCoordinateError').textContent, /from 2 to 4 ms/);
+  }
+  f.input('scopeYInput', 'invalid');
+  for (const boundary of ['2', '4']) {
+    f.input('scopeXInput', boundary);
+    f.click('scopeApplyCoordinatesBtn');
+    assert.equal(f.$('scopeT1Btn').textContent, `T1: ${boundary} ms`);
+    assert.equal(f.$('scopeCoordinateError').hidden, true);
+  }
+});
+
+test('coordinate fields follow dragged and keyboard-selected cursors using the chosen units', () => {
+  const f = harness();
+  f.click('scopeTimeCursorsBtn');
+  f.click('scopeVoltageCursorsBtn');
+  f.change('scopeXUnit', '0.001');
+  f.change('scopeYUnit', '0.001');
+  f.input('scopeXInput', '125');
+  f.pointer('pointerdown', 0.75, 0.4);
+  f.pointer('pointermove', 0.6, 0.4);
+  f.pointer('pointerup', 0.6, 0.4);
+  assert.equal(f.$('scopeXCursor').value, 'T2');
+  assert.equal(f.$('scopeXInput').value, '600');
+  f.pointer('pointerdown', 0.1, 0.25);
+  f.pointer('pointerup', 0.1, 0.45);
+  assert.equal(f.$('scopeYCursor').value, 'V2');
+  assert.equal(f.$('scopeYInput').value, '400');
+  f.key('scopeT1Btn', 'ArrowRight');
+  assert.equal(f.$('scopeXCursor').value, 'T1');
+  assert.equal(f.$('scopeXInput').value, '252.5');
+  f.click('scopeResetCursorsBtn');
+  assert.equal(f.$('scopeXInput').value, '250');
+  assert.equal(f.$('scopeYInput').value, '2000');
+});
+
+test('redraws preserve drafts, Escape restores them, and Reset discards drafts even at default positions', () => {
+  const f = harness();
+  f.click('scopeTimeCursorsBtn');
+  f.click('scopeVoltageCursorsBtn');
+  f.input('scopeXInput', '0.4');
+  f.input('scopeYInput', '-1');
+  f.run('drawScope()');
+  assert.equal(f.$('scopeXInput').value, '0.4');
+  assert.equal(f.$('scopeYInput').value, '-1');
+  f.key('scopeXInput', 'Escape');
+  assert.equal(f.$('scopeXInput').value, '0.25');
+  assert.equal(f.$('scopeYInput').value, '-2');
+  f.input('scopeXInput', '0.4');
+  f.click('scopeResetCursorsBtn');
+  assert.equal(f.$('scopeXInput').value, '0.25');
+  f.input('scopeYInput', '');
+  f.change('scopeYUnit', '0.001');
+  assert.equal(f.$('scopeYUnit').value, '1');
+  assert.equal(f.$('scopeYInput').value, '');
+  assert.match(f.$('scopeCoordinateError').textContent, /finite number before changing units/);
 });

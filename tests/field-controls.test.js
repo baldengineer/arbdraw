@@ -45,6 +45,15 @@ test('numeric input formatting truncates to the configurable default precision',
   assert.equal(fields.formatNumber(1.23459, 2), '1.23');
 });
 
+test('manually formatted coordinate inputs retain precision and empty drafts on global formatting', () => {
+  for (const value of ['', '0.000000000125', '-1.23456789012345', '1e-12']) {
+    const input = fakeInput(value);
+    input.dataset.numberFormat = 'manual';
+    fields.formatInput(input);
+    assert.equal(input.value, value);
+  }
+});
+
 test('fields preview valid drafts by default and can opt out', () => {
   const liveInput = fakeInput();
   let livePreview;

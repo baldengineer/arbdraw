@@ -10,6 +10,99 @@
   ];
   const enabled = { time: false, voltage: false };
   let active = null, drag = null, plot = null;
+  const editors = [
+    { axis: 'time', label: 'X', input: $('scopeXInput'), target: $('scopeXCursor'), unit: $('scopeXUnit'),
+      units: new Map([[1e-9, 'ps'], [1e-6, 'ns'], [0.001, 'µs'], [1, 'ms'], [1000, 's']]) },
+    { axis: 'voltage', label: 'Y', input: $('scopeYInput'), target: $('scopeYCursor'), unit: $('scopeYUnit'),
+      units: new Map([[0.001, 'mV'], [1, 'V']]) },
+  ];
+  for (const editor of editors) {
+    editor.scale = 1;
+    editor.unit.value = '1';
+    editor.target.value = cursors.find(cursor => cursor.axis === editor.axis).id;
+  }
+
+  function selectedCursor(editor) {
+    return cursors.find(cursor => cursor.id === editor.target.value && cursor.axis === editor.axis);
+  }
+
+  function clearCoordinateErrors() {
+    for (const editor of editors) {
+      editor.input.setCustomValidity('');
+      editor.input.removeAttribute('aria-invalid');
+    }
+    $('scopeCoordinateError').hidden = true;
+    $('scopeCoordinateError').textContent = '';
+  }
+
+  function displayCoordinate(editor, value) {
+    editor.input.value = Number((value / editor.scale).toPrecision(15)).toString();
+    // Retain the canonical value across unit conversions rather than repeatedly
+    // parsing a rounded display value. Typing replaces this cached draft.
+    editor.draft = { text: editor.input.value, value };
+  }
+
+  function renderCoordinates(force = false) {
+    $('scopeCoordinateControls').hidden = !enabled.time && !enabled.voltage;
+    $('scopeApplyCoordinatesBtn').disabled = !enabled.time && !enabled.voltage;
+    for (const editor of editors) {
+      for (const element of [editor.input, editor.target, editor.unit]) element.disabled = !enabled[editor.axis];
+      const cursor = selectedCursor(editor);
+      if (cursor.value === null) continue;
+      const { min, span } = range(editor.axis);
+      editor.input.min = String(min / editor.scale);
+      editor.input.max = String((min + span) / editor.scale);
+      // Keep a typed draft on ordinary redraws; a moved or newly selected cursor
+      // is authoritative and immediately synchronizes the coordinate field.
+      if (force || editor.lastCursor !== cursor || editor.lastValue !== cursor.value) {
+        displayCoordinate(editor, cursor.value);
+        editor.lastCursor = cursor;
+        editor.lastValue = cursor.value;
+        clearCoordinateErrors();
+      }
+    }
+  }
+
+  function coordinateValue(editor) {
+    const text = editor.input.value.trim();
+    if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(text)) return NaN;
+    return editor.draft?.text === editor.input.value ? editor.draft.value : Number(text) * editor.scale;
+  }
+
+  function coordinateError(editor, message) {
+    editor.input.setCustomValidity(message);
+    editor.input.setAttribute('aria-invalid', 'true');
+    $('scopeCoordinateError').textContent = `${editor.label} (${editor.target.value}): ${message}`;
+    $('scopeCoordinateError').hidden = false;
+    editor.input.reportValidity();
+  }
+
+  function applyCoordinates() {
+    clearCoordinateErrors();
+    const changes = [];
+    for (const editor of editors) {
+      if (!enabled[editor.axis]) continue;
+      const value = coordinateValue(editor), { min, span } = range(editor.axis);
+      if (!Number.isFinite(value)) {
+        coordinateError(editor, 'Enter a finite number.');
+        return;
+      }
+      if (value < min || value > min + span) {
+        coordinateError(editor, `Use a value from ${Number((min / editor.scale).toPrecision(12))} to ${Number(((min + span) / editor.scale).toPrecision(12))} ${editor.units.get(editor.scale)} in the current view.`);
+        return;
+      }
+      changes.push({ cursor: selectedCursor(editor), value });
+    }
+    if (drag) cancel({ pointerId: drag.pointerId });
+    for (const { cursor, value } of changes) cursor.value = value;
+    renderCoordinates(true);
+    drawScope();
+  }
+
+  function selectCursor(cursor) {
+    active = cursor;
+    editors.find(editor => editor.axis === cursor.axis).target.value = cursor.id;
+  }
 
   function range(axis) {
     return axis === 'time'
@@ -44,6 +137,7 @@
     }
     if (enabled.time) $('scopeTimeDelta').textContent = `Δt: ${format(cursors[1].value - cursors[0].value, 'time')}`;
     if (enabled.voltage) $('scopeVoltageDelta').textContent = `ΔV: ${format(cursors[3].value - cursors[2].value, 'voltage')}`;
+    renderCoordinates();
   }
 
   function reset(axis) {
@@ -119,7 +213,7 @@
     if (drag) return true;
     const cursor = hitTest(event, point);
     if (!cursor) return false;
-    active = cursor;
+    selectCursor(cursor);
     const pointerFraction = cursor.axis === 'time' ? point.timeFraction : 1 - point.voltageFraction;
     drag = { pointerId: event.pointerId, cursor, original: cursor.value, offset: fraction(cursor) - pointerFraction };
     scopeCanvas.focus({ preventScroll: true });
@@ -176,20 +270,52 @@
       enabled[axis] = !enabled[axis];
       if (enabled[axis]) {
         if (cursors.find(cursor => cursor.axis === axis).value === null) reset(axis);
-        active = cursors.find(cursor => cursor.axis === axis);
+        selectCursor(cursors.find(cursor => cursor.axis === axis));
       } else if (active?.axis === axis) active = cursors.find(cursor => enabled[cursor.axis]) || null;
+      renderCoordinates(true);
       drawScope();
     });
   }
   $('scopeResetCursorsBtn').addEventListener('click', () => {
     if (drag) cancel({ pointerId: drag.pointerId });
     for (const axis of ['time', 'voltage']) if (enabled[axis]) reset(axis);
+    renderCoordinates(true);
     drawScope();
   });
   for (const cursor of cursors) {
-    cursor.button.addEventListener('click', () => { active = cursor; drawScope(); });
-    cursor.button.addEventListener('keydown', event => { active = cursor; keydown(event); });
+    cursor.button.addEventListener('click', () => { selectCursor(cursor); drawScope(); });
+    cursor.button.addEventListener('keydown', event => { selectCursor(cursor); keydown(event); });
   }
+  for (const editor of editors) {
+    editor.input.addEventListener('input', () => {
+      editor.draft = null;
+      clearCoordinateErrors();
+    });
+    editor.input.addEventListener('keydown', event => {
+      if (!['Enter', 'Escape'].includes(event.key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === 'Enter') applyCoordinates();
+      else { clearCoordinateErrors(); renderCoordinates(true); }
+    });
+    editor.target.addEventListener('change', () => {
+      selectCursor(selectedCursor(editor));
+      drawScope();
+    });
+    editor.unit.addEventListener('change', () => {
+      const scale = Number(editor.unit.value), value = coordinateValue(editor);
+      if (!editor.units.has(scale) || !Number.isFinite(value)) {
+        editor.unit.value = String(editor.scale);
+        coordinateError(editor, 'Enter a finite number before changing units.');
+        return;
+      }
+      editor.scale = scale;
+      displayCoordinate(editor, value);
+      clearCoordinateErrors();
+      renderCoordinates();
+    });
+  }
+  $('scopeApplyCoordinatesBtn').addEventListener('click', applyCoordinates);
   globalThis.ARBDRAW_SCOPE_CURSORS = { draw, pointerDown, pointerMove,
     pointerUp: (event, point) => finish(event, point), cancel, keydown };
   renderControls();
