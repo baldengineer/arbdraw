@@ -88,6 +88,18 @@ test('arbitrary waveforms at the profile limit are preserved', () => {
   assert.equal(state.samples, 4096);
 });
 
+test('I2C profile changes preserve the packet clock and reject truncation', () => {
+  const { context, state, calls } = profileChangeHarness({ type: 'i2c', edited: false, count: 10000 });
+  const before = { ...state };
+  assert.equal(context.applyAwgProfile(globalThis.ARBDRAW_AWG_PROFILES.audio), true);
+  assert.deepEqual(state, before);
+  assert.equal(context.applyAwgProfile(globalThis.ARBDRAW_AWG_PROFILES.rigolDg1022), false);
+  assert.deepEqual(state, before);
+  assert.equal(context.selectedAwgProfile.id, 'audio');
+  assert.equal(calls.generated, 0);
+  assert.equal(calls.confirmations, 0);
+});
+
 test('unedited built-in waveforms retain profile defaults and regeneration', () => {
   const { context, state, calls } = profileChangeHarness({ edited: false });
   assert.equal(context.applyAwgProfile(globalThis.ARBDRAW_AWG_PROFILES.rigolDg1022), true);

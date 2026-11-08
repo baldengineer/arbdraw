@@ -186,6 +186,30 @@
           </div>
           <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select class="menu-select" id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
         </details>
+        <details id="i2cProperties" class="section i2c-section" data-property-panel="i2c" open hidden>
+          <summary class="section-title">I2C packet</summary>
+          <label>SDA signal <div class="unit-input"><select id="i2cSdaSignal" class="menu-select" aria-label="SDA signal"></select></div></label>
+          <label>SCL signal <div class="unit-input"><select id="i2cSclSignal" class="menu-select" aria-label="SCL signal"></select></div></label>
+          <label>Bus speed <div class="unit-input"><select id="i2cSpeed" class="menu-select"><option value="100000">100 kbit/s</option><option value="400000">400 kbit/s</option><option value="1000000">1 Mbit/s</option></select></div></label>
+          <label>Address width <div class="unit-input"><select id="i2cAddressBits" class="menu-select"><option value="7">7-bit</option><option value="10">10-bit</option></select></div></label>
+          <label>Address <div class="unit-input"><input id="i2cAddress" type="text" value="0x50" spellcheck="false" title="Decimal or 0x-prefixed hex. Do not include the R/W bit."></div></label>
+          <label>Transaction <div class="unit-input"><select id="i2cOperation" class="menu-select"><option value="write">Write</option><option value="read">Read</option><option value="writeRead">Write then Read</option></select></div></label>
+          <label id="i2cPayloadField" class="i2c-payload">Write bytes (hex)<textarea id="i2cPayload" rows="2" maxlength="3072" spellcheck="false" placeholder="00 A5 FF" aria-label="I2C write payload"></textarea></label>
+          <label id="i2cReadPayloadField" class="i2c-payload" hidden>Read response (hex)<textarea id="i2cReadPayload" rows="2" maxlength="3072" spellcheck="false" placeholder="5A FF" aria-label="I2C read response"></textarea></label>
+          <label>Address ACK <input id="i2cAddressAck" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label id="i2cDataAckField">Write-data ACK <input id="i2cDataAck" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label id="i2cFinalNackField" hidden>Final read NACK <input id="i2cFinalNack" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>STOP condition <input id="i2cStop" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>Pre-idle (bits) <div class="unit-input"><input id="i2cPreIdle" type="number" min="1" max="1000" step="1" value="1"></div></label>
+          <label>Post-idle (bits) <div class="unit-input"><input id="i2cPostIdle" type="number" min="1" max="1000" step="1" value="1"></div></label>
+          <label>Logic high (V) <div class="unit-input"><input id="i2cHigh" type="number" step="0.1" value="3.3"></div></label>
+          <label>Logic low (V) <div class="unit-input"><input id="i2cLow" type="number" step="0.1" value="0"></div></label>
+          <label>Samples / bit <div class="unit-input"><select id="i2cResolution" class="menu-select"><option value="20">20</option><option value="40">40</option><option value="80">80</option></select></div></label>
+          <p class="i2c-help">START is included. Write then Read uses a repeated START. Read data and ACK/NACK are generated response levels, not live bus responses. Both outputs use the same sample clock; export one signal at a time.</p>
+          <div class="i2c-actions"><button id="generateI2cBtn" class="primary" type="button">Generate packet</button><button id="cancelI2cBtn" class="ghost" type="button">Cancel</button></div>
+          <p id="i2cError" class="i2c-error" role="alert"></p>
+          <output id="i2cSummary" class="i2c-help" aria-live="polite"></output>
+        </details>
         <details class="section" data-property-panel="amplitude" open>
           <summary class="section-title">Amplitude</summary>
           <div class="property-mode-switch" role="group" aria-label="Amplitude controls">
@@ -387,6 +411,7 @@
     <button data-wave="triangle" role="menuitem"><canvas aria-hidden="true"></canvas><span>Triangle</span></button>
     <button data-wave="rc" role="menuitem"><canvas aria-hidden="true"></canvas><span>RC</span></button>
     <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>Serial</span></button>
+    <button data-wave="i2c" role="menuitem"><canvas aria-hidden="true"></canvas><span>I2C</span></button>
     <button data-wave="pulse" role="menuitem"><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem"><canvas aria-hidden="true"></canvas><span>DC</span></button>
     <button data-wave="noise" role="menuitem"><canvas aria-hidden="true"></canvas><span>Noise</span></button>
@@ -398,6 +423,7 @@
   <script src="js/awg-profiles.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/defaults.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/math-expression.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/i2c-waveform.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/fields.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/field-definitions.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/core.js?v=__ARBDRAW_BUILD_SHA__"></script>
@@ -421,6 +447,8 @@
   <script src="js/editor-modes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/sequence.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/signals.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signal-transactions.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/i2c-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/signal-grid.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/help.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/ui.js?v=__ARBDRAW_BUILD_SHA__"></script>

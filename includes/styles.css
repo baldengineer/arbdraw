@@ -291,3 +291,11 @@ button { color:inherit; }
 .signal-actions-panel input { width:100%; margin:4px 0 8px; padding:5px; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:4px; }
 .signal-actions-panel button { display:block; width:100%; text-align:left; }
 .editor-waveform-stage.signal-grid-scroll { overflow-y:auto; }
+.i2c-payload { flex-direction:column; align-items:stretch!important; }
+.i2c-section[hidden],.i2c-section [hidden] { display:none; }
+.i2c-payload textarea { width:100%; resize:vertical; padding:6px; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:4px; font:12px ui-monospace,monospace; }
+.i2c-help,.i2c-error { display:block; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+.i2c-help { color:var(--muted); }
+.i2c-error { color:#e25b5b; }
+.i2c-error:empty { display:none; }
+.i2c-actions { display:flex; gap:6px; margin:10px 0; }

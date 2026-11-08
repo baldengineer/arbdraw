@@ -9,6 +9,8 @@ function activeSignal() {
 }
 
 function resetSignals() {
+  globalThis.ARBDRAW_SIGNAL_TRANSACTIONS?.reset();
+  globalThis.ARBDRAW_I2C_UI?.reset();
   globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
   if (!projectDocument.signals) projectDocument = createSignalDocument([
     { id: 'signal-1', name: 'Signal 1', AWG: projectDocument.AWG, waveform: projectDocument.waveform },
@@ -69,6 +71,7 @@ function freshSignalSource() {
   // Start with the selected source, but regenerate clean samples over the whole
   // current record. Duplicate is the operation that preserves edits/segments.
   delete waveform.segments;
+  if (waveform.type === 'i2c') { waveform.type = 'sine'; delete waveform.i2c; }
   Object.assign(waveform, {
     sampleCount: record.sampleCount,
     sampleRateMSa: record.sampleRateMSa,
@@ -92,6 +95,7 @@ function addSignal(duplicate = false) {
   const signal = { id: `signal-${number}`,
     name: duplicate ? `${source.name} copy`.slice(0, 120) : `Signal ${number}`,
     AWG: { ...source.AWG }, waveform: cloneWaveform(source.waveform) };
+  if (signal.waveform.i2c) Object.assign(signal.waveform.i2c, { sdaSignalId: '', sclSignalId: '' });
   projectDocument.signals.push(signal);
   projectDocument.activeSignalId = signal.id;
   restoreSignalSession();

@@ -262,6 +262,7 @@ function generate(
   deferRender = false,
   preserveTiming = false,
 ) {
+  if (type === 'i2c') return globalThis.ARBDRAW_I2C_UI?.regenerate(recordHistory) || false;
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   let mathSamples = null;
   if (type === 'math') {
@@ -415,6 +416,7 @@ function cloneWaveform(source = projectDocument.waveform) {
     ...source,
     serial: { ...source.serial },
     filters: { ...source.filters },
+    ...(source.i2c ? { i2c: { ...source.i2c } } : {}),
     values: [...source.values],
     ...(source.segments ? { segments: source.segments.map((segment) => cloneWaveform(segment)) } : {}),
   };
@@ -585,6 +587,7 @@ function drawEditorOverview() {
 function draw() {
   globalThis.ARBDRAW_SEQUENCE?.refresh();
   globalThis.ARBDRAW_SIGNALS?.refresh();
+  globalThis.ARBDRAW_I2C_UI?.lockControls();
   const w = canvas.width,
     h = canvas.height,
     d = devicePixelRatio || 1,
@@ -775,6 +778,7 @@ const dutyDisabledTypes = new Set([
   'dc',
   'noise',
   'serial',
+  'i2c',
 ]);
 function updateDutyAvailability(type) {
   const disabled = dutyDisabledTypes.has(type);
@@ -819,6 +823,7 @@ $('noiseColorSelect').addEventListener('change', () => {
   else persistCurrentSettings();
 });
 function renderWaveformProperties(type) {
+  globalThis.ARBDRAW_I2C_UI?.unlockControls();
   updateDutyAvailability(type);
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
@@ -828,6 +833,7 @@ function renderWaveformProperties(type) {
   globalThis.ARBDRAW_MATH_PROPERTIES?.render(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
+  globalThis.ARBDRAW_I2C_UI?.render(type);
 }
 function beginEditorSelection(event) {
   const point = canvasPoint(event),
@@ -1088,6 +1094,11 @@ function drawMini(c, type) {
     h = (c.height = 42);
   x.strokeStyle = '#ff6b2c';
   x.lineWidth = 2;
+  if (type === 'i2c') {
+    x.fillStyle = '#ff6b2c'; x.font = 'bold 20px ui-monospace';
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('I2C', w / 2, h / 2);
+    return;
+  }
   if (type === 'math') {
     x.fillStyle = '#ff6b2c';
     x.font = 'italic 22px Georgia, serif';
@@ -1130,7 +1141,7 @@ function drawMini(c, type) {
   x.stroke();
 }
 function updateFunctionSelect(type) {
-  const label = { rc: 'RC', dc: 'DC' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
+  const label = { rc: 'RC', dc: 'DC', i2c: 'I2C' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
     button = $('functionSelectBtn');
   button.querySelector('span').textContent = label;
   drawMini(button.querySelector('canvas'), type);
@@ -1180,6 +1191,11 @@ $('functionSelectMenu')
         onSelect(type);
         return;
       }
+      if (type === 'i2c') {
+        closeFunctionSelectMenu();
+        globalThis.ARBDRAW_I2C_UI?.open();
+        return;
+      }
       if (!generate(type)) {
         renderWaveformProperties(state.type);
         if (type === 'math' && state.type !== 'math') globalThis.ARBDRAW_MATH_PROPERTIES?.edit();
@@ -1224,12 +1240,14 @@ document.querySelectorAll('.tool[data-tool]').forEach(
   (button) => (button.onclick = () => setEditorTool(button.dataset.tool)),
 );
 function undoWaveform() {
+  if (globalThis.ARBDRAW_SIGNAL_TRANSACTIONS?.undo()) return;
   if (state.history.length > 1) {
     state.redo.push(state.history.pop());
     restoreWaveform(state.history.at(-1));
   }
 }
 function redoWaveform() {
+  if (globalThis.ARBDRAW_SIGNAL_TRANSACTIONS?.redo()) return;
   if (state.redo.length) {
     const snapshot = state.redo.pop();
     state.history.push(cloneWaveform(snapshot));

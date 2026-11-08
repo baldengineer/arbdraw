@@ -78,6 +78,7 @@ troubleshooting.
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Viewer measurement cursors: independent Time and Voltage pairs with position and signed delta readouts
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
+- I2C packets with assigned SDA/SCL signals, bus-speed presets, addressing, payload, and framing controls
 - Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
 
 ## Multiple signals
@@ -91,6 +92,23 @@ In **Absolute**, rows align by sample index. In **Relative (Time)**, they align 
 Each signal keeps its own waveform properties, filters, sample count, sample rate, AWG profile, and sequence. Undo/redo belongs to the selected signal and survives switching signals. **Save JSON** saves every signal in a version 2 project; **Open** also accepts existing version 1 single-waveform projects. Browser settings remember defaults, not complete projects, so save JSON to retain your signals.
 
 CSV, SVG, WAV, browser playback, and Send to AWG use **one selected signal at a time**. For a sequence, export its Full Record or selected segment. The export dialog identifies the signal and includes its name in the suggested filename. Signals are independent records; they do not share a clock or imply simultaneous hardware output. The hardware channel in Send to AWG is the destination for the selected signal.
+
+## I2C packets
+
+Choose **I2C** in the Waveshape menu. Assign **SDA signal** and **SCL signal** to two different signals, or choose **Create new signal** for either output. Set the packet properties and select **Generate packet** to update both records together in the stacked grid. Selecting either output shows the packet recipe; generating from either updates the assigned pair. Existing unrelated records require overwrite confirmation. Undo/Redo restores both outputs together, including newly created signals.
+
+- Bus speed: **100 kbit/s**, **400 kbit/s**, or **1 Mbit/s**.
+- Address: **7-bit** or **10-bit**, entered as decimal or `0x` hexadecimal, without the R/W bit.
+- Transaction: **Write**, **Read**, or **Write then Read** with repeated START. For register reads, put the register address in Write bytes and the expected response in Read response.
+- Payload: space- or comma-separated hexadecimal bytes, such as `00 A5 FF`, up to 256 bytes in each direction. An empty write performs an address-only transaction.
+- Framing: address ACK, write-data ACK, final read NACK, optional STOP, and pre/post idle in bit periods. A missing address or write-data ACK ends the transfer. START is always included.
+- Levels and resolution: logic high/low in volts and 20, 40, or 80 samples per bit.
+
+The generator follows the framing in [NXP UM10204](https://cache.nxp.com/docs/en/user-guide/UM10204.pdf). It produces ideal sampled bus levels, including simulated target ACKs and read responses; it does not communicate with a live I2C target or model open-drain drivers, pull-ups, arbitration, or clock stretching.
+
+Both records have equal lengths and the same sample clock (`bus speed × samples per bit`). The displayed AWG frequency is the complete packet's repetition rate. Generic amplitude/timing/filter controls are disabled for this source; use the I2C properties to regenerate it. Arbitrary sample edits remain available, and regeneration replaces those edits. I2C occupies complete signal records and cannot be a sequence segment. **+ Signal** from an I2C output creates an independent sine with matching record timing; **Duplicate signal** copies its samples but clears the routing assignments.
+
+Save JSON retains both outputs and their recipes. Export and Send to AWG still handle **one selected signal at a time**; separate uploads do not synchronize physical outputs. Choose an AWG profile that accommodates the whole packet. Profile changes preserve its sample timing and cannot truncate the record.
 
 ## Editing modes
 

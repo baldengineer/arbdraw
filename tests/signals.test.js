@@ -184,6 +184,131 @@ test('compact signal selector lists names and keeps one signal selected without 
   assert.doesNotMatch(read('index.html'), /signalList|signal-card|signals-panel/);
 });
 
+function i2cHarness() {
+  const fixture = harness(), { context, run } = fixture;
+  context.document.querySelectorAll = () => [];
+  const render = context.renderDocument;
+  context.renderDocument = () => { render(); context.ARBDRAW_I2C_UI.render(run('state.type')); };
+  context.renderWaveformProperties = type => context.ARBDRAW_I2C_UI.render(type);
+  for (const file of ['js/i2c-waveform.js', 'js/signal-transactions.js', 'js/i2c-properties.js']) run(read(file));
+  run('ARBDRAW_I2C_UI.open();');
+  return fixture;
+}
+
+test('I2C creates a synchronized pair, switches outputs, and undoes/redoes the whole packet', () => {
+  const { run, element } = i2cHarness();
+  const before = run('JSON.stringify(projectDocument)');
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true, element('i2cError').textContent);
+  assert.equal(run('projectDocument.signals.length'), 2);
+  assert.equal(run('state.type'), 'i2c');
+  assert.equal(run('projectDocument.signals[0].waveform.i2c.role'), 'sda');
+  assert.equal(run('projectDocument.signals[1].waveform.i2c.role'), 'scl');
+  const packet = run('JSON.stringify(projectDocument)');
+  run('activateSignal("signal-2");');
+  assert.equal(element('i2cSdaSignal').value, 'signal-1');
+  assert.equal(element('i2cSclSignal').value, 'signal-2');
+  assert.equal(run('projectDocument.signals[0].waveform.sampleCount === state.samples'), true);
+  assert.equal(run('projectDocument.signals[0].waveform.frequencyHz === state.frequency'), true);
+  assert.equal(run('projectDocument.signals[0].waveform.sampleRateMSa === state.sampleRate'), true);
+  run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+  run('redoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), packet);
+});
+
+test('I2C regenerates from either output and can create two new signals with atomic undo', () => {
+  const { run, element } = i2cHarness();
+  const before = run('JSON.stringify(projectDocument)');
+  element('i2cSdaSignal').value = '';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true);
+  assert.equal(run('projectDocument.signals.length'), 3);
+  const first = run('JSON.stringify(projectDocument)');
+  run('activateSignal("signal-3");');
+  element('i2cSpeed').value = '1000000'; element('i2cPayload').value = 'FF';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true);
+  assert.equal(run('projectDocument.signals[1].waveform.i2c.busHz'), 1000000);
+  assert.equal(run('projectDocument.signals[2].waveform.i2c.payload'), 'FF');
+  run('undoWaveform(); activateSignal("signal-2");');
+  assert.equal(run('JSON.stringify(projectDocument)'), first);
+  run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+  run('redoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), first);
+});
+
+test('I2C profile limits reject the complete pair before either output is replaced', () => {
+  const { run, element } = i2cHarness();
+  run('activeSignal().AWG.profileId = "rigol-dg1022"; selectedAwgProfile = profileById("rigol-dg1022");');
+  element('i2cPayload').value = Array(30).fill('FF').join(' ');
+  const before = run('JSON.stringify(projectDocument)');
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), false);
+  assert.match(element('i2cError').textContent, /4,?096-point/);
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+});
+
+test('I2C routes to two existing signals and leaves an unrelated signal intact', () => {
+  const { run, element } = i2cHarness();
+  run('addSignal(); generate("square"); addSignal(); generate("triangle"); ARBDRAW_I2C_UI.open();');
+  const original = run('JSON.stringify(projectDocument)');
+  element('i2cSdaSignal').value = 'signal-1'; element('i2cSclSignal').value = 'signal-2';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true, element('i2cError').textContent);
+  assert.equal(run('projectDocument.signals[2].waveform.type'), 'triangle');
+  run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), original);
+  run('redoWaveform();');
+  assert.equal(run('projectDocument.signals[1].waveform.type'), 'i2c');
+});
+
+test('I2C rejects invalid routing, malformed payload, and canceled overwrites without changes', () => {
+  const { run, element, context } = i2cHarness();
+  const original = run('JSON.stringify(projectDocument)');
+  element('i2cSclSignal').value = 'signal-1';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), false);
+  element('i2cSclSignal').value = ''; element('i2cPayload').value = 'ZZ';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), false);
+  assert.equal(run('JSON.stringify(projectDocument)'), original);
+  run('addSignal(); ARBDRAW_I2C_UI.open();');
+  const two = run('JSON.stringify(projectDocument)');
+  element('i2cSdaSignal').value = 'signal-1'; element('i2cSclSignal').value = 'signal-2';
+  context.window.confirm = () => false;
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), false);
+  assert.equal(run('JSON.stringify(projectDocument)'), two);
+});
+
+test('I2C project roundtrip preserves both recipes, samples, timing and single-output export', () => {
+  const { run, element } = i2cHarness();
+  element('i2cSpeed').value = '400000'; element('i2cOperation').value = 'writeRead';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true);
+  const values = run('JSON.stringify(projectDocument.signals.map(s => [s.waveform.values, s.waveform.i2c]))');
+  run('loadProject(JSON.parse(JSON.stringify(projectDocument)));');
+  assert.equal(run('JSON.stringify(projectDocument.signals.map(s => [s.waveform.values, s.waveform.i2c]))'), values);
+  assert.equal(run('projectDocument.AWG.tsResolutionSeconds'), 1 / 8000000);
+  assert.equal(run('exportWaveformData().data.length'), run('state.samples'));
+  assert.equal(run('selectedSignalDocument().waveform.i2c.role'), 'sda');
+  assert.equal(run('Object.hasOwn(selectedSignalDocument(), "signals")'), false);
+  run('activateSignal("signal-2");');
+  assert.equal(run('selectedSignalDocument().waveform.i2c.role'), 'scl');
+  run(slice('js/views.js', 'function formatSampleTime(', 'let sampleRenderToken'));
+  assert.equal(Number(run('formatSampleTime(8)')), 0.000001);
+  const before = run('JSON.stringify(projectDocument)');
+  run('var invalid = JSON.parse(JSON.stringify(projectDocument)); invalid.signals[0].waveform.i2c.busHz = 123;');
+  assert.throws(() => run('loadProject(invalid)'));
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+});
+
+test('I2C atomic undo protects newer peer edits and succeeds after they are undone', () => {
+  const { run, context } = i2cHarness();
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true);
+  run('activateSignal("signal-2"); state.data[0] = 1.2; state.samplesEdited = true; pushHistory(); activateSignal("signal-1");');
+  let message = ''; context.showToast = text => { message = text; };
+  run('undoWaveform();');
+  assert.match(message, /Undo newer edits/);
+  assert.equal(run('projectDocument.signals[1].waveform.values[0]'), 1.2);
+  run('activateSignal("signal-2"); undoWaveform(); undoWaveform();');
+  assert.equal(run('projectDocument.signals.length'), 1);
+  assert.equal(run('state.type'), 'sine');
+});
+
 function gridHarness(defaults = {}) {
   const fixture = harness(defaults), { context, run } = fixture;
   const listeners = {}, draws = [];

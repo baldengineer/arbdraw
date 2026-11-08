@@ -516,6 +516,7 @@ const titles = {
   dc: 'DC level',
   noise: 'Noise',
   serial: 'Serial data',
+  i2c: 'I2C packet',
   math: 'Math function',
 };
 

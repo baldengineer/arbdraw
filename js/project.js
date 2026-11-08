@@ -164,11 +164,21 @@ function parseProject(raw) {
     || parsed.waveform.mathExpression.length > 512) {
     parsed.waveform.mathExpression = defaults.mathExpression;
   }
+  if (parsed.waveform.type === 'i2c') {
+    if (source.segments !== undefined || !values.length || !source.i2c || typeof source.i2c !== 'object')
+      throw new Error('I2C outputs must contain a complete sampled record without sequence segments.');
+    parsed.waveform.i2c = ARBDRAW_I2C.normalize(source.i2c);
+    parsed.waveform.cycles = 1;
+    parsed.waveform.frequencyHz = sampleRateMSa * 1e6 / sampleCount;
+    parsed.AWG.frequencyHz = parsed.waveform.frequencyHz;
+    parsed.AWG.periodSeconds = 1 / parsed.AWG.frequencyHz;
+    parsed.AWG.tsResolutionSeconds = 1 / (sampleRateMSa * 1e6);
+  }
   if (source.segments !== undefined) {
     if (!Array.isArray(source.segments) || source.segments.length < 2)
       throw new Error('A sequence must contain at least two segments.');
     const segments = source.segments.map((segment) => {
-      if (!segment || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
+      if (!segment || segment.type === 'i2c' || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
         || segment.sampleCount < 2 || !Array.isArray(segment.values)
         || segment.values.length !== segment.sampleCount || !segment.values.every(Number.isFinite))
         throw new Error('Each sequence segment must contain its declared finite voltage samples.');
@@ -379,7 +389,7 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true, output =
   if (!values.length) voltageMin = voltageMax = 0;
   const sampleCount = values.length,
     durationSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
-      ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
+      || output.type === 'i2c' ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
@@ -416,7 +426,7 @@ function downloadSvg(filename, output = exportWaveformData()) {
     name: projectDocument.name,
     includeAxes: $('includeSvgAxes').checked,
     durationSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments()
-      ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
+      || output.type === 'i2c' ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
   });
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   downloadBlob(blob, filename);

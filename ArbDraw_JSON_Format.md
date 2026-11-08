@@ -56,6 +56,26 @@ All segments share `AWG.sampleRateMSa`. At sample rate `R` in samples/second, a 
 
 For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `serial`, and `filters`) are retained for compatibility and do not describe every segment. Use the segment objects to inspect or regenerate individual sources. The top-level voltage levels describe the combined record.
 
+## I2C packet extension
+
+An I2C output uses `waveform.type = "i2c"` and a `waveform.i2c` recipe. Each generated pair stores the same recipe with a different `role` (`"sda"` or `"scl"`):
+
+```json
+{
+  "busHz": 100000, "addressBits": 7, "address": 80,
+  "operation": "writeRead", "payload": "00", "readPayload": "A5 FF",
+  "addressAck": true, "dataAck": true, "finalReadNack": true, "stop": true,
+  "preIdle": 1, "postIdle": 1, "high": 3.3, "low": 0, "samplesPerBit": 20,
+  "sdaSignalId": "signal-1", "sclSignalId": "signal-2", "role": "sda"
+}
+```
+
+`busHz` is 100000, 400000, or 1000000; `addressBits` is 7 or 10; `address` excludes the R/W bit. `operation` is `write`, `read`, or `writeRead`. Payload strings contain up to 256 separated hex bytes each. Idle counts are whole bit periods from 1 through 1000; `samplesPerBit` is 20, 40, or 80. Logic levels must be finite and `high > low`.
+
+Generated outputs share a sample rate of `busHz * samplesPerBit`, equal counts, and one packet per record (`cycles = 1`). As with sequences, sample `i` occurs at `i / sampleRateHz` and `AWG.tsResolutionSeconds = 1 / sampleRateHz`. The record frequency is `sampleRateHz / sampleCount`. I2C cannot contain sequence segments. Imports require the recipe and complete finite samples, preserving arbitrary edits rather than regenerating the packet.
+
+Assignments are project signal IDs, not hardware channels. A removed signal or single-output import may leave an unresolved ID; the UI offers a new signal for that assignment. Selecting Generate creates/resolves destinations and writes the updated recipe to both outputs. Duplication clears both assignments to avoid overwriting the original pair. Cross-signal undo transactions are transient and are not serialized.
+
 ## Complete legacy version 1 example
 
 ```json
@@ -255,6 +275,7 @@ Version 1 recognizes:
 - `dc`
 - `noise`
 - `serial`
+- `i2c`
 - `math`
 
 The `noise` waveform generates independent, uniformly distributed samples for white noise. Pink

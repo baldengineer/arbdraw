@@ -44,7 +44,7 @@ test('waveshape selector and menu keep DC and RC uppercase without changing othe
   }
   const expected = new Map([
     ['sine', 'Sine'], ['square', 'Square'], ['triangle', 'Triangle'],
-    ['rc', 'RC'], ['serial', 'Serial'], ['pulse', 'Pulse'],
+    ['rc', 'RC'], ['serial', 'Serial'], ['i2c', 'I2C'], ['pulse', 'Pulse'],
     ['dc', 'DC'], ['noise', 'Noise'], ['math', 'Math'],
   ]);
   assert.deepEqual(Array.from(options, ([type, option]) => [type, option.label]), Array.from(expected));

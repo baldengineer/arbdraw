@@ -89,6 +89,10 @@ function selectSequenceSegment(index, commitDraft = true) {
 }
 
 function addSequenceSegment(type = null) {
+  if (type === 'i2c' || state.type === 'i2c') {
+    showToast('I2C generates complete SDA and SCL signal records. It cannot be used as a sequence segment.');
+    return;
+  }
   document.activeElement?.blur();
   finishWaveformPreview();
   const segments = sequenceSegments(), source = segments

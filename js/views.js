@@ -2,7 +2,7 @@
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
 // View menu, sample table, JSON view, and sample-point editing.
 function formatSampleTime(index) {
-  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) return (index / (state.sampleRate * 1e6)).toExponential(9);
+  if (globalThis.ARBDRAW_SEQUENCE?.hasSegments() || state.type === 'i2c') return (index / (state.sampleRate * 1e6)).toExponential(9);
   const seconds = ((index / (state.samples - 1)) * waveformDurationMs()) / 1000;
   return seconds === 0 ? '0' : seconds.toExponential(9);
 }
