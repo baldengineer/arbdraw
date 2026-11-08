@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Expression drafts are applied explicitly, so typing never replaces samples.
+// Presets apply immediately; typed expression drafts require an explicit Apply.
 (function setupMathProperties() {
   const input = $('mathExpressionInput'), error = $('mathExpressionError'), preset = $('mathPreset');
   for (const item of ARBDRAW_MATH.presets) preset.add(new Option(item.name, item.expression));
@@ -32,8 +32,10 @@
     return true;
   }
   preset.addEventListener('change', () => {
-    if (preset.value) input.value = preset.value;
+    if (!preset.value) return;
+    input.value = preset.value;
     setError();
+    if (!apply() && !error.textContent) render();
   });
   input.addEventListener('input', () => { preset.value = ''; setError(); });
   input.addEventListener('keydown', event => {

@@ -88,7 +88,7 @@ In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to
 
 ## Math waveforms
 
-Choose **Math** in the Waveshape menu, enter an expression or choose a preset, then select **Apply expression** (or press **Ctrl/Command+Enter**). Selecting a preset only fills the draft. **Escape** restores the applied expression. Expressions participate in undo/redo and are saved in project JSON, browser settings, and individual sequence segments.
+Choose **Math** in the Waveshape menu, then choose a preset to apply it immediately. For a manually typed formula, select **Apply expression** (or press **Ctrl/Command+Enter**). **Escape** restores the applied expression. Expressions participate in undo/redo and are saved in project JSON, browser settings, and individual sequence segments.
 
 `x` is cycle position from 0 up to, but excluding, 1. Cycles and Phase work as they do for the other periodic sources; Frequency controls playback timing. For example, `sin(2*pi*x)` is a sine and `exp(-4*x)*sin(8*pi*x)` is a damped oscillation repeated each cycle. In Arbitrary mode, an active selection receives its own complete cycle span; points outside it are preserved.
 

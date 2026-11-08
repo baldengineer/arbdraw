@@ -82,9 +82,8 @@ test('Math generation scales voltage, applies filters, and preserves a scoped se
 
 test('expression drafts and invalid or canceled Apply leave samples and history unchanged', () => {
   const f = harness(), before = f.run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })');
-  f.element('mathPreset').value = 'exp(-4*x)*sin(8*pi*x)';
-  f.element('mathPreset').listeners.change();
-  assert.equal(f.element('mathExpressionInput').value, 'exp(-4*x)*sin(8*pi*x)');
+  f.element('mathExpressionInput').value = 'exp(-4*x)*sin(8*pi*x)';
+  f.element('mathExpressionInput').listeners.input();
   assert.equal(f.run('JSON.stringify({ projectDocument, history: state.history, redo: state.redo })'), before);
   for (const expression of ['x.constructor', 'sin(', '1/(x-0.5)']) {
     f.element('mathExpressionInput').value = expression;
@@ -97,6 +96,31 @@ test('expression drafts and invalid or canceled Apply leave samples and history 
   f.element('mathExpressionInput').value = 'x';
   assert.equal(f.context.ARBDRAW_MATH_PROPERTIES.apply(), false);
   assert.equal(f.run('state.mathExpression'), 'sin(2*pi*x)');
+});
+
+test('choosing a Math preset immediately updates samples with one undo step', () => {
+  const f = harness();
+  const before = f.run('JSON.stringify(state.data)'), historyLength = f.run('state.history.length');
+  f.element('mathPreset').value = 'exp(-4*x)*sin(8*pi*x)';
+  f.element('mathPreset').listeners.change();
+  assert.equal(f.run('state.mathExpression'), 'exp(-4*x)*sin(8*pi*x)');
+  assert.notEqual(f.run('JSON.stringify(state.data)'), before);
+  assert.equal(f.run('state.history.length'), historyLength + 1);
+  f.run('undoWaveform();');
+  assert.equal(f.run('JSON.stringify(state.data)'), before);
+  assert.equal(f.element('mathPreset').value, 'sin(2*pi*x)');
+});
+
+test('canceling a preset replacement restores the controls and preserves edited samples', () => {
+  const f = harness();
+  f.run('state.samplesEdited = true;');
+  const before = f.run('JSON.stringify({ projectDocument, history: state.history })');
+  f.context.window.confirm = () => false;
+  f.element('mathPreset').value = '2*abs(sin(2*pi*x))-1';
+  f.element('mathPreset').listeners.change();
+  assert.equal(f.run('JSON.stringify({ projectDocument, history: state.history })'), before);
+  assert.equal(f.element('mathPreset').value, 'sin(2*pi*x)');
+  assert.equal(f.element('mathExpressionInput').value, 'sin(2*pi*x)');
 });
 
 test('Apply is undoable and project JSON restores expressions and authoritative sample edits', () => {
