@@ -260,6 +260,7 @@ function generate(
   confirmOverwrite = true,
   preserveVoltageDraft = false,
   deferRender = false,
+  preserveTiming = false,
 ) {
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   let mathSamples = null;
@@ -275,8 +276,9 @@ function generate(
   globalThis.updateAudioPlaybackButton?.();
   if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
   // Initialize Serial through the same timing path as a payload edit. Sequences
-  // retain their shared clock and explicitly allocated segment lengths.
-  if (type === 'serial' && !globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+  // retain their shared clock and explicitly allocated segment lengths. A new
+  // parallel signal can explicitly preserve the timing inherited from its source.
+  if (type === 'serial' && !preserveTiming && !globalThis.ARBDRAW_SEQUENCE?.hasSegments()
     && (state.type !== 'serial' || !state.data.length)) {
     ensureSerialPeriodCoversPayload();
   }

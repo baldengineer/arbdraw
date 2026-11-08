@@ -55,7 +55,8 @@ function restoreSignalSession(gridView) {
   Object.assign(editorViewport, session?.viewport || { start: 0, pointsPerScreen: null, total: null });
   if (gridView) globalThis.ARBDRAW_SIGNAL_GRID.restoreView(gridView);
   setEditorMode(session?.mode || (hasArbitraryEdits() ? 'advanced' : 'basic'), { render: false });
-  if (!state.data.length) generate();
+  // New signals already have the intended record timing, including Serial.
+  if (!state.data.length) generate(state.type, true, true, false, false, false, false, true);
   else if (!state.history.length) pushHistory();
   renderDocument();
   globalThis.ARBDRAW_SIGNAL_GRID?.revealActive();
@@ -63,12 +64,31 @@ function restoreSignalSession(gridView) {
   refreshSignalJson();
 }
 
+function freshSignalSource() {
+  const record = recordWaveform(), waveform = cloneWaveform(editableWaveform());
+  // Start with the selected source, but regenerate clean samples over the whole
+  // current record. Duplicate is the operation that preserves edits/segments.
+  delete waveform.segments;
+  Object.assign(waveform, {
+    sampleCount: record.sampleCount,
+    sampleRateMSa: record.sampleRateMSa,
+    durationMs: record.sampleCount / (record.sampleRateMSa * 1000),
+    frequencyHz: record.frequencyHz * (waveform.cycles / record.cycles),
+    samplesEdited: false,
+    values: [],
+  });
+  if (waveform.type === 'math') ARBDRAW_MATH.samples(waveform);
+  return { AWG: { ...activeSignal().AWG }, waveform };
+}
+
 function addSignal(duplicate = false) {
   finishSignalEdit();
+  let source;
+  try { source = duplicate ? activeSignal() : freshSignalSource(); }
+  catch (error) { showToast(error.message); return false; }
   rememberSignalSession();
   let number = 1;
   while (projectDocument.signals.some(signal => signal.id === `signal-${number}`)) number++;
-  const source = duplicate ? activeSignal() : createDefaultDocument();
   const signal = { id: `signal-${number}`,
     name: duplicate ? `${source.name} copy`.slice(0, 120) : `Signal ${number}`,
     AWG: { ...source.AWG }, waveform: cloneWaveform(source.waveform) };

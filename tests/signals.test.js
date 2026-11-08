@@ -9,7 +9,7 @@ const slice = (file, from, to) => {
   return source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
 };
 
-function harness() {
+function harness(defaults = {}) {
   const elements = new Map();
   const createElement = () => ({ value: '', children: [], attributes: {},
     classList: { contains: () => true },
@@ -40,7 +40,10 @@ function harness() {
     },
   });
   const run = code => vm.runInContext(code, context);
-  for (const file of ['js/awg-profiles.js', 'js/defaults.js', 'js/math-expression.js', 'js/core.js', 'js/waveform-shapes.js']) run(read(file));
+  for (const file of ['js/awg-profiles.js', 'js/defaults.js']) run(read(file));
+  context.startupDefaults = defaults;
+  run('Object.assign(ARBDRAW_DEFAULTS, startupDefaults);');
+  for (const file of ['js/math-expression.js', 'js/core.js', 'js/waveform-shapes.js']) run(read(file));
   run(`function profileById(id) { return Object.values(ARBDRAW_AWG_PROFILES).find(p => p.id === id); }
     var selectedAwgProfile = profileById('audio');`);
   run(slice('js/serial-properties.js', 'function serialSettings()', 'function renderSerialProperties('));
@@ -181,8 +184,8 @@ test('compact signal selector lists names and keeps one signal selected without 
   assert.doesNotMatch(read('index.html'), /signalList|signal-card|signals-panel/);
 });
 
-function gridHarness() {
-  const fixture = harness(), { context, run } = fixture;
+function gridHarness(defaults = {}) {
+  const fixture = harness(defaults), { context, run } = fixture;
   const listeners = {}, draws = [];
   const context2d = new Proxy({}, { get: (target, key) => target[key]
     || ((...args) => draws.push({ method: key, args })) });
@@ -266,4 +269,70 @@ test('blank record tails and signal labels cannot write samples', () => {
   listeners.pointerdown({ clientX: 20, clientY: 100, pointerId: 2 });
   assert.equal(run('JSON.stringify(projectDocument.signals)'), before);
   assert.equal(run('state.drawing'), false);
+});
+
+test('Add Signal follows the current record timing instead of stale startup defaults in Time mode', () => {
+  const { run, context, draws } = gridHarness({ waveformType: 'square', frequencyHz: 750, frequencyUnit: 'kHz' });
+  run(`projectDocument = createDefaultDocument(); resetSignals();
+    state.samples = 1000; state.frequency = 475.9638; state.cycles = 1; generate('square');
+    var originalValues = JSON.stringify(state.data); addSignal();`);
+  assert.equal(run('state.frequency'), 475.9638);
+  assert.equal(run('state.samples'), 1000);
+  assert.equal(run('state.type'), 'square');
+  context.editorAxisMode = 'time';
+  run('activateSignal("signal-1");');
+  const before = run('JSON.stringify(projectDocument.signals)');
+  draws.length = 0;
+  run('ARBDRAW_SIGNAL_GRID.draw(ctx, 1000, 459, 1, currentEditorViewport());');
+  // Trace paths are clipped per row. Both records must span the same time window.
+  const traceEnds = [];
+  let inTrace = false, lastX;
+  for (const call of draws) {
+    if (call.method === 'clip') inTrace = true;
+    if (inTrace && call.method === 'lineTo') lastX = call.args[0];
+    if (inTrace && call.method === 'restore') { traceEnds.push(lastX); inTrace = false; }
+  }
+  assert.equal(traceEnds.length, 2);
+  assert.equal(traceEnds[0], 982);
+  assert.equal(traceEnds[1], 982);
+  assert.equal(run('JSON.stringify(projectDocument.signals)'), before);
+  assert.equal(run('JSON.stringify(projectDocument.signals[0].waveform.values) === originalValues'), true);
+});
+
+test('new signals regenerate source samples without changing existing edits or the current profile', () => {
+  const { run } = harness();
+  run(`selectedAwgProfile = profileById('rigol-dg1022');
+    state.sampleRate = 100; state.samples = 32; state.frequency = 250; state.cycles = 3;
+    generate('square'); state.data[4] = 0.123; state.samplesEdited = true; pushHistory(); renderAwgTiming();
+    var original = JSON.stringify(projectDocument.signals[0]); addSignal();`);
+  assert.equal(run('JSON.stringify(projectDocument.signals[0]) === original'), true);
+  assert.equal(run('selectedAwgProfile.id'), 'rigol-dg1022');
+  assert.equal(run('state.samples'), 32);
+  assert.equal(run('state.sampleRate'), 100);
+  assert.equal(run('state.cycles / state.frequency'), 3 / 250);
+  assert.equal(run('state.samplesEdited'), false);
+  assert.notEqual(run('state.data[4]'), 0.123);
+});
+
+test('adding a Serial signal preserves deliberately adjusted timing instead of reinitializing its period', () => {
+  const { run } = harness();
+  run(`generate('serial'); state.frequency = 200; state.cycles = 2; generate('serial');
+    var serialValues = JSON.stringify(state.data); addSignal();`);
+  assert.equal(run('state.type'), 'serial');
+  assert.equal(run('state.frequency'), 200);
+  assert.equal(run('state.cycles'), 2);
+  assert.equal(run('JSON.stringify(state.data) === serialValues'), true);
+});
+
+test('adding from a selected sequence segment uses the complete record duration and count', () => {
+  const { run } = harness();
+  run(`addSequenceSegment('triangle');
+    var period = recordState().cycles / recordState().frequency;
+    var count = recordState().samples;
+    var source = JSON.stringify(projectDocument.signals[0]); addSignal();`);
+  assert.equal(run('state.type'), 'triangle');
+  assert.equal(run('state.samples === count'), true);
+  assert.equal(run('state.cycles / state.frequency === period'), true);
+  assert.equal(run('Boolean(sequenceSegments())'), false);
+  assert.equal(run('JSON.stringify(projectDocument.signals[0]) === source'), true);
 });
