@@ -75,6 +75,7 @@ troubleshooting.
 - Sequences with independent segment sources, sample counts, and waveform previews
 - Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
+- Viewer measurement cursors: independent Time and Voltage pairs with position and signed delta readouts
 - Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 - Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
 
@@ -83,6 +84,14 @@ troubleshooting.
 New projects open in **Basic**, where you choose a waveshape and adjust its properties. Switch to **Advanced** above the editor canvas to select or draw points and use filters. Returning to Basic after advanced edits or filters asks for confirmation, then regenerates the waveform from its properties and discards those advanced changes. Projects with point edits or active filters open in Advanced. Sample values can be changed in the Samples view only while Advanced is active. Theme and waveform rendering are available from the View menu.
 
 In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to clip the waveform to that range. Clamp runs after noise and smoothing. Equal limits produce a constant voltage; the minimum cannot exceed the maximum. Turning Clamp off regenerates from the source with the remaining filters. Clamp settings are saved in the project and participate in undo/redo.
+
+## Viewer measurements
+
+Choose **View → Viewer**, then enable **Time** or **Voltage** under **Cursors**. Drag a line or its T1/T2/V1/V2 label to position it. Readouts show each position and signed differences **Δt = T2 − T1** and **ΔV = V2 − V1**. The cursors measure the displayed coordinates independently; they do not snap to waveform samples.
+
+Select a readout and use Left/Right for time or Up/Down for voltage. Each step is one screen pixel; hold **Shift** for ten pixels. **Home** and **End** move the selected cursor to the minimum and maximum visible values. **Escape** cancels a cursor drag. Dragging elsewhere in the plot still zooms the Viewer.
+
+Positions stay in time and voltage units when the waveform, zoom, or scale changes. Hidden lines are marked **outside view** in their readouts; **Reset cursors** places the enabled pairs at 25% and 75% of the current ranges. Toggling a pair off and on retains its positions for the session. Cursors never modify samples, undo history, exports, or saved project JSON.
 
 ## Sequences
 

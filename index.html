@@ -87,8 +87,27 @@
               <label>Time <div class="unit-input scope-control"><input id="scopeTimeDiv" type="number" min="0.000000001" step="any" value="200" aria-label="Time per division"><button id="scopeTimeUnitBtn" class="unit-button" type="button" aria-haspopup="menu" aria-expanded="false">ns/div</button></div></label>
               <button id="scopeRefreshBtn" class="scope-refresh-button" type="button" aria-label="Refresh time scale" title="Refresh time scale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 17.9 15"/></svg></button>
           </div>
+          <div class="scope-measurements" aria-label="Viewer measurement cursors">
+            <div class="scope-cursor-toolbar">
+              <span class="scope-cursor-title">Cursors</span>
+              <button id="scopeTimeCursorsBtn" type="button" aria-pressed="false" aria-controls="scopeTimeMeasurements">Time</button>
+              <button id="scopeVoltageCursorsBtn" type="button" aria-pressed="false" aria-controls="scopeVoltageMeasurements">Voltage</button>
+              <button id="scopeResetCursorsBtn" type="button" disabled title="Place enabled cursors inside the current view">Reset cursors</button>
+              <span id="scopeCursorHint" class="scope-cursor-hint" hidden>Drag a cursor line, or select a readout and use arrow keys. Shift moves farther.</span>
+            </div>
+            <div id="scopeTimeMeasurements" class="scope-measurement-row" hidden>
+              <button id="scopeT1Btn" type="button" aria-pressed="false">T1</button>
+              <button id="scopeT2Btn" type="button" aria-pressed="false">T2</button>
+              <output id="scopeTimeDelta" title="T2 minus T1"></output>
+            </div>
+            <div id="scopeVoltageMeasurements" class="scope-measurement-row" hidden>
+              <button id="scopeV1Btn" type="button" aria-pressed="false">V1</button>
+              <button id="scopeV2Btn" type="button" aria-pressed="false">V2</button>
+              <output id="scopeVoltageDelta" title="V2 minus V1"></output>
+            </div>
+          </div>
           <div class="scope-display-area">
-            <div class="scope-frame scope-readonly"><canvas id="scopeCanvas"></canvas><div id="scopeZoomSelection" class="scope-zoom-selection" aria-hidden="true"></div><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
+            <div class="scope-frame scope-readonly"><canvas id="scopeCanvas" tabindex="0" aria-label="Waveform Viewer. Drag to zoom, or drag a measurement cursor. Arrow keys move the selected cursor." aria-describedby="scopeCursorHint"></canvas><div id="scopeZoomSelection" class="scope-zoom-selection" aria-hidden="true"></div><span class="readonly-badge">READ ONLY</span><div id="scopeCursorReadout" class="cursor-readout">0.000 ms &nbsp; 0.000 V</div></div>
             <div id="scopeVoltageAxisLabel" class="axis-label y-label">VOLTAGE (V)</div><div id="scopeTimeAxisLabel" class="axis-label x-label">TIME (ms)</div>
           </div>
         </div>
@@ -345,6 +364,7 @@
   <script src="js/filters.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/serial-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/scope-view.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/scope-cursors.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/views.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/svg-export.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/wav-export.js?v=__ARBDRAW_BUILD_SHA__"></script>

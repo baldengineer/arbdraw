@@ -141,7 +141,11 @@ function drawScope() {
     scopeCtx.fillStyle = '#718083';
     scopeCtx.fillText(Number(time.toPrecision(4)), px, h - pad.b + 10 * d);
   }
-  if (!output.data.length) return;
+  const drawCursors = () => globalThis.ARBDRAW_SCOPE_CURSORS?.draw({ ctx: scopeCtx, pad, pw, ph, d });
+  if (!output.data.length) {
+    drawCursors();
+    return;
+  }
   scopeCtx.save();
   scopeCtx.beginPath();
   scopeCtx.rect(pad.l, pad.t, pw, ph);
@@ -181,6 +185,7 @@ function drawScope() {
   }
   scopeCtx.globalAlpha = 1;
   scopeCtx.restore();
+  drawCursors();
 }
 
 function scopePlotPoint(event) {
@@ -595,6 +600,8 @@ $('scopeTimeDiv').addEventListener('keydown', (event) => {
 scopeCanvas.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   event.preventDefault();
+  if (scopeZoomDrag) return;
+  if (globalThis.ARBDRAW_SCOPE_CURSORS?.pointerDown(event, scopePlotPoint(event))) return;
   const start = scopePlotPoint(event);
   scopeZoomDrag = { pointerId: event.pointerId, start };
   scopeCanvas.setPointerCapture(event.pointerId);
@@ -602,12 +609,21 @@ scopeCanvas.addEventListener('pointerdown', (event) => {
 });
 scopeCanvas.addEventListener('pointermove', (event) => {
   updateScopeCursor(event);
+  if (globalThis.ARBDRAW_SCOPE_CURSORS?.pointerMove(event, scopePlotPoint(event))) return;
   if (scopeZoomDrag && event.pointerId === scopeZoomDrag.pointerId) {
     renderScopeZoomSelection(scopePlotPoint(event));
   }
 });
-scopeCanvas.addEventListener('pointerup', (event) => finishScopeZoom(event, true));
-scopeCanvas.addEventListener('pointercancel', (event) => finishScopeZoom(event, false));
+scopeCanvas.addEventListener('pointerup', (event) => {
+  if (globalThis.ARBDRAW_SCOPE_CURSORS?.pointerUp(event, scopePlotPoint(event))) return;
+  finishScopeZoom(event, true);
+});
+scopeCanvas.addEventListener('pointercancel', (event) => {
+  if (globalThis.ARBDRAW_SCOPE_CURSORS?.cancel(event)) return;
+  finishScopeZoom(event, false);
+});
+scopeCanvas.addEventListener('lostpointercapture', (event) => globalThis.ARBDRAW_SCOPE_CURSORS?.cancel(event));
+scopeCanvas.addEventListener('keydown', (event) => globalThis.ARBDRAW_SCOPE_CURSORS?.keydown(event));
 scopeCanvas.addEventListener('pointerleave', () => {
   if (!scopeZoomDrag) $('scopeCursorReadout').style.display = 'none';
 });
