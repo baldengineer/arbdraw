@@ -7,6 +7,80 @@ const editorOverviewCanvas = document.querySelector('#editorOverviewCanvas');
 const editorOverviewContext = editorOverviewCanvas.getContext('2d');
 const editorViewport = { start: 0, pointsPerScreen: null, total: null };
 const editorSelection = { left: null, right: null, origin: null, dragging: null };
+// Display coordinates stay separate from the sample indices used by editing/history.
+let editorAxisMode = readStoredSettings().editorAxisMode === 'time' ? 'time' : 'absolute';
+let editorCursorPoint = null;
+
+function editorTiming() {
+  const count = editorRecordLength(),
+    sequence = Boolean(globalThis.ARBDRAW_SEQUENCE?.hasSegments()),
+    intervalSeconds = sequence
+      ? 1 / (state.sampleRate * 1e6)
+      : Math.max(1, state.cycles) / state.frequency / count,
+    periodSeconds = count * intervalSeconds,
+    output = sequence ? recordState() : state;
+  return { count, intervalSeconds, periodSeconds,
+    outputFrequency: output.frequency / Math.max(1, output.cycles) };
+}
+
+function editorTimeText(seconds) {
+  const unit = axisTimeUnitFor(Math.abs(seconds) * 1000);
+  return `${Number((seconds * 1000 / unit.scaleMs).toPrecision(9))} ${unit.label}`;
+}
+
+function editorCoordinateText(index) {
+  const points = `${index.toLocaleString()} pts`;
+  return editorAxisMode === 'time'
+    ? `${editorTimeText(index * editorTiming().intervalSeconds)} (${points})`
+    : points;
+}
+
+function editorTimeTicks(view, intervalSeconds) {
+  const start = view.start * intervalSeconds,
+    end = view.end * intervalSeconds,
+    targetStep = (end - start) / 8;
+  if (!(targetStep > 0) || !Number.isFinite(targetStep)) return [view.start];
+  const magnitude = 10 ** Math.floor(Math.log10(targetStep)),
+    step = [1, 2, 5, 10].find((factor) => factor * magnitude >= targetStep) * magnitude,
+    first = Math.ceil(start / step - 1e-9),
+    last = Math.floor(end / step + 1e-9),
+    ticks = [];
+  for (let tick = first; tick <= last; tick++)
+    ticks.push(Math.max(view.start, Math.min(view.end, tick * step / intervalSeconds)));
+  return ticks;
+}
+
+function updateEditorCursorReadout() {
+  if (!editorCursorPoint) return;
+  const bounds = voltageBounds(),
+    unit = axisVoltageUnitFor(bounds.low, bounds.high),
+    index = Math.min(editorRecordLength() - 1, editorCursorPoint.i);
+  $('cursorReadout').textContent =
+    `${editorCoordinateText(index)}  ${(editorCursorPoint.v / unit.scaleV).toPrecision(5)} ${unit.label}`;
+}
+
+function updateEditorAxisControls() {
+  $('editorAbsoluteAxisBtn').setAttribute('aria-pressed', String(editorAxisMode === 'absolute'));
+  $('editorTimeAxisBtn').setAttribute('aria-pressed', String(editorAxisMode === 'time'));
+  const timing = editorTiming(),
+    frequency = timing.outputFrequency,
+    scale = frequency >= 1e6 ? 1e6 : frequency >= 1e3 ? 1e3 : 1,
+    frequencyUnit = scale === 1e6 ? 'MHz' : scale === 1e3 ? 'kHz' : 'Hz',
+    segment = globalThis.ARBDRAW_SEQUENCE?.hasSegments() && !globalThis.ARBDRAW_SEQUENCE.isOverview()
+      ? `Segment ${state.activeSegment + 1} · ` : '';
+  $('editorTimingReadout').textContent = `${segment}${timing.count.toLocaleString()} pts × `
+    + `${editorTimeText(timing.intervalSeconds)} = ${editorTimeText(timing.periodSeconds)}`
+    + ` · AWG ${Number((frequency / scale).toPrecision(9))} ${frequencyUnit}`;
+  updateEditorCursorReadout();
+}
+
+function setEditorAxisMode(mode, persist = true) {
+  editorAxisMode = mode === 'time' ? 'time' : 'absolute';
+  if (persist) persistSettings({ editorAxisMode });
+  draw();
+}
+$('editorAbsoluteAxisBtn').onclick = () => setEditorAxisMode('absolute');
+$('editorTimeAxisBtn').onclick = () => setEditorAxisMode('time');
 
 function editorWaveformColor() {
   return document.documentElement.dataset.editorMode === 'advanced'
@@ -61,8 +135,8 @@ function updateEditorSelectionReadout(selection = currentEditorSelection()) {
   const readout = $('editorSelectionReadout');
   readout.hidden = !selection;
   if (!selection) return;
-  $('editorSelectionLeft').textContent = `${selection.left.toLocaleString()} pts`;
-  $('editorSelectionRight').textContent = `${selection.right.toLocaleString()} pts`;
+  $('editorSelectionLeft').textContent = editorCoordinateText(selection.left);
+  $('editorSelectionRight').textContent = editorCoordinateText(selection.right);
 }
 
 function clearEditorSelection(render = true) {
@@ -465,7 +539,7 @@ function updateEditorNavigation(view = currentEditorViewport()) {
   viewportWindow.setAttribute('aria-disabled', String(fullRecord));
   viewportWindow.setAttribute(
     'aria-valuetext',
-    fullRecord ? 'Full record' : `Points ${view.start} through ${view.end}`,
+    fullRecord ? 'Full record' : `${editorCoordinateText(view.start)} through ${editorCoordinateText(view.end)}`,
   );
   globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
 }
@@ -511,6 +585,7 @@ function draw() {
     d = devicePixelRatio || 1,
     view = currentEditorViewport();
   drawEditorOverview();
+  updateEditorAxisControls();
   updateEditorSelectionReadout();
   if (!w || !h) return;
   ctx.clearRect(0, 0, w, h);
@@ -520,10 +595,13 @@ function draw() {
     pw = w - pad.l - pad.r,
     ph = h - pad.t - pad.b,
     bounds = voltageBounds(),
-    pointTicks = editorPointTicks(view.start, view.end),
+    timing = editorTiming(),
+    timeUnit = axisTimeUnitFor(view.end * timing.intervalSeconds * 1000),
+    pointTicks = editorAxisMode === 'time'
+      ? editorTimeTicks(view, timing.intervalSeconds) : editorPointTicks(view.start, view.end),
     visiblePointSpan = Math.max(1, view.end - view.start),
     voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
-  $('editorPointAxisLabel').textContent = 'POINTS';
+  $('editorPointAxisLabel').textContent = editorAxisMode === 'time' ? `TIME (${timeUnit.label})` : 'POINTS';
   $('editorVoltageAxisLabel').textContent = `VOLTAGE (${voltageUnit.label})`;
   ctx.font = `${10 * d}px ui-monospace`;
   ctx.lineWidth = 1 * d;
@@ -550,7 +628,10 @@ function draw() {
     ctx.lineTo(px, h - pad.b);
     ctx.stroke();
     ctx.fillStyle = '#718083';
-    ctx.fillText(pointIndex, px, h - pad.b + 10 * d);
+    const label = editorAxisMode === 'time'
+      ? Number((pointIndex * timing.intervalSeconds * 1000 / timeUnit.scaleMs).toPrecision(9))
+      : pointIndex;
+    ctx.fillText(label, px, h - pad.b + 10 * d);
   }
   if (!state.data.length) return;
   const waveformColor = editorWaveformColor();
@@ -805,15 +886,13 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
-  const bounds = voltageBounds();
-  const voltageUnit = axisVoltageUnitFor(bounds.low, bounds.high);
+  editorCursorPoint = p;
   canvas.classList.toggle(
     'waveform-hover',
     (state.tool === 'pencil' || state.tool === 'erase') && pointerIsNearWaveform(e),
   );
   $('cursorReadout').style.display = 'block';
-  $('cursorReadout').innerHTML =
-    `${p.i} pts &nbsp; ${(p.v / voltageUnit.scaleV).toPrecision(5)} ${voltageUnit.label}`;
+  updateEditorCursorReadout();
   if (editorSelection.dragging) {
     moveEditorSelection(e);
   } else if (state.drawing) {

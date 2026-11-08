@@ -33,6 +33,11 @@
                 <button class="tool active" data-tool="pencil" type="button" title="Edit" aria-label="Edit" aria-keyshortcuts="E">✎</button>
                 <button class="tool" data-tool="erase" type="button" title="Delete" aria-label="Delete" aria-keyshortcuts="D">⌫</button>
               </div>
+              <div class="editor-mode-switch editor-axis-switch" role="group" aria-label="Editor horizontal axis">
+                <button id="editorAbsoluteAxisBtn" type="button" aria-pressed="true" title="Show raw sample positions">Absolute</button>
+                <button id="editorTimeAxisBtn" type="button" aria-pressed="false" title="Show elapsed time at the AWG output frequency">Relative (Time)</button>
+              </div>
+              <output id="editorTimingReadout" class="editor-timing-readout" title="Sample count × sample interval = record period. The AWG frequency repeats the full record. The last sample is one interval before the period ends. Segment time starts at zero."></output>
             </div>
             <div class="editor-waveform-stage">
               <div class="scope-frame"><canvas id="waveCanvas"></canvas><div id="cursorReadout" class="cursor-readout">0 pts &nbsp; 0.000 V</div></div>
@@ -56,7 +61,7 @@
                 </div>
               </div>
               <div class="editor-navigation-control">
-                <span>Position</span>
+                <span>Position (pts)</span>
                 <div class="editor-position-stepper">
                   <input id="editorPosition" type="number" min="0" step="1" aria-label="Center point position" title="Shift+wheel accelerates position changes">
                   <span class="editor-position-buttons">

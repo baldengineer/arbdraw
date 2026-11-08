@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const root = path.join(__dirname, '..');
 
-test('editor horizontal scale uses point indices', () => {
+test('editor offers sample and time axes while editing stays indexed by samples', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const draw = source.slice(source.indexOf('function draw()'), source.indexOf('function setWaveformRenderMode('));
@@ -28,13 +28,15 @@ test('editor horizontal scale uses point indices', () => {
   assert.match(html, /id="editorFullRecord"[^>]*>Full Record<\/button>/);
   assert.ok(html.indexOf('id="waveCanvas"') < html.indexOf('id="editorRecordOverview"'));
   assert.ok(html.indexOf('id="editorRecordOverview"') < html.indexOf('class="editor-navigation"'));
-  assert.match(draw, /pointTicks = editorPointTicks\(view\.start, view\.end\)/);
+  assert.match(html, /id="editorAbsoluteAxisBtn"/);
+  assert.match(html, /id="editorTimeAxisBtn"/);
+  assert.match(draw, /editorPointTicks\(view\.start, view\.end\)/);
   assert.match(draw, /for \(const pointIndex of pointTicks\)/);
   assert.match(draw, /\(pw \* \(pointIndex - view\.start\)\) \/ visiblePointSpan/);
-  assert.match(draw, /ctx\.fillText\(pointIndex,/);
+  assert.match(draw, /ctx\.fillText\(label,/);
   assert.doesNotMatch(draw, /Math\.round/);
-  assert.doesNotMatch(draw, /waveformDurationMs|axisTimeUnitFor/);
-  assert.match(pointerMove, /`\$\{p\.i\} pts &nbsp;/);
+  assert.doesNotMatch(draw, /waveformDurationMs/);
+  assert.match(pointerMove, /updateEditorCursorReadout\(\)/);
   assert.doesNotMatch(pointerMove, /waveformDurationMs|axisTimeUnitFor/);
   assert.match(pointerMapping, /view = currentEditorViewport\(\)/);
   assert.match(pointerMapping, /view\.start \+ pointRatio \* \(view\.end - view\.start\)/);

@@ -96,6 +96,12 @@ The result is clipped to −1…1, then converted to volts as **Offset + Amplitu
 
 Supported functions are `sin`, `cos`, `tan`, `abs`, `sqrt`, `exp`, `log` (natural logarithm), `floor`, `ceil`, `round`, `sign`, and the two-argument functions `min`, `max`, and `pow`. Expressions are limited to 512 characters, 128 tokens, and 32 parsing levels. JavaScript code, property access, assignments, and implicit multiplication are not supported. Syntax errors and non-finite sampled results leave the current waveform unchanged and show an explanation. Timing changes that hit an undefined value are rejected too. Validation checks the actual discrete samples, not every point between them; this first version has no antialiasing or automatic normalization.
 
+## Editor time axis
+
+The Editor has an independent **Absolute / Relative (Time)** axis switch. Absolute shows zero-based sample positions; Relative (Time) shows elapsed time at the configured AWG output frequency. Voltage values, drawing, selection, zoom, and undo/redo are preserved when switching. The axis choice is remembered in browser settings and is not part of saved project JSON.
+
+The timing readout shows **sample count × sample interval = record period**, followed by the AWG repetition frequency. For example, 1,000 points containing two cycles of a 1 kHz source repeat at 500 Hz: the record period is 2 ms and each sample interval is 2 µs. The last sample is at 1.998 ms; the final interval wraps back to sample zero. Single-waveform time uses the AWG output period, not the separately stored sample-rate metadata. Sequence segments use their shared sample clock, and each selected segment's time starts at zero. Navigation inputs remain in sample points in both views. See [Editor navigation](docs/help/editor-navigation.html) for details.
+
 ## Viewer measurements
 
 Choose **View → Viewer**, then enable **Time** or **Voltage** under **Cursors**. Drag a line or its T1/T2/V1/V2 label to position it. Readouts show each position and signed differences **Δt = T2 − T1** and **ΔV = V2 − V1**. The cursors measure the displayed coordinates independently; they do not snap to waveform samples.

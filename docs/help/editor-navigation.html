@@ -1,8 +1,14 @@
 <link rel="stylesheet" href="help.css">
 <article>
   <h1>Scrolling and zooming in the Editor</h1>
-  <p>The Editor can show the entire waveform record or a smaller range of samples. Panning and zooming change only which points are visible—they do not remove or resample waveform data. Point numbers and cursor readouts always refer to positions in the complete memory record.</p>
+  <p>The Editor can show the entire waveform record or a smaller range of samples. Panning and zooming change only which points are visible—they do not remove or resample waveform data. Coordinates refer to the complete record, or to the selected segment when editing a sequence.</p>
   <p>These navigation controls work in both Basic and Advanced. To select or draw points, switch to Advanced using the buttons above the waveform. See <a href="how-to-use.html">Basic and Advanced editing</a> for what happens when you switch modes.</p>
+
+  <h2>Absolute and Relative (Time) axes</h2>
+  <p>Use the axis switch above the waveform to choose <strong>Absolute</strong> for zero-based sample positions or <strong>Relative (Time)</strong> for elapsed time. The grid, horizontal axis, pointer readout, and selection readouts follow the choice. Time readouts also include the sample index. Both views use the same voltage scale and edit the same stored samples. Switching preserves selection, zoom, and undo/redo. This browser preference is independent of saved projects; opening a project does not change it.</p>
+  <p>The timing readout shows <strong>sample count × sample interval = record period</strong>, followed by the <strong>AWG repetition frequency</strong>. A single waveform's record period is its cycle count divided by its source frequency. For example, 1,000 points with two cycles at 1 kHz repeat at 500 Hz, giving a 2 ms record period and 2 µs sample interval. Raising frequency shortens these times without changing the number of stored points.</p>
+  <p>Sample <em>i</em> occurs at <em>i × sample interval</em>. The last sample is one interval before the record period ends; that final interval wraps to the first sample. In the example above, sample 999 is at 1.998 ms. The single-waveform time axis follows the AWG output period rather than the separately stored sample-rate metadata. Sequence segments use their shared sample clock, with time starting at zero for each selected segment. Full Record shows the complete sequence from zero.</p>
+  <p><strong>Points / Screen</strong> and <strong>Position (pts)</strong> remain in sample units in both views, so exact memory navigation behaves the same.</p>
 
   <h2>Full-record navigator</h2>
   <p>The narrow waveform below the main editor represents the complete memory record. Its highlighted window shows the portion currently visible in the editor.</p>
