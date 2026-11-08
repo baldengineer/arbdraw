@@ -116,8 +116,8 @@ test('Rigol profile provides documented PyVISA option hooks', () => {
   assert.match(source, /^\s+query_delay: 5,/m);
   assert.match(source, /\/\/ send_end: true/);
   assert.match(instruments, /selectedAwgProfile\?\.pyvisaOptions/);
-  assert.match(instruments, /bridgeClient\.identify\([\s\S]*pyvisaOptions:/);
-  assert.match(instruments, /bridgeClient\.sendWaveform\([\s\S]*pyvisaOptions:/);
+  assert.match(instruments, /client\.identify\([\s\S]*pyvisaOptions:/);
+  assert.match(instruments, /client\.sendWaveform\([\s\S]*pyvisaOptions:/);
 });
 
 test('TekScope profiles select model-specific adapters and arb depths', () => {

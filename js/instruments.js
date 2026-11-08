@@ -17,6 +17,8 @@
   const adapterSelect = $('instrumentAdapter');
   const backendHelp = $('instrumentBackendHelp');
   const connectButton = $('bridgeConnectBtn');
+  const disconnectButton = $('bridgeDisconnectBtn');
+  const connectionHelp = $('bridgeConnectionHelp');
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
   const sendButton = $('sendWaveformBtn');
@@ -32,6 +34,8 @@
   let bridgeOnline = false;
   let busy = false;
   let keepAlivePending = false;
+  let keepAliveTimer = null;
+  let connectionVersion = 0;
   let resources = [];
 
   directoryInput.value = DEFAULT_VALUES.tekScopeDirectory;
@@ -102,11 +106,48 @@
     bridgeOnline = true;
     setStatus('online', `Connected · API ${health?.api_version || 'v1'}`);
     updateActions();
+    renderConnectionHelp();
   }
 
   function markBridgeOffline() {
+    resetConnection();
+    setStatus('failed', 'Connection failed');
+    updateActions();
+  }
+
+  function renderConnectionHelp() {
+    if (!bridgeClient) {
+      connectionHelp.textContent = 'Enter a bridge URL and select Connect.';
+      return;
+    }
+    const editedUrl = bridgeUrlInput.value.trim().replace(/\/+$/, '');
+    connectionHelp.textContent = bridgeOnline
+      ? `Active URL: ${bridgeClient.baseUrl}.${editedUrl !== bridgeClient.baseUrl ? ' URL edited; select Connect to use the new address.' : ''}`
+      : `Connecting to ${bridgeClient.baseUrl}…`;
+  }
+
+  function resetConnection() {
+    // Every async operation belongs to one connection, even when reconnecting
+    // to the same URL. Old responses must not change the new connection's UI.
+    connectionVersion++;
+    if (keepAliveTimer !== null) clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+    keepAlivePending = false;
+    bridgeClient = null;
     bridgeOnline = false;
-    setStatus('offline', 'Bridge offline');
+    busy = false;
+    resources = [];
+    resourceInput.value = '';
+    closeResourceMenu();
+    renderResourceList();
+    renderAdapters([]);
+    renderConnectionHelp();
+  }
+
+  function disconnect() {
+    resetConnection();
+    setStatus('disconnected', 'Disconnected');
+    setResult('');
     updateActions();
   }
 
@@ -140,6 +181,7 @@
     const hasResource = Boolean(selectedResource());
     instrumentControls.disabled = !bridgeOnline;
     connectButton.disabled = busy;
+    disconnectButton.disabled = !bridgeClient;
     refreshButton.disabled = busy || !bridgeOnline;
     identifyButton.disabled = busy || !bridgeOnline || !hasResource;
     sendButton.disabled = busy || !bridgeOnline || !hasResource || !hasSelectedAdapter();
@@ -151,24 +193,35 @@
   }
 
   async function runBridgeAction(action) {
-    if (busy) return;
+    if (busy || !bridgeOnline || !bridgeClient) return;
+    const client = bridgeClient, version = connectionVersion;
+    const isCurrent = () => version === connectionVersion;
     busy = true;
     updateActions();
     try {
-      await action();
+      await action({ client, isCurrent });
     } catch (error) {
+      if (!isCurrent()) return;
       if (isConnectionError(error)) markBridgeOffline();
       setResult(error.message || 'The bridge request failed.', true);
     } finally {
-      busy = false;
-      updateActions();
+      if (isCurrent()) {
+        busy = false;
+        updateActions();
+      }
     }
   }
 
-  async function loadResources({ preserveSelection = true } = {}) {
+  async function loadResources({ client, isCurrent, preserveSelection = true }) {
     const previous = preserveSelection ? selectedResource() : '';
     setResult('Scanning VISA resources…');
-    resources = await bridgeClient.listResources();
+    const found = await client.listResources();
+    if (!isCurrent()) return;
+    resources = found;
+    renderResources(previous);
+  }
+
+  function renderResources(previous = '') {
     if (!resources.length) {
       resourceInput.value = '';
       renderResourceList();
@@ -180,8 +233,7 @@
     setResult(`Found ${resources.length} VISA resource${resources.length === 1 ? '' : 's'}.`, false, true);
   }
 
-  async function loadAdapters() {
-    const adapters = await bridgeClient.listAdapters();
+  function renderAdapters(adapters) {
     adapterSelect.replaceChildren();
     adapterSelect.add(new Option('Identify only (no waveform backend)', ''));
     adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
@@ -198,61 +250,78 @@
   globalThis.ARBDRAW_INSTRUMENTS = { syncProfile: selectPreferredAdapter };
 
   async function connect() {
-    let candidate;
-    try {
-      candidate = new ArbDrawBridge.BridgeClient(bridgeUrlInput.value);
-    } catch (error) {
-      bridgeOnline = false;
-      setStatus('offline', 'Not connected');
-      updateActions();
-      throw error;
-    }
-    bridgeClient = candidate;
-    bridgeOnline = false;
+    if (busy) return;
+    resetConnection();
+    const version = connectionVersion;
+    const isCurrent = () => version === connectionVersion;
+    const requestedUrl = bridgeUrlInput.value;
+    busy = true;
     setStatus('connecting', 'Connecting…');
+    setResult('');
     updateActions();
-    let health;
     try {
-      health = await candidate.health();
+      const candidate = new ArbDrawBridge.BridgeClient(requestedUrl);
+      bridgeClient = candidate;
+      renderConnectionHelp();
+      updateActions();
+      const health = await candidate.health();
+      if (!isCurrent()) return;
+      const adapters = await candidate.listAdapters();
+      if (!isCurrent()) return;
+      const found = await candidate.listResources();
+      if (!isCurrent()) return;
+      // Keep edits made while connecting as a draft for the next connection.
+      if (bridgeUrlInput.value === requestedUrl) bridgeUrlInput.value = candidate.baseUrl;
+      try {
+        localStorage.setItem(BRIDGE_URL_STORAGE_KEY, candidate.baseUrl);
+      } catch {
+        // The connection still works if browser storage is unavailable.
+      }
+      resources = found;
+      renderAdapters(adapters);
+      renderResources();
+      markBridgeOnline(health);
+      keepAliveTimer = setInterval(checkBridgeHealth, BRIDGE_KEEP_ALIVE_MS);
     } catch (error) {
+      if (!isCurrent()) return;
       markBridgeOffline();
-      throw error;
+      setResult(error.message || 'Could not connect to the bridge.', true);
+    } finally {
+      if (isCurrent()) {
+        busy = false;
+        updateActions();
+      }
     }
-    bridgeUrlInput.value = candidate.baseUrl;
-    try {
-      localStorage.setItem(BRIDGE_URL_STORAGE_KEY, candidate.baseUrl);
-    } catch {
-      // The connection still works if browser storage is unavailable.
-    }
-    markBridgeOnline(health);
-    await loadAdapters();
-    await loadResources({ preserveSelection: false });
   }
 
   async function checkBridgeHealth() {
-    if (!bridgeDialog.open || !bridgeClient || busy || keepAlivePending) return;
-    const client = bridgeClient;
+    if (!bridgeDialog.open || !bridgeOnline || !bridgeClient || busy || keepAlivePending) return;
+    const client = bridgeClient, version = connectionVersion;
     keepAlivePending = true;
     try {
       const health = await client.health();
-      if (client === bridgeClient) markBridgeOnline(health);
-    } catch {
-      if (client === bridgeClient) markBridgeOffline();
+      if (version === connectionVersion) markBridgeOnline(health);
+    } catch (error) {
+      if (version === connectionVersion) {
+        markBridgeOffline();
+        setResult(error.message || 'The bridge connection was lost. Select Connect to retry.', true);
+      }
     } finally {
-      keepAlivePending = false;
+      if (version === connectionVersion) keepAlivePending = false;
     }
   }
 
   function openSendToAwgDialog() {
     closeFileMenu();
     bridgeDialog.showModal();
-    if (!bridgeOnline) runBridgeAction(connect);
   }
 
   globalThis.openSendToAwgDialog = openSendToAwgDialog;
   $('instrumentsBtn').addEventListener('click', openSendToAwgDialog);
 
-  connectButton.addEventListener('click', () => runBridgeAction(connect));
+  connectButton.addEventListener('click', connect);
+  disconnectButton.addEventListener('click', disconnect);
+  bridgeUrlInput.addEventListener('input', renderConnectionHelp);
   adapterSelect.addEventListener('change', updateBackendControls);
   directoryInput.addEventListener('input', saveFileSettings);
   overwriteCheckbox.addEventListener('change', saveFileSettings);
@@ -294,24 +363,25 @@
   });
 
   identifyButton.addEventListener('click', () =>
-    runBridgeAction(async () => {
+    runBridgeAction(async ({ client, isCurrent }) => {
       setResult(`Querying ${selectedResource()}…`);
-      const response = await bridgeClient.identify(selectedResource(), {
+      const response = await client.identify(selectedResource(), {
         pyvisaOptions: selectedPyVisaOptions(),
       });
+      if (!isCurrent()) return;
       setResult(response.identity || response.response || 'The instrument returned an empty response.', false, true);
     }),
   );
 
   sendButton.addEventListener('click', () =>
-    runBridgeAction(async () => {
+    runBridgeAction(async ({ client, isCurrent }) => {
       if (!hasSelectedAdapter()) throw new Error('Select an installed waveform backend before sending.');
       const resource = selectedResource();
       globalThis.ARBDRAW_SEQUENCE?.sync();
       if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
       const sampleCount = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState().samples : state.data.length;
       setResult(`Sending ${sampleCount.toLocaleString()} samples to ${resource}…`);
-      const response = await bridgeClient.sendWaveform(
+      const response = await client.sendWaveform(
         resource,
         JSON.parse(JSON.stringify(projectDocument)),
         {
@@ -327,6 +397,7 @@
           },
         },
       );
+      if (!isCurrent()) return;
       const message = response?.message || `Waveform sent to ${resource}.`;
       setResult(message, false, true);
       showToast(message);
@@ -336,12 +407,10 @@
   bridgeUrlInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      runBridgeAction(connect);
+      connect();
     }
   });
 
   bridgeDialog.addEventListener('close', () => setResult(''));
-  setInterval(checkBridgeHealth, BRIDGE_KEEP_ALIVE_MS);
-  updateBackendControls();
-  updateActions();
+  disconnect();
 })();

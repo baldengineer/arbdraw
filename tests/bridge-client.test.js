@@ -156,7 +156,8 @@ test('a stalled body releases instrument action and keepalive state', async () =
   const extract = (from, to) => source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
   const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', { timeoutMs: 10, fetchImpl: delayedFetch({ stall: true }) });
   let offline = 0;
-  const context = vm.createContext({ bridgeClient: client, bridgeDialog: { open: true }, busy: false, keepAlivePending: false,
+  const context = vm.createContext({ bridgeClient: client, bridgeOnline: true, connectionVersion: 0,
+    bridgeDialog: { open: true }, busy: false, keepAlivePending: false,
     updateActions() {}, setResult() {}, isConnectionError: () => true,
     markBridgeOnline() {}, markBridgeOffline() { offline++; } });
   vm.runInContext(extract('  async function runBridgeAction(', '  async function loadResources(')

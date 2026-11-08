@@ -248,3 +248,4 @@ button { color:inherit; }
 @media(max-width:560px){.canvas-area:has(.editor-sequence-controls:not([hidden])){grid-template-rows:auto minmax(0,1fr) auto 38px auto}}
 .segment-select,.segment-remove{border:0}
 .segment-select:focus-visible,.segment-remove:focus-visible,.segment-add:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.bridge-connection-actions{display:flex;gap:8px}.bridge-connection-actions button{height:37px}.bridge-connection-group .bridge-backend-help{overflow-wrap:anywhere}.bridge-status::before{flex-shrink:0}.bridge-status[data-status="failed"]::before{background:#e25b5b}@media(max-width:520px){.bridge-connection-row{grid-template-columns:minmax(0,1fr)}.bridge-connection-actions{justify-content:flex-end}}

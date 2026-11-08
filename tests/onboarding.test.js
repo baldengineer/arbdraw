@@ -191,6 +191,8 @@ test('Instrument controls follow the bridge connection state', () => {
     bridgeOnline: false,
     busy: false,
     connectButton: {},
+    disconnectButton: {},
+    bridgeClient: null,
     refreshButton: {},
     identifyButton: {},
     instrumentControls,

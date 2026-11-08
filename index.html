@@ -272,10 +272,11 @@
       <fieldset class="bridge-control-group bridge-connection-group">
         <legend>Bridge connection</legend>
         <div class="bridge-connection-row">
-          <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off"></label>
-          <button id="bridgeConnectBtn" type="button" class="primary">Connect</button>
+          <label class="save-filename-label" for="bridgeUrlInput">Bridge URL<input id="bridgeUrlInput" type="url" spellcheck="false" autocomplete="off" aria-describedby="bridgeConnectionHelp"></label>
+          <div class="bridge-connection-actions"><button id="bridgeConnectBtn" type="button" class="primary">Connect</button><button id="bridgeDisconnectBtn" type="button" class="ghost" disabled>Disconnect</button></div>
         </div>
-        <div id="bridgeStatus" class="bridge-status" data-status="offline" role="status">Not connected</div>
+        <div id="bridgeStatus" class="bridge-status" data-status="disconnected" role="status">Disconnected</div>
+        <p id="bridgeConnectionHelp" class="bridge-backend-help" role="status">Enter a bridge URL and select Connect.</p>
       </fieldset>
       <fieldset id="bridgeInstrumentControls" class="bridge-control-group bridge-instrument-group" disabled>
         <legend>Instrument &amp; waveform</legend>

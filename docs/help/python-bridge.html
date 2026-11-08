@@ -26,10 +26,13 @@ python -m python_bridge</code></pre>
   <ol>
     <li>Start the bridge and wait for it to report <code>http://127.0.0.1:8876</code>.</li>
     <li>Open the hosted app or the local served app described above, then choose <strong>File → Send to AWG</strong>.</li>
-    <li>Use the default bridge URL, then connect or refresh the instrument list.</li>
+    <li>Use the default bridge URL or enter another address, then select <strong>Connect</strong>. ArbDraw checks the bridge and loads its adapters and VISA resources.</li>
     <li>Select a VISA resource and use <strong>Identify</strong> to confirm the connection.</li>
     <li>Choose the matching AWG Profile before opening the dialog. ArbDraw selects its preferred installed backend automatically; verify it before sending.</li>
   </ol>
+
+  <p>The connection status shows <strong>Disconnected</strong>, <strong>Connecting</strong>, <strong>Connected</strong>, or <strong>Connection failed</strong>. The active URL appears below it. Editing the URL does not change the active connection; select <strong>Connect</strong> to apply the new address. A failed connection attempt clears the previous connection and disables instrument actions until you connect successfully.</p>
+  <p><strong>Disconnect</strong> clears the connection and instrument list and stops health checks. You can also disconnect while a request is pending; its late result will be ignored. Disconnect does not stop the Python service or turn off the instrument, and a command already sent may still finish. Closing and reopening the dialog does not reconnect automatically. While connected and the dialog is open, ArbDraw checks bridge health every ten seconds; a lost connection requires <strong>Connect</strong> to retry.</p>
 
   <p>Changing the AWG Profile or opening a saved project updates the waveform backend even while the dialog is closed. If the preferred adapter is unavailable, or the profile is Audio or Other, the dialog selects <strong>Identify only (no waveform backend)</strong>. Identify remains usable; sending requires an installed backend. The message below the selector explains the current choice.</p>
   <p>You can select a backend manually. If it differs from the profile's preferred backend, ArbDraw shows the mismatch and omits that profile's VISA connection options. Selecting a new profile restores automatic backend selection.</p>
