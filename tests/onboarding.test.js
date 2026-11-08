@@ -195,6 +195,7 @@ test('Instrument controls follow the bridge connection state', () => {
     identifyButton: {},
     instrumentControls,
     selectedResource: () => 'USB0::INSTR',
+    hasSelectedAdapter: () => true,
     sendButton: {},
   });
   vm.runInContext(`${updateActionsSource}\nupdateActions();`, context);

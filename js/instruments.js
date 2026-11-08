@@ -15,6 +15,7 @@
   const resourceList = $('visaResourceList');
   const instrumentControls = $('bridgeInstrumentControls');
   const adapterSelect = $('instrumentAdapter');
+  const backendHelp = $('instrumentBackendHelp');
   const connectButton = $('bridgeConnectBtn');
   const refreshButton = $('refreshResourcesBtn');
   const identifyButton = $('identifyResourceBtn');
@@ -45,6 +46,18 @@
     fileOptions.hidden = !tekScope;
     channelSelect.disabled = tekScope;
     if (tekScope) channelSelect.value = '1';
+    const profile = selectedAwgProfile?.name || selectedAwgProfile?.id || 'Selected profile';
+    const preferred = selectedAwgProfile?.preferredBackend;
+    if (!adapterSelect.value) {
+      backendHelp.textContent = preferred
+        ? `${profile}: backend "${preferred}" is unavailable. Identify remains available; install the matching adapter or select an installed backend to send.`
+        : `${profile} has no preferred waveform backend. Identify remains available; select an installed backend to send.`;
+    } else if (preferred && adapterSelect.value !== preferred) {
+      backendHelp.textContent = `${profile}: manually selected backend "${adapterSelect.value}" differs from "${preferred}". Profile-specific VISA options will not be used.`;
+    } else {
+      backendHelp.textContent = `${profile}: using backend "${adapterSelect.value}".`;
+    }
+    updateActions();
   }
 
   function saveFileSettings() {
@@ -65,6 +78,9 @@
   }
 
   function selectedPyVisaOptions() {
+    // Identify-only uses the chosen profile; manual overrides must not inherit
+    // connection settings intended for a different backend.
+    if (adapterSelect.value && adapterSelect.value !== selectedAwgProfile?.preferredBackend) return {};
     const options = selectedAwgProfile?.pyvisaOptions;
     return options && typeof options === 'object' ? { ...options } : {};
   }
@@ -126,7 +142,12 @@
     connectButton.disabled = busy;
     refreshButton.disabled = busy || !bridgeOnline;
     identifyButton.disabled = busy || !bridgeOnline || !hasResource;
-    sendButton.disabled = busy || !bridgeOnline || !hasResource;
+    sendButton.disabled = busy || !bridgeOnline || !hasResource || !hasSelectedAdapter();
+  }
+
+  function hasSelectedAdapter() {
+    return Boolean(adapterSelect.value) &&
+      Array.from(adapterSelect.options).some(option => option.value === adapterSelect.value);
   }
 
   async function runBridgeAction(action) {
@@ -162,25 +183,19 @@
   async function loadAdapters() {
     const adapters = await bridgeClient.listAdapters();
     adapterSelect.replaceChildren();
-    if (!adapters.length) {
-      adapterSelect.add(new Option('No adapter installed', ''));
-      adapterSelect.disabled = true;
-      updateBackendControls();
-      return;
-    }
+    adapterSelect.add(new Option('Identify only (no waveform backend)', ''));
     adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
-    adapterSelect.disabled = false;
-    selectPreferredAdapter(adapters);
+    adapterSelect.disabled = !adapters.length;
+    selectPreferredAdapter();
   }
 
-  function selectPreferredAdapter(adapters = null) {
+  function selectPreferredAdapter() {
     const preferred = selectedAwgProfile?.preferredBackend;
-    const available = adapters
-      ? adapters.some((adapter) => adapter.id === preferred)
-      : Array.from(adapterSelect.options).some((option) => option.value === preferred);
-    if (available) adapterSelect.value = preferred;
+    const available = preferred && Array.from(adapterSelect.options).some((option) => option.value === preferred);
+    adapterSelect.value = available ? preferred : '';
     updateBackendControls();
   }
+  globalThis.ARBDRAW_INSTRUMENTS = { syncProfile: selectPreferredAdapter };
 
   async function connect() {
     let candidate;
@@ -241,7 +256,6 @@
   adapterSelect.addEventListener('change', updateBackendControls);
   directoryInput.addEventListener('input', saveFileSettings);
   overwriteCheckbox.addEventListener('change', saveFileSettings);
-  $('awgProfileSelect')?.addEventListener('change', () => selectPreferredAdapter());
   refreshButton.addEventListener('click', () => runBridgeAction(loadResources));
   resourceInput.addEventListener('input', () => {
     setResult('');
@@ -291,6 +305,7 @@
 
   sendButton.addEventListener('click', () =>
     runBridgeAction(async () => {
+      if (!hasSelectedAdapter()) throw new Error('Select an installed waveform backend before sending.');
       const resource = selectedResource();
       globalThis.ARBDRAW_SEQUENCE?.sync();
       if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
@@ -300,7 +315,7 @@
         resource,
         JSON.parse(JSON.stringify(projectDocument)),
         {
-          adapter: adapterSelect.value || 'default',
+          adapter: adapterSelect.value,
           pyvisaOptions: selectedPyVisaOptions(),
           options: {
             channel: isTekScopeBackend() ? 1 : Number(channelSelect.value),

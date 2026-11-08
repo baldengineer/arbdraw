@@ -31,6 +31,9 @@ python -m python_bridge</code></pre>
     <li>Choose the matching AWG Profile before opening the dialog. ArbDraw selects its preferred installed backend automatically; verify it before sending.</li>
   </ol>
 
+  <p>Changing the AWG Profile or opening a saved project updates the waveform backend even while the dialog is closed. If the preferred adapter is unavailable, or the profile is Audio or Other, the dialog selects <strong>Identify only (no waveform backend)</strong>. Identify remains usable; sending requires an installed backend. The message below the selector explains the current choice.</p>
+  <p>You can select a backend manually. If it differs from the profile's preferred backend, ArbDraw shows the mismatch and omits that profile's VISA connection options. Selecting a new profile restores automatic backend selection.</p>
+
   <h2>VISA backend</h2>
   <p>The bridge installs PyVISA, but instrument access also requires a VISA implementation. A vendor installation such as NI-VISA normally works without another option. To use the pure-Python implementation, install <code>pyvisa-py</code> into the same environment and select it when starting the bridge:</p>
   <pre><code>python -m python_bridge --visa-library @py</code></pre>

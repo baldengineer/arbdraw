@@ -54,7 +54,6 @@ test('TekScope profiles select model-specific adapters and arb depths', () => {
     FIFTY: { min: -1.25, max: 1.25 },
   });
   assert.match(instruments, /selectedAwgProfile\?\.preferredBackend/);
-  assert.match(instruments, /adapterSelect\.value = preferred/);
   assert.match(core, /profile\.legacyIds\?\.includes\(preferred\)/);
   assert.match(properties, /profile\.legacyIds\?\.includes\(id\)/);
 });

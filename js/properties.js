@@ -70,6 +70,7 @@ function applyAwgProfile(profile) {
     return false;
   }
   selectedAwgProfile = profile;
+  globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
   if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
   if (Number.isFinite(profile.sampleDepth?.default)) state.samples = profile.sampleDepth.default;
   if (Number.isFinite(profile.sampleDepth?.max)) {
@@ -89,6 +90,7 @@ function restoreAwgSettingsFromDocument(awg = {}) {
   const profile = profileById(awg.profileId);
   if (profile) {
     selectedAwgProfile = profile;
+    globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
     awgProfileSelect.value = profile.id;
     if (Number.isFinite(profile.sampleDepth?.max)) $('samplesEdit').max = profile.sampleDepth.max;
     else $('samplesEdit').removeAttribute('max');
