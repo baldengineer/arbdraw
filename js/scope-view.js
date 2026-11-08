@@ -386,6 +386,60 @@ $('scopeVerticalPosition').addEventListener('keydown', (event) => {
     $('scopeVerticalPosition').blur();
   }
 });
+function scopePositionMidpoint() {
+  const output = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState() : state;
+  let low = Infinity, high = -Infinity;
+  for (const value of output.data) {
+    if (!Number.isFinite(value)) continue;
+    low = Math.min(low, value);
+    high = Math.max(high, value);
+  }
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    low = Number.isFinite(output.low) ? output.low : 0;
+    high = Number.isFinite(output.high) ? output.high : low;
+  }
+  return low / 2 + high / 2;
+}
+function closeScopePositionPresetMenu(restoreFocus = false) {
+  $('scopePositionPresetMenu').classList.remove('open');
+  $('scopeVerticalPosition').setAttribute('aria-expanded', 'false');
+  if (restoreFocus) $('scopeVerticalPosition').focus();
+}
+function openScopePositionPresetMenu(event, keyboard = false) {
+  event.preventDefault();
+  closePropertyMenus();
+  const input = $('scopeVerticalPosition'), menu = $('scopePositionPresetMenu');
+  const rect = input.getBoundingClientRect();
+  menu.classList.add('open');
+  input.setAttribute('aria-expanded', 'true');
+  menu.style.left = Math.max(0, Math.min(keyboard ? rect.left : event.clientX, innerWidth - menu.offsetWidth)) + 'px';
+  menu.style.top = Math.max(0, Math.min(keyboard ? rect.bottom : event.clientY, innerHeight - menu.offsetHeight)) + 'px';
+  $('scopePositionZeroBtn').focus();
+}
+function applyScopePositionPreset(midpoint) {
+  scopeState.verticalPosition = midpoint ? scopePositionMidpoint() : 0;
+  $('scopeVerticalPosition').value = Number((scopeState.verticalPosition / scopePositionUnitScale).toPrecision(8));
+  drawScope();
+  closeScopePositionPresetMenu(true);
+}
+$('scopeVerticalPosition').addEventListener('contextmenu', event => openScopePositionPresetMenu(event));
+$('scopeVerticalPosition').addEventListener('keydown', event => {
+  if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))
+    openScopePositionPresetMenu(event, true);
+});
+$('scopePositionZeroBtn').onclick = () => applyScopePositionPreset(false);
+$('scopePositionMidpointBtn').onclick = () => applyScopePositionPreset(true);
+$('scopePositionPresetMenu').addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    closeScopePositionPresetMenu(true);
+  } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    const next = document.activeElement === $('scopePositionZeroBtn') ? 'scopePositionMidpointBtn' : 'scopePositionZeroBtn';
+    $(next).focus();
+  }
+});
 $('scopeVoltageUnitBtn').onclick = (event) => {
   event.stopPropagation();
   const button = $('scopeVoltageUnitBtn'),

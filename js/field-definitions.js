@@ -130,7 +130,7 @@ const ARBDRAW_FIELD_DEFINITIONS = {
     scopeVerticalPosition: {
       kind: 'number',
       label: 'Vertical position',
-      title: 'Vertical position of the waveform',
+      title: 'Vertical position of the waveform. Right-click for 0 V or waveform midpoint.',
     },
     scopeTimeDiv: {
       kind: 'number',

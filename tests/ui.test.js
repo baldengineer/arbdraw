@@ -17,7 +17,7 @@ function createHarness() {
     }
     return elements.get(id);
   };
-  const calls = { closeTimingUnitMenus: 0 };
+  const calls = { closeTimingUnitMenus: 0, closeScopePositionPresetMenu: 0 };
   const context = vm.createContext({
     $: element,
     document: {
@@ -37,6 +37,7 @@ function createHarness() {
     closeScopeTimeUnitMenu() {},
     closeScopeDivisionMenu() {},
     closeScopeZoomMenu() {},
+    closeScopePositionPresetMenu() { calls.closeScopePositionPresetMenu++; },
     closeFunctionSelectMenu() {},
   });
   const source = fs.readFileSync(path.join(__dirname, '../js/ui.js'), 'utf8');
@@ -68,6 +69,16 @@ test('pointer down on a transition-time unit button does not dismiss its menu', 
   listeners.pointerdown({ target });
 
   assert.equal(calls.closeTimingUnitMenus, 0);
+});
+
+test('viewer presets stay open for menu interaction and dismiss outside or on Escape', () => {
+  const { calls, listeners } = createHarness();
+  listeners.pointerdown({ target: { closest: selector => selector.includes('#scopePositionPresetMenu') ? {} : null } });
+  assert.equal(calls.closeScopePositionPresetMenu, 0);
+  listeners.pointerdown({ target: { closest: () => null } });
+  assert.equal(calls.closeScopePositionPresetMenu, 1);
+  listeners.keydown({ key: 'Escape' });
+  assert.equal(calls.closeScopePositionPresetMenu, 2);
 });
 
 test('View menu follows Edit and retains all project views', () => {
