@@ -65,14 +65,22 @@ function renderAwgProfiles() {
 function applyAwgProfile(profile) {
   if (!profile) return;
   if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) return false;
-  if (!confirmWaveformReplacement(false)) {
+  const preserveSamples = state.type === 'custom' || state.samplesEdited === true;
+  const maximumSamples = sampleLimitForProfile(profile);
+  if (preserveSamples && state.samples > maximumSamples) {
+    awgProfileSelect.value = selectedAwgProfile?.id || '';
+    showToast(`${profile.name} supports up to ${maximumSamples} points; this waveform has ${state.samples}. Profile and waveform unchanged. Choose a profile with a larger point limit.`);
+    return false;
+  }
+  if (!preserveSamples && !confirmWaveformReplacement(false)) {
     awgProfileSelect.value = selectedAwgProfile?.id || '';
     return false;
   }
   selectedAwgProfile = profile;
   globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
   if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
-  if (Number.isFinite(profile.sampleDepth?.default)) state.samples = profile.sampleDepth.default;
+  if (!preserveSamples && Number.isFinite(profile.sampleDepth?.default))
+    state.samples = profile.sampleDepth.default;
   if (Number.isFinite(profile.sampleDepth?.max)) {
     state.samples = Math.min(state.samples, profile.sampleDepth.max);
     $('samplesEdit').max = profile.sampleDepth.max;
@@ -81,7 +89,14 @@ function applyAwgProfile(profile) {
   }
   state.duration = state.samples / (state.sampleRate * 1000);
   renderTiming();
-  generate(state.type, true, true, false, false);
+  if (preserveSamples) {
+    globalThis.ARBDRAW_AUDIO_PLAYBACK?.stop();
+    globalThis.updateAudioPlaybackButton?.();
+    draw();
+    if (!$('samplesView').classList.contains('hidden')) renderSamples();
+  } else {
+    generate(state.type, true, true, false, false);
+  }
   persistCurrentSettings();
   return true;
 }

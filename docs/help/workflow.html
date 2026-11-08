@@ -13,6 +13,7 @@
   </ul>
   <p>If the waveform has Advanced point edits or active filters, switching back to Basic asks for confirmation. Cancel keeps the edits. Continuing removes the edits and filters, regenerates the full waveform from its Properties, and clears the earlier edit history.</p>
   <p>Use the AWG controls to choose the instrument profile and sample count. Sample Rate and TS Resolution remain visible as profile/project reference values but are not currently editable. The AWG Frequency and AWG Period fields show the timing settings sent to a supported instrument adapter or entered manually on another AWG.</p>
+  <p>Changing the AWG profile preserves custom or point-edited samples, their point count, selection, and undo history. The profile's sample-rate metadata can still change. If the waveform has more points than the new profile supports, ArbDraw explains the limit and keeps the existing profile and waveform. Unedited waveforms regenerate using the new profile's default point count.</p>
 
   <h2>2. Transfer</h2>
   <p>Move the generated waveform data to your test equipment using one of these methods:</p>

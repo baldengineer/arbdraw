@@ -151,7 +151,7 @@ Choose **File → Export Waveform → Full Record** (or **Segment X** while a se
 
 The WAV sample rate comes from the current waveform settings and is shown in the export dialog. The exporter accepts rates from **8 to 384 kHz**. Hardware generator profiles can use much higher rates, so select the Audio profile when preparing audio files for applications such as Adobe Audition.
 
-The file contains one copy of the sample buffer. At 48 kHz, 1,000 points lasts about **20.8 ms**, and 100,000 points lasts about **2.08 seconds**. Selecting a profile resets the sample count to its default and regenerates the waveform, so choose the profile before editing.
+The file contains one copy of the sample buffer. At 48 kHz, 1,000 points lasts about **20.8 ms**, and 100,000 points lasts about **2.08 seconds**. Selecting a profile resets the sample count to its default and regenerates an unedited waveform. Custom or point-edited waveforms keep their samples, point count, selection, and undo history while the profile's sample-rate metadata updates. If the waveform exceeds the new profile's point limit, the switch is declined with an explanation; the existing profile and waveform remain unchanged.
 
 ## Editing defaults
 
