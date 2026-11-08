@@ -14,6 +14,8 @@ No build step or dependency installation is required to open `index.html` direct
 
 Opening `index.html` as a `file://` page supports waveform editing, saving, and exporting, but cannot connect to the Python instrument bridge. For instrument discovery, Identify, and Send to AWG, use the hosted app or serve your local copy as described below.
 
+In **File → Send to AWG**, **Identify** automatically selects an installed backend from supported manufacturer/model data or known USB VID/PID and displays the matching reason. Unknown or ambiguous instruments stay in Identify-only mode. You can override the backend manually; identification leaves your waveform and AWG Profile unchanged. Choose a matching AWG Profile to apply its waveform limits. Installed adapters are discovered automatically, so normal use needs no vendor-specific `--waveform-handler` option.
+
 For GitHub Pages publication, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The `Publish ArbDraw` workflow builds and deploys the stamped site on each push to `main`.
 
 ArbDraw loads the pinned MIT-licensed Driver.js 1.8.0 browser distribution from jsDelivr for its first-run product tour. If the CDN is unavailable, it automatically falls back to the vendored copy, so the tour also works when `index.html` is opened directly from disk. The upstream license is retained in [`vendor/driver.js/1.8.0/LICENSE`](vendor/driver.js/1.8.0/LICENSE).

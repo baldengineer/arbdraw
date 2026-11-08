@@ -14,9 +14,9 @@ python -m python_bridge --serve-app .
 
 ArbDraw lists adapters with `GET /api/v1/adapters`, and sends the selected adapter ID with the complete project document to `POST /api/v1/waveforms/send`. The bridge validates the top-level request and calls the selected function. This keeps backend selection in the GUI.
 
-The intended next step is a registry of instrument adapters selected from the resource and `*IDN?` response. Adapter code should therefore keep instrument matching, capabilities, transfer options, and waveform transmission separate, even when the first version exports only the current `send_waveform(request)` function. That structure will make the adapter straightforward to register later without changing its transfer implementation.
+The GUI matches the resource and `*IDN?` response using identification metadata in `js/awg-profiles.js`, then selects only an installed adapter returned by the bridge. A future adapter-owned matching registry can replace this profile metadata. Keep instrument matching, capabilities, transfer options, and waveform transmission separate so that migration does not change the transfer implementation.
 
-Do not add vendor-specific rules to ArbDraw's JavaScript or to the generic bridge service. Put them in the adapter.
+Keep vendor-specific transfer rules in the adapter. The JavaScript profiles contain only identification metadata, waveform capabilities, and preferred connection settings; the generic bridge service contains no vendor-specific matching or transfer rules.
 
 ## Data flow
 
@@ -243,15 +243,25 @@ The current `send_waveform(request)` entry point can instantiate this class and 
 
 ## Instrument selection and capabilities
 
-The current bridge discovers installed adapters by entry point and lets the user
-choose one in ArbDraw. It does not yet match an instrument to an adapter
-automatically. Future automatic selection should follow this order:
+The bridge discovers installed adapters by entry point; normal use does not
+require `--waveform-handler`. After Identify, the GUI parses the manufacturer
+and model fields and matches the profile's `identification` rules. Profiles may
+also declare `vid` and `pid`; USB INSTR resources accept decimal or hexadecimal
+IDs. Only an unambiguous installed backend is selected. Matching reasons,
+missing adapters, unsupported models, and conflicts are visible in the dialog.
+An unsupported manufacturer/model does not fall back to a known USB pair.
 
-1. Discover the selected VISA resource.
-2. Query and cache its `*IDN?` response for a short period.
-3. Ask each registered adapter whether the resource and identity match.
-4. Use the single match, or report a clear ambiguity or unsupported-instrument error.
-5. Allow an explicit adapter selection only as a controlled override.
+Manual backend selection (including Identify-only) survives re-identification.
+Resource changes clear that override and any detected backend. Profile changes
+or reconnection restore the profile's preferred backend. Identification does
+not change the waveform or its AWG Profile; an automatic match uses the matched
+profile's PyVISA options for subsequent requests. Generic VISA/SCPI endpoints
+remain usable regardless of the matching result.
+
+To add identification for an adapter, add anchored manufacturer/model rules and
+verified USB IDs to its AWG profile. Profiles without identification metadata
+remain manually selectable. Adapters must still validate the instrument and
+transport before transfer; a GUI match does not authorize an unsupported upload.
 
 An adapter match should be conservative. Match parsed manufacturer and model fields or well-defined patterns, not a loose substring that could select the wrong command set.
 

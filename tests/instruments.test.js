@@ -46,7 +46,11 @@ function createHarness({ storage = new Map(), preferredBackend = null,
     async identify(resource, options) {
       identifies.push({ resource, ...options });
       if (handlers.identify) return handlers.identify(this);
-      return { identity: 'Test instrument' };
+      return { identity: {
+        'rigol-dg1022': 'RIGOL TECHNOLOGIES,DG1022,SN1,1.0',
+        'tekscope-mso2': 'TEKTRONIX,MSO24,SN1,1.0',
+        'tekscope-mso6': 'TEKTRONIX,MSO64B,SN1,1.0',
+      }[context.selectedAwgProfile.preferredBackend] || 'Test instrument' };
     }
     async sendWaveform(resource, waveform, options) {
       sends.push({ resource, waveform, ...options });
@@ -68,6 +72,7 @@ function createHarness({ storage = new Map(), preferredBackend = null,
   });
   const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   vm.runInContext(read('js/defaults.js'), context);
+  vm.runInContext(read('js/awg-profiles.js'), context);
   const core = read('js/core.js');
   vm.runInContext(core.slice(0, core.indexOf('function resetStoredSettings')), context);
   vm.runInContext('const DEFAULT_VALUES = normalizeDefaults({ ...ARBDRAW_DEFAULTS, ...readStoredSettings() });', context);
@@ -464,5 +469,129 @@ test('reconnecting refreshes adapter availability without retaining removed back
   f.adapters.push('tekscope-mso2');
   await f.connect();
   assert.equal(f.$('instrumentAdapter').value, 'tekscope-mso2');
+  assert.equal(f.$('sendWaveformBtn').disabled, false);
+});
+
+test('Identify selects an installed backend and its VISA options without changing waveform data or profile', async () => {
+  const f = createHarness({ preferredBackend: 'tekscope-mso2', adapters: ['rigol-dg1022', 'tekscope-mso2'],
+    handlers: { identify: () => ({ identity: 'RIGOL TECHNOLOGIES,DG1022,SN,FW' }) } });
+  await f.connect();
+  const profile = f.context.selectedAwgProfile, data = f.context.state.data;
+  await f.$('identifyResourceBtn').listeners.click();
+  assert.equal(f.$('instrumentAdapter').value, 'rigol-dg1022');
+  assert.match(f.$('instrumentBackendHelp').textContent, /Automatically selected.*\*IDN\?.*DG1022/);
+  assert.match(f.$('instrumentBackendHelp').textContent, /waveform profile is still/);
+  assert.equal(f.context.selectedAwgProfile, profile);
+  assert.equal(f.context.state.data, data);
+  assert.equal(f.$('instrumentFileOptions').hidden, true);
+  await f.$('sendWaveformBtn').listeners.click();
+  assert.equal(f.sends[0].adapter, 'rigol-dg1022');
+  assert.equal(f.sends[0].pyvisaOptions.query_delay, 5);
+});
+
+test('USB identification works with an empty IDN and unknown identification clears the previous backend', async () => {
+  const f = createHarness({ adapters: ['rigol-dg1022'], handlers: { identify: () => ({ identity: '' }) } });
+  await f.connect();
+  f.$('visaResourceInput').value = 'USB0::1024::2500::SN::INSTR';
+  f.$('visaResourceInput').listeners.input();
+  await f.$('identifyResourceBtn').listeners.click();
+  assert.equal(f.$('instrumentAdapter').value, 'rigol-dg1022');
+  assert.match(f.$('instrumentBackendHelp').textContent, /USB VID\/PID/);
+  f.handlers.identify = () => ({ identity: 'Unknown,Instrument,SN,FW' });
+  await f.$('identifyResourceBtn').listeners.click();
+  assert.equal(f.$('instrumentAdapter').value, '');
+  assert.equal(f.$('sendWaveformBtn').disabled, true);
+  assert.equal(f.$('identifyResourceBtn').disabled, false);
+  assert.match(f.$('bridgeResult').textContent, /Unknown,Instrument/);
+});
+
+test('unknown and conflicting matches clear a profile default and keep Identify available', async () => {
+  for (const identity of ['Unknown,Instrument,SN,FW', 'TEKTRONIX,MSO24,SN,FW']) {
+    const f = createHarness({ preferredBackend: 'tekscope-mso2',
+      handlers: { resources: () => ['USB0::1024::2500::SN::INSTR'], identify: () => ({ identity }) } });
+    await f.connect();
+    await f.$('identifyResourceBtn').listeners.click();
+    assert.equal(f.$('instrumentAdapter').value, '');
+    assert.equal(f.$('sendWaveformBtn').disabled, true);
+    assert.equal(f.$('identifyResourceBtn').disabled, false);
+    assert.match(f.$('instrumentBackendHelp').textContent, /unsupported|Conflicting/);
+  }
+});
+
+test('manual backend and Identify-only overrides survive repeated identification', async () => {
+  for (const backend of ['other', '']) {
+    const f = createHarness({ handlers: { identify: () => ({ identity: 'TEKTRONIX,MSO24,SN,FW' }) } });
+    await f.connect();
+    f.$('instrumentAdapter').value = backend;
+    f.$('instrumentAdapter').listeners.change();
+    for (let i = 0; i < 2; i++) {
+      await f.$('identifyResourceBtn').listeners.click();
+      assert.equal(f.$('instrumentAdapter').value, backend);
+      assert.match(f.$('instrumentBackendHelp').textContent, /Manual override retained/);
+      assert.match(f.$('instrumentBackendHelp').textContent, /MSO24/);
+    }
+  }
+});
+
+test('resource edits, clearing, list selection, and refresh invalidate previous backend choices', async () => {
+  for (const change of ['edit', 'clear', 'list', 'refresh']) {
+    const f = createHarness({ preferredBackend: 'tekscope-mso2' });
+    await f.connect();
+    await f.$('identifyResourceBtn').listeners.click();
+    if (change === 'edit') {
+      f.$('visaResourceInput').value = 'TCPIP0::other::INSTR';
+      f.$('visaResourceInput').listeners.input();
+    } else if (change === 'clear') f.$('clearVisaResourceBtn').listeners.click();
+    else if (change === 'list') f.$('visaResourceList').listeners.click({ target: {
+      closest: () => ({ dataset: { resource: 'TCPIP0::other::INSTR' } }),
+    } });
+    else {
+      f.handlers.resources = () => ['TCPIP0::other::INSTR'];
+      await f.$('refreshResourcesBtn').listeners.click();
+    }
+    assert.equal(f.$('instrumentAdapter').value, '', change);
+    assert.equal(f.$('sendWaveformBtn').disabled, true);
+    assert.match(f.$('instrumentBackendHelp').textContent, /Resource changed/);
+  }
+});
+
+test('late identification cannot replace a resource edit, manual override, or profile change', async () => {
+  for (const change of ['resource', 'manual', 'profile']) {
+    const pending = deferred();
+    const f = createHarness({ handlers: { identify: () => pending.promise } });
+    await f.connect();
+    const action = f.$('identifyResourceBtn').listeners.click();
+    if (change === 'resource') {
+      f.$('visaResourceInput').value = 'TCPIP0::other::INSTR';
+      f.$('visaResourceInput').listeners.input();
+    } else if (change === 'manual') {
+      f.$('instrumentAdapter').value = 'other';
+      f.$('instrumentAdapter').listeners.change();
+    } else {
+      f.context.selectedAwgProfile.preferredBackend = 'tekscope-mso6';
+      f.context.ARBDRAW_INSTRUMENTS.syncProfile();
+    }
+    const selected = f.$('instrumentAdapter').value, help = f.$('instrumentBackendHelp').textContent;
+    pending.resolve({ identity: 'TEKTRONIX,MSO24,SN,FW' });
+    await action;
+    assert.equal(f.$('instrumentAdapter').value, selected);
+    assert.equal(f.$('instrumentBackendHelp').textContent, help);
+  }
+});
+
+test('a pending resource scan preserves a newly typed address and its manual override', async () => {
+  const f = createHarness({ preferredBackend: 'tekscope-mso2' });
+  await f.connect();
+  const pending = deferred();
+  f.handlers.resources = () => pending.promise;
+  const scan = f.$('refreshResourcesBtn').listeners.click();
+  f.$('visaResourceInput').value = 'TCPIP0::new-address::INSTR';
+  f.$('visaResourceInput').listeners.input();
+  f.$('instrumentAdapter').value = 'other';
+  f.$('instrumentAdapter').listeners.change();
+  pending.resolve(['TCPIP0::scope::INSTR']);
+  await scan;
+  assert.equal(f.$('visaResourceInput').value, 'TCPIP0::new-address::INSTR');
+  assert.equal(f.$('instrumentAdapter').value, 'other');
   assert.equal(f.$('sendWaveformBtn').disabled, false);
 });

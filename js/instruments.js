@@ -37,6 +37,10 @@
   let keepAliveTimer = null;
   let connectionVersion = 0;
   let resources = [];
+  let installedAdapters = [];
+  let identification = null;
+  let manualBackend = false;
+  let selectionVersion = 0;
 
   directoryInput.value = DEFAULT_VALUES.tekScopeDirectory;
   overwriteCheckbox.checked = DEFAULT_VALUES.tekScopeOverwrite;
@@ -52,7 +56,19 @@
     if (tekScope) channelSelect.value = '1';
     const profile = selectedAwgProfile?.name || selectedAwgProfile?.id || 'Selected profile';
     const preferred = selectedAwgProfile?.preferredBackend;
-    if (!adapterSelect.value) {
+    if (manualBackend) {
+      backendHelp.textContent = adapterSelect.value
+        ? `${profile}: manually selected backend "${adapterSelect.value}".${preferred && adapterSelect.value !== preferred ? ` This differs from "${preferred}"; profile-specific VISA options will not be used.` : ''}`
+        : 'Manually selected Identify only (no waveform backend).';
+      if (identification) backendHelp.textContent += ` Identification: ${identification.reason.replace(/\.$/, '')}. Manual override retained.`;
+    } else if (identification) {
+      backendHelp.textContent = identification.backend
+        ? `Automatically selected backend "${identification.backend}" from ${identification.reason}.`
+        : identification.reason;
+      if (identification.backend && identification.backend !== preferred) {
+        backendHelp.textContent += ` The waveform profile is still ${profile}; choose a matching AWG Profile to apply its waveform limits.`;
+      }
+    } else if (!adapterSelect.value) {
       backendHelp.textContent = preferred
         ? `${profile}: backend "${preferred}" is unavailable. Identify remains available; install the matching adapter or select an installed backend to send.`
         : `${profile} has no preferred waveform backend. Identify remains available; select an installed backend to send.`;
@@ -82,6 +98,7 @@
   }
 
   function selectedPyVisaOptions() {
+    if (!manualBackend && identification?.backend) return { ...identification.profile?.pyvisaOptions };
     // Identify-only uses the chosen profile; manual overrides must not inherit
     // connection settings intended for a different backend.
     if (adapterSelect.value && adapterSelect.value !== selectedAwgProfile?.preferredBackend) return {};
@@ -218,7 +235,15 @@
     const found = await client.listResources();
     if (!isCurrent()) return;
     resources = found;
+    // A resource typed while scanning may not be discoverable (for example a
+    // LAN address). Keep it and any backend override made for that resource.
+    if (preserveSelection && previous !== selectedResource()) {
+      renderResourceList();
+      setResult(`Found ${resources.length} VISA resources; keeping your resource selection.`, false, true);
+      return;
+    }
     renderResources(previous);
+    if (previous !== selectedResource()) resetResourceBackend();
   }
 
   function renderResources(previous = '') {
@@ -234,6 +259,7 @@
   }
 
   function renderAdapters(adapters) {
+    installedAdapters = adapters;
     adapterSelect.replaceChildren();
     adapterSelect.add(new Option('Identify only (no waveform backend)', ''));
     adapters.forEach((adapter) => adapterSelect.add(new Option(adapter.name || adapter.id, adapter.id)));
@@ -242,12 +268,23 @@
   }
 
   function selectPreferredAdapter() {
+    selectionVersion++;
+    identification = null;
+    manualBackend = false;
     const preferred = selectedAwgProfile?.preferredBackend;
     const available = preferred && Array.from(adapterSelect.options).some((option) => option.value === preferred);
     adapterSelect.value = available ? preferred : '';
     updateBackendControls();
   }
   globalThis.ARBDRAW_INSTRUMENTS = { syncProfile: selectPreferredAdapter };
+
+  function resetResourceBackend() {
+    selectionVersion++;
+    manualBackend = false;
+    identification = { backend: null, reason: 'Resource changed. Identify the instrument to select its backend, or select a backend manually.' };
+    adapterSelect.value = '';
+    updateBackendControls();
+  }
 
   async function connect() {
     if (busy) return;
@@ -322,17 +359,23 @@
   connectButton.addEventListener('click', connect);
   disconnectButton.addEventListener('click', disconnect);
   bridgeUrlInput.addEventListener('input', renderConnectionHelp);
-  adapterSelect.addEventListener('change', updateBackendControls);
+  adapterSelect.addEventListener('change', () => {
+    selectionVersion++;
+    manualBackend = true;
+    updateBackendControls();
+  });
   directoryInput.addEventListener('input', saveFileSettings);
   overwriteCheckbox.addEventListener('change', saveFileSettings);
   refreshButton.addEventListener('click', () => runBridgeAction(loadResources));
   resourceInput.addEventListener('input', () => {
+    resetResourceBackend();
     setResult('');
     updateActions();
   });
 
   clearResourceButton.addEventListener('click', () => {
     resourceInput.value = '';
+    resetResourceBackend();
     resourceInput.focus();
     setResult('');
     updateActions();
@@ -351,6 +394,7 @@
     const option = event.target.closest('.bridge-resource-option');
     if (!option) return;
     resourceInput.value = option.dataset.resource;
+    resetResourceBackend();
     closeResourceMenu();
     setResult('');
     updateActions();
@@ -364,11 +408,17 @@
 
   identifyButton.addEventListener('click', () =>
     runBridgeAction(async ({ client, isCurrent }) => {
-      setResult(`Querying ${selectedResource()}…`);
-      const response = await client.identify(selectedResource(), {
+      const resource = selectedResource(), version = selectionVersion;
+      setResult(`Querying ${resource}…`);
+      const response = await client.identify(resource, {
         pyvisaOptions: selectedPyVisaOptions(),
       });
-      if (!isCurrent()) return;
+      if (!isCurrent() || version !== selectionVersion || resource !== selectedResource()) return;
+      identification = ARBDRAW_MATCH_INSTRUMENT({
+        identity: response.identity || response.response || '', resource, adapters: installedAdapters,
+      });
+      if (!manualBackend) adapterSelect.value = identification.backend || '';
+      updateBackendControls();
       setResult(response.identity || response.response || 'The instrument returned an empty response.', false, true);
     }),
   );
