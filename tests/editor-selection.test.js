@@ -299,9 +299,9 @@ test('waveshape generation spans the selected range and preserves surrounding sa
   assert.equal(context.state.data[0], 10);
   assert.equal(context.state.data[5], 15);
   assert.ok(Math.abs(context.state.data[1]) < 1e-12);
-  assert.ok(Math.abs(context.state.data[2] - Math.sqrt(3) / 2) < 1e-12);
-  assert.ok(Math.abs(context.state.data[3] + Math.sqrt(3) / 2) < 1e-12);
-  assert.ok(Math.abs(context.state.data[4]) < 1e-12);
+  assert.ok(Math.abs(context.state.data[2] - 1) < 1e-12);
+  assert.ok(Math.abs(context.state.data[3]) < 1e-12);
+  assert.ok(Math.abs(context.state.data[4] + 1) < 1e-12);
 
   context.currentEditorSelection = () => null;
   vm.runInNewContext(`generate('sine', false, false, true, false);`, context);

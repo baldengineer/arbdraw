@@ -174,6 +174,20 @@ An imported `durationMs` value is ignored and replaced with the calculated value
 
 `values[0]` is the first voltage point and `values[sampleCount - 1]` is the last.
 
+Generated periodic sources (`sine`, `square`, `pulse`, `triangle`, and `rc`) use
+`phaseCycles(i) = i × cycles / sampleCount + phaseDegrees / 360`. The final sample
+precedes the next record's first sample by one sample interval; the generator does
+not duplicate the endpoint. For example, 100 cycles in 1,000 points repeat the same
+10 sample phases in each cycle. A selection uses its selected point count in this
+formula. Serial sources retain their payload timing rules. Imported sample arrays
+are preserved as stored, including those created by older versions, until explicitly
+regenerated.
+
+With few samples per cycle, the stored points can miss the continuous waveform's
+peaks. If the point count is not a multiple of the cycle count, sampled peaks can
+also vary between cycles. Increase the point count for a more detailed waveform;
+the generator does not rescale individual cycles to force them to reach the limits.
+
 ArbDraw displays sample timestamps across one period calculated from `frequencyHz`. The `cycles`
 setting changes the voltage pattern within that span but is intentionally excluded from the time
 calculation:

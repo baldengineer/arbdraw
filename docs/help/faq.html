@@ -1,6 +1,8 @@
 <link rel="stylesheet" href="help.css">
 <article>
   <h1>Frequently Asked Questions</h1>
+  <h2>Why do high-cycle waveforms need enough points?</h2>
+  <p>Periodic waveshapes distribute their cycles across the sample buffer without duplicating its endpoint. For example, 100 cycles in 1,000 points use the same 10 sample phases per cycle. Frequency and period edits preserve a single-record sine waveform's points. With few points per cycle, samples may miss the continuous wave's peaks; increase the point count for more detail. When the point count is not a multiple of the cycle count, sampled peaks can vary between cycles. Existing saved samples are preserved until you regenerate the waveform.</p>
   <h2>Why can't a local file connect to my instrument?</h2>
   <p>Waveform editing, saving, and exporting still work when you open <code>index.html</code> directly. Instrument access from <code>file://</code> pages is blocked because their opaque browser origin cannot distinguish a trusted local copy from an untrusted page.</p>
   <p>After installing the bridge and adapter, run <code>python -m python_bridge --serve-app .</code> from the ArbDraw source folder containing <code>index.html</code>, then open <a href="http://127.0.0.1:8876" target="_blank" rel="noopener noreferrer">http://127.0.0.1:8876</a>. Save your current waveform as JSON before switching pages and reopen it there. The hosted ArbDraw app continues to work with the usual bridge launcher. See <a href="python-bridge.html#local-copy">Python bridge setup</a>.</p>

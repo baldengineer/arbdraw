@@ -208,7 +208,6 @@ function generate(
     sourceLow = Number.isFinite(state.sourceLow) ? state.sourceLow : state.low,
     mid = (sourceHigh + sourceLow) / 2,
     amp = (sourceHigh - sourceLow) / 2,
-    phase = (state.phase * Math.PI) / 180,
     serialBits = type === 'serial' ? serialBitPattern() : null,
     serialBaud = type === 'serial' ? serialSettings().baud : null,
     serialVoltage = type === 'serial' ? ARBDRAW_WAVEFORM_SHAPES.createSerialVoltage({
@@ -231,11 +230,14 @@ function generate(
     bufferDurationSeconds = waveformDurationMs() / 1000;
   state.type = type;
   const generatedData = Array.from({ length: generatedPointCount }, (_, i) => {
-    const t = i / Math.max(1, globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? generatedPointCount : generatedPointCount - 1),
-      p = (t * state.cycles + state.phase / 360) % 1;
+    // A periodic buffer contains N sample intervals, including the wrap back
+    // to sample zero. Dividing by N - 1 duplicates the endpoint and makes
+    // sampled peaks drift between cycles. Reduce the integer phase numerator
+    // first so repeated cycles also share exactly the same edge positions.
+    const p = (((i * state.cycles) % generatedPointCount) / generatedPointCount + state.phase / 360) % 1;
     switch (type) {
       case 'sine':
-        return mid + amp * Math.sin(2 * Math.PI * state.cycles * t + phase);
+        return mid + amp * Math.sin(2 * Math.PI * p);
       case 'square':
       case 'pulse':
         return ARBDRAW_WAVEFORM_SHAPES.squarePulseVoltage({
@@ -268,7 +270,8 @@ function generate(
       case 'serial':
         {
           const elapsedSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
-            ? i / (state.sampleRate * 1e6) : t * bufferDurationSeconds;
+            ? i / (state.sampleRate * 1e6)
+            : (i / Math.max(1, generatedPointCount - 1)) * bufferDurationSeconds;
           return serialVoltage(elapsedSeconds);
         }
       default:
