@@ -32,7 +32,8 @@
     $('i2cProperties').hidden = type !== 'i2c';
     draftOwner = type === 'i2c' ? activeSignal().id : null;
     if (type === 'i2c') {
-      const settings = { ...ARBDRAW_I2C.defaults, ...projectDocument.waveform.i2c };
+      const settings = { ...ARBDRAW_I2C.defaults,
+        ...(state.type === 'i2c' ? projectDocument.waveform.i2c : {}) };
       if (!settings.sdaSignalId && !settings.sclSignalId)
         settings[settings.role === 'scl' ? 'sclSignalId' : 'sdaSignalId'] = activeSignal().id;
       for (const [key, id] of Object.entries(fields)) {
@@ -72,8 +73,17 @@
   function open() {
     finishSignalEdit();
     if (sequenceSegments()) { showToast('Select a separate signal for I2C; packet outputs use complete records.'); return; }
+    const createPacket = state.type !== 'i2c';
     renderWaveformProperties('i2c');
+    // Like the other waveshapes, choosing I2C immediately produces a waveform.
+    // Reopening an existing output only shows its settings and preserves edits.
+    if (createPacket) {
+      const generated = apply();
+      if (!generated && !$('i2cError').textContent) renderDocument();
+      return generated;
+    }
     $('i2cSdaSignal').focus();
+    return true;
   }
   function read() {
     const settings = {};
@@ -128,6 +138,7 @@
         ...outputFor(destination.signal, packet, index === 0 ? 'sda' : 'scl'), isNew: destination.isNew }));
       draftOwner = null;
       ARBDRAW_SIGNAL_TRANSACTIONS.commit(changes, settings.sdaSignalId);
+      refreshScopeTime();
       render('i2c');
       $('i2cSummary').textContent = `${packet.sda.length.toLocaleString()} samples per signal · `
         + `${(packet.durationSeconds * 1e6).toPrecision(6)} µs · `

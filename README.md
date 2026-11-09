@@ -95,7 +95,7 @@ CSV, SVG, WAV, browser playback, and Send to AWG use **one selected signal at a 
 
 ## I2C packets
 
-Choose **I2C** in the Waveshape menu. Assign **SDA signal** and **SCL signal** to two different signals, or choose **Create new signal** for either output. Set the packet properties and select **Generate packet** to update both records together in the stacked grid. Selecting either output shows the packet recipe; generating from either updates the assigned pair. Existing unrelated records require overwrite confirmation. Undo/Redo restores both outputs together, including newly created signals.
+Choose **I2C** in the Waveshape menu to immediately generate a default 100 kbit/s write to address `0x50` with payload `00 A5`. The selected signal becomes SDA and a new SCL signal appears alongside it in the stacked grid. In Properties, assign **SDA signal** and **SCL signal** to two different signals, or choose **Create new signal** for either output. Change the packet properties and select **Generate packet** to update both records together. Reselecting I2C on an existing output preserves its packet and sample edits. Selecting either output shows the packet recipe; generating from either updates the assigned pair. Existing unrelated records require overwrite confirmation. Undo/Redo restores both outputs together, including newly created signals.
 
 - Bus speed: **100 kbit/s**, **400 kbit/s**, or **1 Mbit/s**.
 - Address: **7-bit** or **10-bit**, entered as decimal or `0x` hexadecimal, without the R/W bit.
