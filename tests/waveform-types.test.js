@@ -31,7 +31,7 @@ test('Custom is not offered or retained as a waveshape', () => {
   assert.doesNotMatch(views, /markCustom/);
 });
 
-test('waveshape selector and menu keep DC and RC uppercase without changing other labels', () => {
+test('waveshape selector and menu show DC, RC, UART, and I2C labels', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const editor = fs.readFileSync(path.join(root, 'js/waveform-editor.js'), 'utf8');
   const options = new Map();
@@ -44,7 +44,7 @@ test('waveshape selector and menu keep DC and RC uppercase without changing othe
   }
   const expected = new Map([
     ['sine', 'Sine'], ['square', 'Square'], ['triangle', 'Triangle'],
-    ['rc', 'RC'], ['serial', 'Serial'], ['pulse', 'Pulse'],
+    ['rc', 'RC'], ['serial', 'UART'], ['i2c', 'I2C'], ['pulse', 'Pulse'],
     ['dc', 'DC'], ['noise', 'Noise'], ['math', 'Math'],
   ]);
   assert.deepEqual(Array.from(options, ([type, option]) => [type, option.label]), Array.from(expected));

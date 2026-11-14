@@ -9,6 +9,28 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const html = read('index.html');
 const styles = read('includes/menus.css');
 
+function assertNativeOptionPalette(css) {
+  const rule = css.replace(/\/\*[\s\S]*?\*\//g, '').match(/(?:^|\})\s*\.menu-select\s+option\s*\{([^}]*)\}/);
+  assert.ok(rule, 'Native dropdown options need a shared theme rule; transparent controls can otherwise open a white list.');
+  const declarations = Object.fromEntries(rule[1].split(';').filter(part => part.includes(':'))
+    .map(part => part.split(':').map(value => value.trim())));
+  assert.equal(declarations.color, 'var(--ink)', 'Option text must follow the active theme.');
+  assert.equal(declarations.background, 'var(--field)', 'Option backgrounds must be opaque and match themed fields.');
+}
+
+test('native dropdown option lists use the shared theme foreground and background', () => {
+  assertNativeOptionPalette(styles);
+});
+
+test('dropdown styling check rejects the original missing-rule bug and hard-coded colors', () => {
+  const broken = styles.replace(/\.menu-select\s+option\s*\{[^}]*\}/, '');
+  assert.throws(() => assertNativeOptionPalette(broken), /shared theme rule/);
+  for (const background of ['transparent', '#fff', '#000']) {
+    assert.throws(() => assertNativeOptionPalette(`${broken}\n.menu-select option { color: var(--ink); background: ${background}; }`), /Option backgrounds/);
+  }
+  assert.throws(() => assertNativeOptionPalette(`${broken}\n.menu-select option { color: #fff; background: var(--field); }`), /Option text/);
+});
+
 test('custom menus and native selectors use the shared menu interface', () => {
   assert.match(html, /<link rel="stylesheet" href="includes\/menus\.css\?v=__ARBDRAW_BUILD_SHA__">/);
   assert.ok(html.indexOf('src="js/menus.js"') < html.indexOf('src="js/views.js'));

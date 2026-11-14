@@ -350,6 +350,9 @@
 
   function openSendToAwgDialog() {
     closeFileMenu();
+    const signalName = globalThis.ARBDRAW_SIGNALS?.active()?.name;
+    $('bridgeSignalSummary').textContent = signalName
+      ? `Source: ${signalName}. Sends this signal’s full record to one hardware channel.` : '';
     bridgeDialog.showModal();
   }
 
@@ -433,7 +436,7 @@
       setResult(`Sending ${sampleCount.toLocaleString()} samples to ${resource}…`);
       const response = await client.sendWaveform(
         resource,
-        JSON.parse(JSON.stringify(projectDocument)),
+        JSON.parse(JSON.stringify(selectedSignalDocument())),
         {
           adapter: adapterSelect.value,
           pyvisaOptions: selectedPyVisaOptions(),

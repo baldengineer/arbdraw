@@ -180,7 +180,8 @@ function currentEditorViewport() {
     requestedViewport = followsFullRecord
       ? { start: 0, pointsPerScreen: null }
       : editorViewport,
-    normalized = normalizeEditorViewport(requestedViewport, editorRecordLength());
+    normalized = normalizeEditorViewport(requestedViewport,
+      globalThis.ARBDRAW_SIGNAL_GRID?.recordLength() || editorRecordLength());
   editorViewport.start = normalized.start;
   editorViewport.pointsPerScreen = normalized.pointsPerScreen;
   editorViewport.total = normalized.total;
@@ -259,7 +260,9 @@ function generate(
   confirmOverwrite = true,
   preserveVoltageDraft = false,
   deferRender = false,
+  preserveTiming = false,
 ) {
+  if (type === 'i2c') return globalThis.ARBDRAW_I2C_UI?.regenerate(recordHistory) || false;
   if (globalThis.ARBDRAW_SEQUENCE?.isOverview()) return false;
   let mathSamples = null;
   if (type === 'math') {
@@ -274,8 +277,9 @@ function generate(
   globalThis.updateAudioPlaybackButton?.();
   if (confirmOverwrite && !confirmWaveformReplacement(scopeSelection)) return false;
   // Initialize Serial through the same timing path as a payload edit. Sequences
-  // retain their shared clock and explicitly allocated segment lengths.
-  if (type === 'serial' && !globalThis.ARBDRAW_SEQUENCE?.hasSegments()
+  // retain their shared clock and explicitly allocated segment lengths. A new
+  // parallel signal can explicitly preserve the timing inherited from its source.
+  if (type === 'serial' && !preserveTiming && !globalThis.ARBDRAW_SEQUENCE?.hasSegments()
     && (state.type !== 'serial' || !state.data.length)) {
     ensureSerialPeriodCoversPayload();
   }
@@ -412,6 +416,7 @@ function cloneWaveform(source = projectDocument.waveform) {
     ...source,
     serial: { ...source.serial },
     filters: { ...source.filters },
+    ...(source.i2c ? { i2c: { ...source.i2c } } : {}),
     values: [...source.values],
     ...(source.segments ? { segments: source.segments.map((segment) => cloneWaveform(segment)) } : {}),
   };
@@ -541,7 +546,7 @@ function updateEditorNavigation(view = currentEditorViewport()) {
     'aria-valuetext',
     fullRecord ? 'Full record' : `${editorCoordinateText(view.start)} through ${editorCoordinateText(view.end)}`,
   );
-  globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
+  if (!globalThis.ARBDRAW_SIGNAL_GRID?.enabled()) globalThis.ARBDRAW_SEQUENCE?.updateOverviewWindow();
 }
 
 function drawEditorOverview() {
@@ -552,6 +557,7 @@ function drawEditorOverview() {
     d = devicePixelRatio || 1;
   updateEditorNavigation(view);
   if (!w || !h) return;
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.drawOverview(editorOverviewContext, w, h, d)) return;
   editorOverviewContext.clearRect(0, 0, w, h);
   editorOverviewContext.fillStyle = '#090d0f';
   editorOverviewContext.fillRect(0, 0, w, h);
@@ -580,6 +586,8 @@ function drawEditorOverview() {
 }
 function draw() {
   globalThis.ARBDRAW_SEQUENCE?.refresh();
+  globalThis.ARBDRAW_SIGNALS?.refresh();
+  globalThis.ARBDRAW_I2C_UI?.lockControls();
   const w = canvas.width,
     h = canvas.height,
     d = devicePixelRatio || 1,
@@ -588,6 +596,10 @@ function draw() {
   updateEditorAxisControls();
   updateEditorSelectionReadout();
   if (!w || !h) return;
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.draw(ctx, w, h, d, view)) {
+    if (!$('waveformView').classList.contains('hidden')) drawScope();
+    return;
+  }
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#090d0f';
   ctx.fillRect(0, 0, w, h);
@@ -679,6 +691,8 @@ function setWaveformRenderMode(mode) {
   draw();
 }
 function canvasPoint(e) {
+  const signalPoint = globalThis.ARBDRAW_SIGNAL_GRID?.canvasPoint(e);
+  if (signalPoint) return signalPoint;
   const r = canvas.getBoundingClientRect(),
     d = devicePixelRatio || 1,
     p = { l: 58 * d, r: 18 * d, t: 20 * d, b: 39 * d },
@@ -699,6 +713,7 @@ function canvasPoint(e) {
 }
 
 function pointerIsNearWaveform(e) {
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.enabled()) return globalThis.ARBDRAW_SIGNAL_GRID.nearWaveform(e);
   if (!state.data.length) return false;
   const r = canvas.getBoundingClientRect();
   const d = devicePixelRatio || 1;
@@ -738,6 +753,7 @@ function editorEditIndexRange(firstIndex, secondIndex = firstIndex, selection = 
 }
 
 function editAt(pt, last) {
+  if (pt.outsideLane) return false;
   if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return false;
   if (state.tool === 'erase') pt.v = (state.high + state.low) / 2;
   if (last) {
@@ -762,6 +778,7 @@ const dutyDisabledTypes = new Set([
   'dc',
   'noise',
   'serial',
+  'i2c',
 ]);
 function updateDutyAvailability(type) {
   const disabled = dutyDisabledTypes.has(type);
@@ -806,6 +823,7 @@ $('noiseColorSelect').addEventListener('change', () => {
   else persistCurrentSettings();
 });
 function renderWaveformProperties(type) {
+  globalThis.ARBDRAW_I2C_UI?.unlockControls();
   updateDutyAvailability(type);
   updateDcPropertyAvailability(type);
   updateTransitionPropertiesVisibility(type);
@@ -815,6 +833,7 @@ function renderWaveformProperties(type) {
   globalThis.ARBDRAW_MATH_PROPERTIES?.render(type);
   updateSerialPropertiesVisibility(type);
   updateFunctionSelect(type);
+  globalThis.ARBDRAW_I2C_UI?.render(type);
 }
 function beginEditorSelection(event) {
   const point = canvasPoint(event),
@@ -861,6 +880,7 @@ function finishEditorSelection() {
   editorSelection.origin = null;
 }
 canvas.addEventListener('pointerdown', (e) => {
+  if (globalThis.ARBDRAW_SIGNAL_GRID?.selectLane(e)) return;
   if (globalThis.ARBDRAW_EDITOR_MODES?.isAdvanced() === false) return;
   if (state.tool === 'pointer') return;
   if (state.tool === 'selection') {
@@ -886,6 +906,11 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointermove', (e) => {
   const p = canvasPoint(e);
+  if (p.outsideLane && !state.drawing && !editorSelection.dragging) {
+    canvas.classList.remove('waveform-hover');
+    $('cursorReadout').style.display = 'none';
+    return;
+  }
   editorCursorPoint = p;
   canvas.classList.toggle(
     'waveform-hover',
@@ -898,7 +923,7 @@ canvas.addEventListener('pointermove', (e) => {
   } else if (state.drawing) {
     const changed = editAt(p, state.lastPoint);
     state.drawingChanged = changed || state.drawingChanged;
-    state.lastPoint = p;
+    state.lastPoint = p.outsideLane ? null : p;
   }
 });
 canvas.addEventListener('pointerup', (e) => {
@@ -1069,6 +1094,11 @@ function drawMini(c, type) {
     h = (c.height = 42);
   x.strokeStyle = '#ff6b2c';
   x.lineWidth = 2;
+  if (type === 'i2c') {
+    x.fillStyle = '#ff6b2c'; x.font = 'bold 20px ui-monospace';
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('I2C', w / 2, h / 2);
+    return;
+  }
   if (type === 'math') {
     x.fillStyle = '#ff6b2c';
     x.font = 'italic 22px Georgia, serif';
@@ -1111,7 +1141,7 @@ function drawMini(c, type) {
   x.stroke();
 }
 function updateFunctionSelect(type) {
-  const label = { rc: 'RC', dc: 'DC' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
+  const label = { rc: 'RC', dc: 'DC', serial: 'UART', i2c: 'I2C' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
     button = $('functionSelectBtn');
   button.querySelector('span').textContent = label;
   drawMini(button.querySelector('canvas'), type);
@@ -1161,6 +1191,11 @@ $('functionSelectMenu')
         onSelect(type);
         return;
       }
+      if (type === 'i2c') {
+        closeFunctionSelectMenu();
+        globalThis.ARBDRAW_I2C_UI?.open();
+        return;
+      }
       if (!generate(type)) {
         renderWaveformProperties(state.type);
         if (type === 'math' && state.type !== 'math') globalThis.ARBDRAW_MATH_PROPERTIES?.edit();
@@ -1205,12 +1240,14 @@ document.querySelectorAll('.tool[data-tool]').forEach(
   (button) => (button.onclick = () => setEditorTool(button.dataset.tool)),
 );
 function undoWaveform() {
+  if (globalThis.ARBDRAW_SIGNAL_TRANSACTIONS?.undo()) return;
   if (state.history.length > 1) {
     state.redo.push(state.history.pop());
     restoreWaveform(state.history.at(-1));
   }
 }
 function redoWaveform() {
+  if (globalThis.ARBDRAW_SIGNAL_TRANSACTIONS?.redo()) return;
   if (state.redo.length) {
     const snapshot = state.redo.pop();
     state.history.push(cloneWaveform(snapshot));

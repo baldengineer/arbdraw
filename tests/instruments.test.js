@@ -75,6 +75,7 @@ function createHarness({ storage = new Map(), preferredBackend = null,
   vm.runInContext(read('js/awg-profiles.js'), context);
   const core = read('js/core.js');
   vm.runInContext(core.slice(0, core.indexOf('function resetStoredSettings')), context);
+  vm.runInContext(core.slice(core.indexOf('function createSignalDocument('), core.indexOf('const state =')), context);
   vm.runInContext('const DEFAULT_VALUES = normalizeDefaults({ ...ARBDRAW_DEFAULTS, ...readStoredSettings() });', context);
   vm.runInContext(read('js/instruments.js'), context);
   return { $, sends, identifies, context, storage, adapters, handlers, clients, requests, toasts, timers,
@@ -344,6 +345,23 @@ test('TekScope sends include file options and other adapters keep their channel 
     await $('sendWaveformBtn').listeners.click();
     assert.deepEqual(JSON.parse(JSON.stringify(sends[1].options)), { channel: 2, enable_output: true });
   }
+});
+
+test('multi-signal projects send only the selected signal as a legacy bridge document', async () => {
+  const f = createHarness({ preferredBackend: 'tekscope-mso6' });
+  vm.runInContext(`projectDocument = createSignalDocument([
+    { id: 'one', name: 'Clock', AWG: { sampleCount: 2 }, waveform: { values: [1, -1] } },
+    { id: 'two', name: 'Ramp', AWG: { sampleCount: 3 }, waveform: { values: [0, 1, 2] } },
+    { id: 'three', name: 'Pulse', AWG: { sampleCount: 2 }, waveform: { values: [3, 0] } },
+  ], 'Test project', 'three');`, f.context);
+  await f.connect();
+  await f.$('sendWaveformBtn').listeners.click();
+  const payload = JSON.parse(JSON.stringify(f.sends[0].waveform));
+  assert.equal(payload.version, 1);
+  assert.equal(payload.name, 'Test project - Pulse');
+  assert.deepEqual(payload.waveform.values, [3, 0]);
+  assert.equal(Object.hasOwn(payload, 'signals'), false);
+  assert.equal(f.sends[0].options.channel, 1);
 });
 
 function loadProfileChanges(fixture) {

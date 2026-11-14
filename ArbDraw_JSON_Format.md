@@ -1,15 +1,50 @@
 # ArbDraw JSON Format
 
-ArbDraw project files contain a waveform record, optionally composed of sequence segments, and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
+ArbDraw project files contain one or more independent signals, each optionally composed of sequence segments, and use JSON encoded as UTF-8 text. Saved files normally use the extension `.arbdraw.json`.
 
 The current format identifier is:
 
 ```json
 {
   "schema": "arbdraw.waveform",
-  "version": 1
+  "version": 2
 }
 ```
+
+## Multiple signals (version 2)
+
+Version 2 stores a nonempty `signals` array, a project `name`, and `activeSignalId`. Each signal has a unique nonempty string `id`, a display `name` (up to 120 characters), an `AWG` object, and a `waveform` object. There is no fixed two-signal limit. Each signal uses the record fields documented below and has independent samples, timing, profile, filters, and optional sequence segments.
+
+```json
+{
+  "schema": "arbdraw.waveform",
+  "version": 2,
+  "name": "Two independent signals",
+  "activeSignalId": "signal-1",
+  "signals": [
+    {
+      "id": "signal-1", "name": "Clock",
+      "AWG": { "profileId": "audio", "sampleRateMSa": 0.048, "sampleCount": 4 },
+      "waveform": { "type": "square", "frequencyHz": 1000, "cycles": 1,
+        "highVoltage": 1, "lowVoltage": -1, "values": [1, 1, -1, -1] }
+    },
+    {
+      "id": "signal-2", "name": "Ramp",
+      "AWG": { "profileId": "audio", "sampleRateMSa": 0.048, "sampleCount": 4 },
+      "waveform": { "type": "triangle", "frequencyHz": 500, "cycles": 1,
+        "highVoltage": 1, "lowVoltage": -1, "values": [-1, -0.5, 0, 0.5] }
+    }
+  ]
+}
+```
+
+Missing or unknown `activeSignalId` selects the first signal. All signals are validated before replacing the open project: IDs must be unique, profiles supported, record lengths within profile/application limits, and samples finite and equal in count to `AWG.sampleCount`. For sequences, validated segments reconstruct the full sample buffer. Version 2 does not regenerate missing samples. Undo history, zoom, and selected segments are not serialized.
+
+Version 1 files with top-level `AWG` and `waveform` remain readable and become one signal. New saves use version 2, even for one signal. Older ArbDraw releases cannot open version 2 projects. CSV/SVG/WAV exports and audio playback use only the selected signal (or selected segment for file export). Send to AWG converts the selected signal into a version 1 document, preserving compatibility with existing bridges and instrument adapters. A signal ID is not a hardware output channel number.
+
+## Single-signal record (version 1 and version 2 signal entries)
+
+The remaining field descriptions apply to the `AWG` and `waveform` objects inside each signal, or at the top level of a legacy version 1 document.
 
 ## Sequence extension
 
@@ -21,7 +56,27 @@ All segments share `AWG.sampleRateMSa`. At sample rate `R` in samples/second, a 
 
 For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `serial`, and `filters`) are retained for compatibility and do not describe every segment. Use the segment objects to inspect or regenerate individual sources. The top-level voltage levels describe the combined record.
 
-## Complete example
+## I2C packet extension
+
+An I2C output uses `waveform.type = "i2c"` and a `waveform.i2c` recipe. Each generated pair stores the same recipe with a different `role` (`"sda"` or `"scl"`):
+
+```json
+{
+  "busHz": 100000, "addressBits": 7, "address": 80,
+  "operation": "writeRead", "payload": "00", "readPayload": "A5 FF",
+  "addressAck": true, "dataAck": true, "finalReadNack": true, "stop": true,
+  "preIdle": 1, "postIdle": 1, "high": 3.3, "low": 0, "samplesPerBit": 20,
+  "sdaSignalId": "signal-1", "sclSignalId": "signal-2", "role": "sda"
+}
+```
+
+`busHz` is 100000, 400000, or 1000000; `addressBits` is 7 or 10; `address` excludes the R/W bit. `operation` is `write`, `read`, or `writeRead`. Payload strings contain up to 256 separated hex bytes each. Idle counts are whole bit periods from 1 through 1000; `samplesPerBit` is 20, 40, or 80. Logic levels must be finite and `high > low`.
+
+Generated outputs share a sample rate of `busHz * samplesPerBit`, equal counts, and one packet per record (`cycles = 1`). As with sequences, sample `i` occurs at `i / sampleRateHz` and `AWG.tsResolutionSeconds = 1 / sampleRateHz`. The record frequency is `sampleRateHz / sampleCount`. I2C cannot contain sequence segments. Imports require the recipe and complete finite samples, preserving arbitrary edits rather than regenerating the packet.
+
+Assignments are project signal IDs, not hardware channels. A removed signal or single-output import may leave an unresolved ID; the UI offers a new signal for that assignment. Valid property edits immediately create/resolve destinations and write the updated recipe to both outputs. Invalid drafts leave the last valid samples and recipe unchanged. Duplication clears both assignments to avoid overwriting the original pair. Cross-signal undo transactions and in-progress field drafts are transient and are not serialized.
+
+## Complete legacy version 1 example
 
 ```json
 {
@@ -82,7 +137,7 @@ For sequences, the top-level source fields (such as `type`, `phaseDegrees`, `ser
 }
 ```
 
-## Top-level fields
+## Legacy version 1 top-level fields
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -116,7 +171,7 @@ Unknown top-level fields are ignored.
 | `fallTimeSeconds` | number | s | Linear high-to-low transition time for square and pulse waveforms. `0` means an ideal step. |
 | `noiseColor` | string | — | Noise spectrum used by the `noise` waveform. Allowed values are `white` and `pink`. |
 | `filters` | object | — | Post-processing filter settings. |
-| `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
+| `serial` | object | — | UART framing metadata. See **UART settings** below. |
 | `samplesEdited` | boolean | — | `true` when point editing or selection-scoped generation has made the saved samples differ from a full waveshape regeneration. ArbDraw uses this to warn before replacing those samples. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
@@ -180,7 +235,7 @@ Generated periodic sources (`sine`, `square`, `pulse`, `triangle`, and `rc`) use
 precedes the next record's first sample by one sample interval; the generator does
 not duplicate the endpoint. For example, 100 cycles in 1,000 points repeat the same
 10 sample phases in each cycle. A selection uses its selected point count in this
-formula. Serial sources retain their payload timing rules. Imported sample arrays
+formula. UART sources retain their payload timing rules. Imported sample arrays
 are preserved as stored, including those created by older versions, until explicitly
 regenerated.
 
@@ -220,6 +275,7 @@ Version 1 recognizes:
 - `dc`
 - `noise`
 - `serial`
+- `i2c`
 - `math`
 
 The `noise` waveform generates independent, uniformly distributed samples for white noise. Pink
@@ -234,9 +290,9 @@ For `math`, `mathExpression` defines a dimensionless periodic function of `x`, w
 
 The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved, marked as edited, and remains the waveform's authoritative sample data.
 
-## Serial settings
+## UART settings
 
-When `type` is `serial`, the `serial` object stores UART framing metadata:
+The waveform is named **UART** in the interface. Its saved `type` remains `serial`, and the `serial` object stores UART framing metadata, preserving compatibility with existing projects:
 
 | Field | Type | Allowed values | Default |
 | --- | --- | --- | --- |
@@ -254,7 +310,7 @@ When `type` is `serial`, the `serial` object stores UART framing metadata:
 | `binaryPattern` | string | A string containing only `0` and `1`, or empty | Empty |
 
 The object remains part of the project document when another waveform type is active, allowing the
-Serial settings to be restored if Serial is selected again.
+UART settings to be restored if UART is selected again.
 
 For UART, ArbDraw emits each payload word in the selected bit order with the enabled start bit and selected number of stop bits,
 and the selected parity bit. Pre Idle and Post Idle add the requested number of high-level bit times
@@ -277,13 +333,13 @@ high-level serial idle state. Frames longer than the available time span are cli
 the buffer.
 
 When `binaryPattern` is nonempty, it is the authoritative bit sequence used for waveform generation.
-Editing another structured Serial control clears this override and rebuilds the sequence from the
+Editing another structured UART control clears this override and rebuilds the sequence from the
 protocol, framing, and payload settings. Its Binary editor is hidden by default; set
 `serial_debug: true` in `js/defaults.js` to show it.
 
 `type` describes how ArbDraw should regenerate the waveform when valid sample data is unavailable. When `values` is valid, it remains the statement of record for the actual waveform points.
 
-## Import validation and normalization
+## Version 1 import validation and normalization
 
 ArbDraw applies the following rules while opening a file:
 
@@ -312,15 +368,24 @@ import math
 from pathlib import Path
 
 
-def load_arbdraw(path):
+def load_arbdraw(path, signal_id=None):
     project = json.loads(Path(path).read_text(encoding="utf-8"))
 
     if project.get("schema") != "arbdraw.waveform":
         raise ValueError("Unsupported ArbDraw schema")
-    if project.get("version") != 1:
+    if project.get("version") not in (1, 2):
         raise ValueError("Unsupported ArbDraw version")
 
-    waveform = project.get("waveform")
+    record = project
+    if project["version"] == 2:
+        signals = project.get("signals", [])
+        if not signals:
+            raise ValueError("Missing signals")
+        selected_id = signal_id or project.get("activeSignalId") or signals[0]["id"]
+        record = next((s for s in signals if s["id"] == selected_id), None)
+        if record is None:
+            raise ValueError("Unknown signal ID")
+    waveform = record.get("waveform")
     if not isinstance(waveform, dict):
         raise ValueError("Missing waveform object")
 
@@ -337,7 +402,7 @@ def load_arbdraw(path):
     sample_interval_s = 1 / sample_rate_sa
 
     return {
-        "name": project.get("name", "Imported waveform"),
+        "name": record.get("name", "Imported waveform"),
         "type": waveform.get("type", "sine"),
         "sample_rate_sa": sample_rate_sa,
         "sample_interval_s": sample_interval_s,

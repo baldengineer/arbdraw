@@ -150,6 +150,12 @@
   font-weight: var(--menu-font-weight);
 }
 
+/* A transparent select inside a field can otherwise open a white option list. */
+.menu-select option {
+  color: var(--ink);
+  background: var(--field);
+}
+
 .menu-surface .bridge-resource-filter,
 .menu-surface .bridge-resource-empty {
   font-family: var(--menu-font-family);

@@ -35,6 +35,31 @@ function setIncludeCsvTimestampsPreference(value, save = true) {
   if (save) persistSettings({ includeCsvTimestamps: includeCsvTimestampsPreference });
 }
 function parseProject(raw) {
+  if (raw?.schema === 'arbdraw.waveform' && raw.version === 2) {
+    if (!Array.isArray(raw.signals) || !raw.signals.length)
+      throw new Error('A project must contain at least one signal.');
+    const ids = new Set();
+    const signals = raw.signals.map((signal) => {
+      if (!signal || typeof signal.id !== 'string' || !signal.id.trim() || ids.has(signal.id))
+        throw new Error('Each signal must have a unique, nonempty ID.');
+      ids.add(signal.id);
+      if (!signal.AWG || !Number.isInteger(signal.AWG.sampleCount)
+        || signal.AWG.sampleCount < 2 || signal.AWG.sampleCount > APPLICATION_SAMPLE_LIMIT
+        || !signal.waveform || typeof signal.waveform !== 'object' || Array.isArray(signal.waveform))
+        throw new Error('Each signal must declare a valid AWG sample count and waveform.');
+      const parsed = parseProject({ schema: raw.schema, version: 1,
+        AWG: signal.AWG, waveform: signal.waveform });
+      const profile = profileById(parsed.AWG.profileId);
+      if (!profile || parsed.AWG.sampleCount > sampleLimitForProfile(profile))
+        throw new Error('Each signal must use a supported AWG profile and fit its sample limit.');
+      if (!parsed.waveform.values.length)
+        throw new Error('Each signal must contain its declared finite voltage samples.');
+      parsed.AWG.profileId = profile.id;
+      return { id: signal.id, name: String(signal.name || 'Signal').slice(0, 120),
+        AWG: parsed.AWG, waveform: parsed.waveform };
+    });
+    return createSignalDocument(signals, String(raw.name || 'Imported project').slice(0, 120), raw.activeSignalId);
+  }
   if (!raw || raw.schema !== 'arbdraw.waveform' || raw.version !== 1 || !raw.waveform)
     throw new Error('This is not a supported ArbDraw project.');
   const source = raw.waveform,
@@ -139,11 +164,21 @@ function parseProject(raw) {
     || parsed.waveform.mathExpression.length > 512) {
     parsed.waveform.mathExpression = defaults.mathExpression;
   }
+  if (parsed.waveform.type === 'i2c') {
+    if (source.segments !== undefined || !values.length || !source.i2c || typeof source.i2c !== 'object')
+      throw new Error('I2C outputs must contain a complete sampled record without sequence segments.');
+    parsed.waveform.i2c = ARBDRAW_I2C.normalize(source.i2c);
+    parsed.waveform.cycles = 1;
+    parsed.waveform.frequencyHz = sampleRateMSa * 1e6 / sampleCount;
+    parsed.AWG.frequencyHz = parsed.waveform.frequencyHz;
+    parsed.AWG.periodSeconds = 1 / parsed.AWG.frequencyHz;
+    parsed.AWG.tsResolutionSeconds = 1 / (sampleRateMSa * 1e6);
+  }
   if (source.segments !== undefined) {
     if (!Array.isArray(source.segments) || source.segments.length < 2)
       throw new Error('A sequence must contain at least two segments.');
     const segments = source.segments.map((segment) => {
-      if (!segment || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
+      if (!segment || segment.type === 'i2c' || segment.segments !== undefined || !Number.isInteger(segment.sampleCount)
         || segment.sampleCount < 2 || !Array.isArray(segment.values)
         || segment.values.length !== segment.sampleCount || !segment.values.every(Number.isFinite))
         throw new Error('Each sequence segment must contain its declared finite voltage samples.');
@@ -176,6 +211,7 @@ function loadProject(raw) {
     parsed.AWG.profileId = profile.id;
   }
   projectDocument = parsed;
+  globalThis.ARBDRAW_SIGNALS?.reset();
   state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
@@ -228,6 +264,7 @@ $('confirmNewBtn').onclick = () => {
   setIncludeCsvTimestampsPreference(defaultIncludeCsvTimestamps);
   resetPropertyPanels();
   projectDocument = createDefaultDocument();
+  globalThis.ARBDRAW_SIGNALS?.reset();
   state.activeSegment = null;
   clearEditorSelection(false);
   restoreAwgSettingsFromDocument(projectDocument.AWG);
@@ -352,7 +389,7 @@ function downloadCsv(includeHeader, filename, includeTimestamps = true, output =
   if (!values.length) voltageMin = voltageMax = 0;
   const sampleCount = values.length,
     durationSeconds = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
-      ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
+      || output.type === 'i2c' ? (sampleCount - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
     timeMax = sampleCount > 1 ? durationSeconds : 0,
     metadata = [
       ['Waveform name', document.querySelector('.document-name').value.trim() || 'Untitled waveform'],
@@ -389,7 +426,7 @@ function downloadSvg(filename, output = exportWaveformData()) {
     name: projectDocument.name,
     includeAxes: $('includeSvgAxes').checked,
     durationSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments()
-      ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
+      || output.type === 'i2c' ? (output.samples - 1) / (output.sampleRate * 1e6) : output.duration / 1000,
   });
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   downloadBlob(blob, filename);
@@ -425,16 +462,19 @@ $('includeCsvTimestamps').addEventListener('change', () => {
 });
 function openExportDialog(segmentIndex = null) {
   const output = exportWaveformData(segmentIndex),
-    label = segmentIndex === null ? 'Full Record' : `Segment ${segmentIndex + 1}`;
+    signalName = globalThis.ARBDRAW_SIGNALS?.active()?.name,
+    scope = segmentIndex === null ? 'Full Record' : `Segment ${segmentIndex + 1}`,
+    label = signalName ? `${signalName} · ${scope}` : scope;
   exportTarget = { output, label };
   closeFileMenu();
   const projectName = projectNameFromFilename(document.querySelector('.document-name').value);
   $('exportScopeTitle').textContent = `Export ${label}`;
   $('exportScopeDescription').textContent = `${label} · ${output.data.length.toLocaleString()} samples. Choose the file format and filename.`;
   $('exportFormatSelect').value = 'csv';
-  $('exportFilenameInput').value = projectName + (segmentIndex === null ? '' : `-segment-${segmentIndex + 1}`) + '.csv';
+  const signalSuffix = signalName ? '-' + signalName.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') : '';
+  $('exportFilenameInput').value = projectName + signalSuffix + (segmentIndex === null ? '' : `-segment-${segmentIndex + 1}`) + '.csv';
   updateExportFormat();
-  $('updateProjectNameOnExport').checked = segmentIndex === null;
+  $('updateProjectNameOnExport').checked = !signalName && segmentIndex === null;
   $('includeCsvHeaders').checked = false;
   setIncludeCsvTimestampsPreference(includeCsvTimestampsPreference, false);
   $('exportDialog').showModal();

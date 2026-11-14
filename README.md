@@ -63,7 +63,7 @@ troubleshooting.
 
 ## Features
 
-- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and serial (UART) waveform types
+- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and UART waveform types
 - Math waveforms from user expressions, with harmonic, damped sine, Gaussian, and other presets
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Generator profiles, including Audio at 48 kHz with 1,000 default points and a 100,000-point maximum
@@ -77,8 +77,40 @@ troubleshooting.
 - Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Viewer measurement cursors: independent Time and Voltage pairs with position and signed delta readouts
-- Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
-- Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
+- UART pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
+- I2C packets with assigned SDA/SCL signals, bus-speed presets, addressing, payload, and framing controls
+- Adjustable rise and fall times for square, pulse, and UART waveforms, with linear ramps limited by the next opposite edge
+
+## Multiple signals
+
+Use **+ Signal** to create another independent signal. Multiple signals appear as stacked rows in one Editor grid, sharing a horizontal axis and zoom. Click a row to select it, then edit that row; the first click on another row only selects it. The compact signal dropdown also selects the signal used by Properties, Viewer, Samples, playback, and export. The **⋯** menu contains the name field, **Duplicate signal** (including segments and sample edits), and **Remove signal**. Removal asks for confirmation and cannot remove the last signal.
+
+A new signal inherits the selected signal’s current source settings, AWG profile, sample count, sample rate, and full-record duration, then generates fresh samples. This keeps newly added signals aligned when switching to Time mode. With a sequence, the selected segment’s source (or the full-record source in overview) fills the new signal’s complete record. Use **Duplicate signal** to preserve exact sample edits and the sequence itself. Signals remain independently adjustable afterward.
+
+In **Absolute**, rows align by sample index. In **Relative (Time)**, they align by elapsed time using each signal’s timing. Full Record fits all displayed signals; shorter records leave blank space at the right. Each row has its own labeled voltage range. With many signals, scroll the grid vertically. Selecting a different signal preserves the shared horizontal window. The Viewer and its measurement cursors continue to show the selected signal.
+
+Each signal keeps its own waveform properties, filters, sample count, sample rate, AWG profile, and sequence. Undo/redo belongs to the selected signal and survives switching signals. **Save JSON** saves every signal in a version 2 project; **Open** also accepts existing version 1 single-waveform projects. Browser settings remember defaults, not complete projects, so save JSON to retain your signals.
+
+CSV, SVG, WAV, browser playback, and Send to AWG use **one selected signal at a time**. For a sequence, export its Full Record or selected segment. The export dialog identifies the signal and includes its name in the suggested filename. Signals are independent records; they do not share a clock or imply simultaneous hardware output. The hardware channel in Send to AWG is the destination for the selected signal.
+
+## I2C packets
+
+Choose **I2C** in the Waveshape menu to immediately generate a default 100 kbit/s write to address `0x50` with payload `00 A5`. The selected signal becomes SDA and a new SCL signal appears alongside it in the stacked grid. In Properties, assign **SDA signal** and **SCL signal** to two different signals, or choose **Create new signal** for either output. Property changes update both records immediately, including valid address, payload, level, and idle edits as you type. Incomplete or invalid entries show an error and leave the last valid packet visible; Escape restores the field values for that packet. Reselecting I2C on an existing output preserves its packet and sample edits. Selecting either output shows the packet recipe; editing from either updates the assigned pair while keeping that output selected. Existing unrelated records and arbitrary edits require overwrite confirmation. Undo/Redo restores both outputs together, including newly created signals, with continuous typing in one field grouped into one undo step.
+
+Automatically named signals (such as **Signal 1**) become **I2C SDA** or **I2C SCL** when the packet is generated. These names follow reassigned roles, while custom signal names are preserved. Undo/Redo includes automatic naming changes.
+
+- Bus speed: **100 kbit/s**, **400 kbit/s**, or **1 Mbit/s**.
+- Address: **7-bit** or **10-bit**, entered as decimal or `0x` hexadecimal, without the R/W bit.
+- Transaction: **Write**, **Read**, or **Write then Read** with repeated START. For register reads, put the register address in Write bytes and the expected response in Read response.
+- Payload: space- or comma-separated hexadecimal bytes, such as `00 A5 FF`, up to 256 bytes in each direction. An empty write performs an address-only transaction.
+- Framing: address ACK, write-data ACK, final read NACK, optional STOP, and pre/post idle in bit periods. A missing address or write-data ACK ends the transfer. START is always included.
+- Levels and resolution: logic high/low in volts and 20, 40, or 80 samples per bit.
+
+The generator follows the framing in [NXP UM10204](https://cache.nxp.com/docs/en/user-guide/UM10204.pdf). It produces ideal sampled bus levels, including simulated target ACKs and read responses; it does not communicate with a live I2C target or model open-drain drivers, pull-ups, arbitration, or clock stretching.
+
+Both records have equal lengths and the same sample clock (`bus speed × samples per bit`). The displayed AWG frequency is the complete packet's repetition rate. Generic amplitude/timing/filter controls are disabled for this source; use the I2C properties to regenerate it. Arbitrary sample edits remain available, and regeneration replaces those edits. I2C occupies complete signal records and cannot be a sequence segment. **+ Signal** from an I2C output creates an independent sine with matching record timing; **Duplicate signal** copies its samples but clears the routing assignments.
+
+Save JSON retains both outputs and their recipes. Export and Send to AWG still handle **one selected signal at a time**; separate uploads do not synchronize physical outputs. Choose an AWG profile that accommodates the whole packet. Profile changes preserve its sample timing and cannot truncate the record.
 
 ## Editing modes
 
@@ -89,6 +121,8 @@ In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to
 ## Math waveforms
 
 Choose **Math** in the Waveshape menu, then choose a preset to apply it immediately. For a manually typed formula, select **Apply expression** (or press **Ctrl/Command+Enter**). **Escape** restores the applied expression. Expressions participate in undo/redo and are saved in project JSON, browser settings, and individual sequence segments.
+
+Select **Expression reference** for examples, syntax, functions, and voltage scaling in a floating help window. The editor remains usable while it is open. Drag its header to move it, or focus the header and use arrow keys (Shift moves farther). Close it with **×** or press **Escape** while focus is inside the reference.
 
 `x` is cycle position from 0 up to, but excluding, 1. Cycles and Phase work as they do for the other periodic sources; Frequency controls playback timing. For example, `sin(2*pi*x)` is a sine and `exp(-4*x)*sin(8*pi*x)` is a damped oscillation repeated each cycle. In Arbitrary mode, an active selection receives its own complete cycle span; points outside it are preserved.
 
@@ -201,6 +235,8 @@ The defaults use a JavaScript object rather than fetched JSON so that the app al
 - `python_bridge/` provides the optional instrument service; it is independent of browser rendering.
 
 Run the JavaScript regression suite with `node --test tests/*.test.js` and the bridge suite with `python -m unittest discover -s tests -p test_python_bridge.py`.
+
+The **Web app checks** workflow runs the JavaScript suite on branch pushes and pull requests. Pages publication also runs it before building, so a failing check stops deployment. Shared menu checks require every native dropdown to use `menu-select` and require option text/background colors to follow the theme. They explicitly reject the missing option styling that caused unreadable I2C menus. For UI changes, also inspect open dropdowns in Dark, Light, and High Contrast when browser access is available; static style checks cannot verify native OS popup rendering.
 
 ## License
 

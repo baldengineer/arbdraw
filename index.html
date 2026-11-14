@@ -16,7 +16,7 @@
     <main class="workspace">
       <section class="editor-column">
         <div class="document-bar">
-          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false">File</button><div id="fileMenu" class="context-menu menu-surface file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Send to AWG</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>Your current waveform will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
+          <div class="document-leading"><div class="brand"><img class="brand-mark" src="includes/ArbDraw.png" alt="ArbDraw"><span>ArbDraw</span></div><div class="project-identity"><span class="project-kind">PROJECT</span><div class="project-name-box"><input class="document-name" value="Waveform 01" aria-label="Project name" readonly></div><span class="project-actions"><button id="fileBtn" class="ghost file-button menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false">File</button><div id="fileMenu" class="context-menu menu-surface file-menu" role="menu" aria-label="File"><button id="newBtn" class="ghost" role="menuitem" type="button">New</button><button id="openBtn" class="ghost" role="menuitem" type="button">Open</button><button id="saveBtn" class="ghost" role="menuitem" type="button">Save</button><div class="menu-divider" role="separator"></div><button id="instrumentsBtn" class="ghost" role="menuitem" type="button">Send to AWG</button></div><div id="newConfirm" class="new-confirm" role="dialog" aria-label="Confirm new project" hidden><strong>Start a new project?</strong><span>All signals in the current project will be replaced.</span><div><button id="cancelNewBtn" class="ghost" type="button">Cancel</button><button id="confirmNewBtn" class="primary" type="button">New project</button></div></div><button id="undoBtn" class="icon-btn" type="button" title="Undo">↶</button><button id="redoBtn" class="icon-btn" type="button" title="Redo">↷</button></span></div></div>
           <div class="view-tabs" role="tablist" aria-label="Project view"><button id="editorTab" class="active" role="tab" aria-selected="true" aria-controls="editorView">Editor</button><button id="waveformTab" role="tab" aria-selected="false" aria-controls="waveformView">Viewer</button><button id="samplesTab" role="tab" aria-selected="false" aria-controls="samplesView">Samples</button><button id="jsonTab" role="tab" aria-selected="false" aria-controls="jsonView">JSON</button></div>
         </div>
 
@@ -154,6 +154,18 @@
       </section>
 
       <aside class="inspector panel">
+        <div class="signal-toolbar" role="group" aria-label="Project signals">
+          <select id="signalSelect" class="menu-select" aria-label="Selected signal"></select>
+          <button id="addSignalBtn" class="ghost" type="button">+ Signal</button>
+          <details id="signalActions" class="signal-actions">
+            <summary aria-label="Signal actions" title="Rename, duplicate, or remove the selected signal">⋯</summary>
+            <div class="signal-actions-panel">
+              <label>Name <input id="signalNameInput" maxlength="120" aria-label="Selected signal name"></label>
+              <button id="duplicateSignalBtn" class="ghost" type="button">Duplicate signal</button>
+              <button id="removeSignalBtn" class="ghost" type="button">Remove signal</button>
+            </div>
+          </details>
+        </div>
         <fieldset id="inspectorControls" class="inspector-controls">
         <div class="panel-heading inspector-heading"><div class="property-heading-row"><span class="eyebrow">PROPERTIES</span><div class="property-actions"><button id="defaultAllBtn" class="ghost default-button" title="Reset all properties to defaults">Default</button><button class="icon-btn">•••</button></div></div></div>
         <details class="section function-section" data-property-panel="function" open>
@@ -165,14 +177,36 @@
           <div id="mathProperties" hidden>
             <label for="mathPreset">Preset <select id="mathPreset" class="menu-select"><option value="">Choose a preset…</option></select></label>
             <label class="math-expression-label" for="mathExpressionInput">Expression
-              <textarea id="mathExpressionInput" rows="3" maxlength="512" spellcheck="false" aria-describedby="mathExpressionHelp mathExpressionError"></textarea>
+              <textarea id="mathExpressionInput" rows="3" maxlength="512" spellcheck="false" aria-describedby="mathExpressionError"></textarea>
             </label>
-            <button id="applyMathExpression" type="button" class="ghost">Apply expression</button>
+            <button id="applyMathExpression" type="button" class="primary">Apply expression</button>
             <p id="mathExpressionError" class="math-error" role="status" aria-live="polite"></p>
-            <p id="mathExpressionHelp" class="math-help">x = cycle position, 0 ≤ x &lt; 1. Output is clipped to −1…1, then scaled by Amplitude and Offset. Use * to multiply and ^ for powers. Angles are radians.</p>
-            <details class="math-help"><summary>Functions and constants</summary><p>sin, cos, tan, abs, sqrt, exp, log (natural), floor, ceil, round, sign; min(a,b), max(a,b), pow(a,b). Constants: pi, e. Operators: + − * / % ^ and parentheses.</p></details>
+            <button id="mathReferenceBtn" type="button" class="math-reference-button" aria-haspopup="dialog" aria-controls="mathReferenceDialog" aria-expanded="false">Expression reference ↗</button>
           </div>
           <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select class="menu-select" id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
+        </details>
+        <details id="i2cProperties" class="section i2c-section" data-property-panel="i2c" open hidden>
+          <summary class="section-title">I2C packet</summary>
+          <label>SDA signal <div class="unit-input"><select id="i2cSdaSignal" class="menu-select" aria-label="SDA signal"></select></div></label>
+          <label>SCL signal <div class="unit-input"><select id="i2cSclSignal" class="menu-select" aria-label="SCL signal"></select></div></label>
+          <label>Bus speed <div class="unit-input"><select id="i2cSpeed" class="menu-select"><option value="100000">100 kbit/s</option><option value="400000">400 kbit/s</option><option value="1000000">1 Mbit/s</option></select></div></label>
+          <label>Address width <div class="unit-input"><select id="i2cAddressBits" class="menu-select"><option value="7">7-bit</option><option value="10">10-bit</option></select></div></label>
+          <label>Address <div class="unit-input"><input id="i2cAddress" type="text" value="0x50" spellcheck="false" title="Decimal or 0x-prefixed hex. Do not include the R/W bit."></div></label>
+          <label>Transaction <div class="unit-input"><select id="i2cOperation" class="menu-select"><option value="write">Write</option><option value="read">Read</option><option value="writeRead">Write then Read</option></select></div></label>
+          <label id="i2cPayloadField" class="i2c-payload">Write bytes (hex)<textarea id="i2cPayload" rows="2" maxlength="3072" spellcheck="false" placeholder="00 A5 FF" aria-label="I2C write payload"></textarea></label>
+          <label id="i2cReadPayloadField" class="i2c-payload" hidden>Read response (hex)<textarea id="i2cReadPayload" rows="2" maxlength="3072" spellcheck="false" placeholder="5A FF" aria-label="I2C read response"></textarea></label>
+          <label>Address ACK <input id="i2cAddressAck" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label id="i2cDataAckField">Write-data ACK <input id="i2cDataAck" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label id="i2cFinalNackField" hidden>Final read NACK <input id="i2cFinalNack" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>STOP condition <input id="i2cStop" class="switch-input" type="checkbox" checked><span class="switch-control" aria-hidden="true"></span></label>
+          <label>Pre-idle (bits) <div class="unit-input"><input id="i2cPreIdle" type="number" min="1" max="1000" step="1" value="1"></div></label>
+          <label>Post-idle (bits) <div class="unit-input"><input id="i2cPostIdle" type="number" min="1" max="1000" step="1" value="1"></div></label>
+          <label>Logic high (V) <div class="unit-input"><input id="i2cHigh" type="number" step="0.1" value="3.3"></div></label>
+          <label>Logic low (V) <div class="unit-input"><input id="i2cLow" type="number" step="0.1" value="0"></div></label>
+          <label>Samples / bit <div class="unit-input"><select id="i2cResolution" class="menu-select"><option value="20">20</option><option value="40">40</option><option value="80">80</option></select></div></label>
+          <p class="i2c-help">START is included. Write then Read uses a repeated START. Read data and ACK/NACK are generated response levels, not live bus responses. Both outputs use the same sample clock; export one signal at a time.</p>
+          <p id="i2cError" class="i2c-error" role="alert"></p>
+          <output id="i2cSummary" class="i2c-help" aria-live="polite"></output>
         </details>
         <details class="section" data-property-panel="amplitude" open>
           <summary class="section-title">Amplitude</summary>
@@ -200,7 +234,7 @@
           <label>N Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" value="1"></div></label>
         </details>
         <details id="serialProperties" class="section serial-section" data-property-panel="serial" open hidden>
-          <summary class="section-title">Serial</summary>
+          <summary class="section-title">UART</summary>
           <label>Protocol <div class="unit-input"><input id="serialProtocol" value="UART" aria-label="Protocol" readonly></div></label>
           <label>Baud <div class="unit-input"><input id="serialBaud" type="number" min="1" step="1" value="115200" list="serialBaudRates"></div></label>
           <label>Word Size <div class="unit-input"><select class="menu-select" id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
@@ -212,7 +246,7 @@
           <label>Post Idle <div class="unit-input"><input id="serialPostIdle" type="number" min="0" step="1" value="1"></div></label>
           <label>Stop Bits <div class="unit-input"><select class="menu-select" id="serialStopBits"><option value="1" selected>1</option><option value="2">2</option></select></div></label>
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
-          <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
+          <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="UART binary pattern"></div></label>
         </details>
         <details class="section filters-section" data-property-panel="filters" open>
           <summary id="filtersSectionTitle" class="section-title">Filters</summary>
@@ -272,6 +306,44 @@
       </div>
     </main>
   </div>
+  <dialog id="mathReferenceDialog" class="math-reference-dialog" aria-labelledby="mathReferenceTitle">
+    <header id="mathReferenceHandle" class="math-reference-heading" tabindex="0" aria-label="Move expression reference with arrow keys" title="Drag to move, or focus this header and use arrow keys">
+      <div><h2 id="mathReferenceTitle">Expression reference</h2><p>Keep this open while you edit. Drag the header to move.</p></div>
+      <button id="closeMathReferenceBtn" type="button" class="icon-btn" aria-label="Close expression reference" autofocus>×</button>
+    </header>
+    <div class="math-reference-body" tabindex="0" aria-label="Expression reference contents">
+      <section aria-labelledby="mathReferenceBasics"><h3 id="mathReferenceBasics">Start here</h3>
+        <dl class="math-reference-basics">
+          <dt><code>x</code></dt><dd>Position within each cycle: <strong>0 ≤ x &lt; 1</strong>. It starts again at 0 each cycle.</dd>
+          <dt>Output</dt><dd>Results are clipped to <strong>−1…1</strong>, then scaled to volts by Amplitude and Offset. Filters run afterward.</dd>
+        </dl>
+        <p class="math-reference-formula">Volts = Offset + (Amplitude ÷ 2) × result</p>
+      </section>
+      <section aria-labelledby="mathReferenceExamples"><h3 id="mathReferenceExamples">Examples</h3>
+        <div class="math-reference-example"><span>Sine · one oscillation per cycle</span><code>sin(2*pi*x)</code></div>
+        <div class="math-reference-example"><span>Rising ramp · −1 toward +1</span><code>2*x-1</code></div>
+        <div class="math-reference-example"><span>Damped sine · four oscillations per cycle</span><code>exp(-4*x)*sin(8*pi*x)</code></div>
+      </section>
+      <section aria-labelledby="mathReferenceSyntax"><h3 id="mathReferenceSyntax">Writing expressions</h3>
+        <ul><li>Write multiplication explicitly: <code>2*x</code>.</li><li>Use <code>^</code> for powers and parentheses to group terms: <code>(x-0.5)^2</code>.</li><li>Angles are in <strong>radians</strong>; one turn is <code>2*pi</code>.</li></ul>
+        <dl class="math-reference-basics"><dt>Operators</dt><dd><code>+ - * / % ^</code> <span class="math-reference-note">(% is remainder)</span></dd><dt>Constants</dt><dd><code>pi</code> ≈ 3.14159 &nbsp; <code>e</code> ≈ 2.71828</dd></dl>
+      </section>
+      <section aria-labelledby="mathReferenceFunctions"><h3 id="mathReferenceFunctions">Functions</h3>
+        <table><thead><tr><th scope="col">Syntax</th><th scope="col">Meaning</th></tr></thead><tbody>
+          <tr><td><code>sin(a), cos(a), tan(a)</code></td><td>Trigonometry (radians)</td></tr>
+          <tr><td><code>abs(a)</code></td><td>Absolute value</td></tr>
+          <tr><td><code>sqrt(a)</code></td><td>Square root</td></tr>
+          <tr><td><code>exp(a), log(a)</code></td><td>e to a power; natural logarithm</td></tr>
+          <tr><td><code>floor(a), ceil(a)</code></td><td>Round down; round up</td></tr>
+          <tr><td><code>round(a)</code></td><td>Nearest integer (ties toward +∞)</td></tr>
+          <tr><td><code>sign(a)</code></td><td>−1, 0, or +1</td></tr>
+          <tr><td><code>min(a,b), max(a,b)</code></td><td>Smaller; larger value</td></tr>
+          <tr><td><code>pow(a,b)</code></td><td>a raised to b; same as <code>a^b</code></td></tr>
+        </tbody></table>
+      </section>
+      <section aria-labelledby="mathReferenceApply"><h3 id="mathReferenceApply">Apply your changes</h3><p>Select <strong>Apply expression</strong> or press <strong>Ctrl/⌘ + Enter</strong> in the expression field. Press <strong>Escape</strong> in that field to restore the applied expression.</p><p class="math-reference-note">Expressions must produce finite values at every sample. Use up to 512 characters; JavaScript and implicit multiplication are not supported.</p></section>
+    </div>
+  </dialog>
   <dialog id="basicModeConfirmDialog" class="open-dialog mode-confirm-dialog" aria-labelledby="basicModeConfirmTitle">
     <form method="dialog">
       <div class="dialog-heading"><div><span class="eyebrow">EDITING MODE</span><h2 id="basicModeConfirmTitle">Switch to Basic?</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
@@ -320,6 +392,7 @@
     <form method="dialog">
       <div class="dialog-heading"><div><div class="bridge-heading-row"><span class="eyebrow">PYTHON BRIDGE</span><a class="bridge-download-link" href="https://github.com/baldengineer/arbdraw/releases/latest" target="_blank" rel="noopener noreferrer">Download Bridge ↗</a></div><h2>Send to AWG</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
       <p>Connect ArbDraw to the local Python service that owns VISA and instrument-specific waveform transfers.</p>
+      <p id="bridgeSignalSummary"></p>
       <fieldset class="bridge-control-group bridge-connection-group">
         <legend>Bridge connection</legend>
         <div class="bridge-connection-row">
@@ -373,7 +446,8 @@
     <button data-wave="square" role="menuitem"><canvas aria-hidden="true"></canvas><span>Square</span></button>
     <button data-wave="triangle" role="menuitem"><canvas aria-hidden="true"></canvas><span>Triangle</span></button>
     <button data-wave="rc" role="menuitem"><canvas aria-hidden="true"></canvas><span>RC</span></button>
-    <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>Serial</span></button>
+    <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>UART</span></button>
+    <button data-wave="i2c" role="menuitem"><canvas aria-hidden="true"></canvas><span>I2C</span></button>
     <button data-wave="pulse" role="menuitem"><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem"><canvas aria-hidden="true"></canvas><span>DC</span></button>
     <button data-wave="noise" role="menuitem"><canvas aria-hidden="true"></canvas><span>Noise</span></button>
@@ -385,6 +459,7 @@
   <script src="js/awg-profiles.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/defaults.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/math-expression.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/i2c-waveform.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/fields.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/field-definitions.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/core.js?v=__ARBDRAW_BUILD_SHA__"></script>
@@ -396,6 +471,7 @@
   <script src="js/waveform-shapes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/waveform-editor.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/math-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/math-reference.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/filters.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/serial-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/scope-view.js?v=__ARBDRAW_BUILD_SHA__"></script>
@@ -407,6 +483,10 @@
   <script src="js/project.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/editor-modes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/sequence.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signals.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signal-transactions.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/i2c-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/signal-grid.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/help.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/ui.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/instruments.js?v=__ARBDRAW_BUILD_SHA__"></script>

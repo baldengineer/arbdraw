@@ -1,17 +1,20 @@
 <link rel="stylesheet" href="help.css">
 <article>
   <h1>ArbDraw JSON format</h1>
-  <p>ArbDraw project files are UTF-8 JSON documents, normally saved with the <code>.arbdraw.json</code> extension. They describe one waveform, its instrument metadata, and its ordered voltage samples.</p>
+  <p>ArbDraw project files are UTF-8 JSON documents, normally saved with the <code>.arbdraw.json</code> extension. Version 2 saves all independent signals. Each signal has its own instrument metadata, waveform properties, voltage samples, and optional sequence.</p>
 
   <h2>File identity</h2>
-  <p>A compatible file must contain these values:</p>
+  <p>New project saves contain these values:</p>
   <pre><code>{
   "schema": "arbdraw.waveform",
-  "version": 1
+  "version": 2
 }</code></pre>
-  <p>The top-level <code>name</code> is optional. Unknown top-level fields are ignored.</p>
+  <p>Version 2 contains a nonempty <code>signals</code> array. Every entry has a unique nonempty string <code>id</code>, a display <code>name</code>, and the <code>AWG</code> and <code>waveform</code> objects described below. The project also stores its <code>name</code> and <code>activeSignalId</code>; a missing or unknown active ID selects the first signal. Signals have independent sample counts, timing, profiles, filters, and sequences. There is no two-signal limit.</p>
+  <p>All signals must contain finite samples matching their declared AWG sample counts and fit supported profile limits. An invalid signal rejects the whole import. Undo history and selected segments are not saved. Existing version 1 files still open as one signal; older ArbDraw releases cannot read version 2 projects.</p>
+  <p>CSV, SVG, WAV, audio playback, and Send to AWG output only the selected signal. File export can also select a sequence segment. The bridge receives that signal as a version 1 document. A signal ID is independent of the destination hardware channel.</p>
 
-  <h2>Basic structure</h2>
+  <h2>Legacy version 1 structure</h2>
+  <p>For version 2, place these <code>AWG</code> and <code>waveform</code> objects inside each signal entry.</p>
   <pre><code>{
   "schema": "arbdraw.waveform",
   "version": 1,

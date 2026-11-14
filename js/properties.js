@@ -64,6 +64,19 @@ function renderAwgProfiles() {
 
 function applyAwgProfile(profile) {
   if (!profile) return;
+  if (state.type === 'i2c') {
+    if (state.samples > sampleLimitForProfile(profile)) {
+      awgProfileSelect.value = selectedAwgProfile.id;
+      showToast(`${profile.name} cannot hold this I2C packet. Choose a larger profile or generate a shorter packet.`);
+      return false;
+    }
+    // Profile selection must not retime or truncate either packet output.
+    selectedAwgProfile = profile;
+    globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
+    renderTiming();
+    persistCurrentSettings();
+    return true;
+  }
   if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) return false;
   const preserveSamples = state.type === 'custom' || state.samplesEdited === true;
   const maximumSamples = sampleLimitForProfile(profile);
@@ -107,7 +120,7 @@ function applyAwgProfile(profile) {
   return true;
 }
 
-function restoreAwgSettingsFromDocument(awg = {}) {
+function restoreAwgSettingsFromDocument(awg = {}, { preserveWaveform = false } = {}) {
   const profile = profileById(awg.profileId);
   if (profile) {
     selectedAwgProfile = profile;
@@ -116,6 +129,7 @@ function restoreAwgSettingsFromDocument(awg = {}) {
     if (Number.isFinite(profile.sampleDepth?.max)) $('samplesEdit').max = profile.sampleDepth.max;
     else $('samplesEdit').removeAttribute('max');
   }
+  if (preserveWaveform) return;
   const rate = Number(awg.sampleRateMSa),
     samples = Number(awg.sampleCount),
     maximumSamples = sampleLimitForProfile(selectedAwgProfile);
@@ -261,12 +275,13 @@ function renderTiming() {
   if (globalThis.ARBDRAW_SEQUENCE?.hasSegments())
     $('samplesEdit').max = globalThis.ARBDRAW_SEQUENCE.capacity() / sampleCountUnitScale;
   $('tsResolutionEdit').value = Number(
-    ((globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? 1 / (state.sampleRate * 1e6)
+    ((globalThis.ARBDRAW_SEQUENCE?.hasSegments() || state.type === 'i2c' ? 1 / (state.sampleRate * 1e6)
       : state.duration / 1000 / Math.max(1, state.samples - 1)) / tsResolutionUnitScale).toPrecision(10),
   );
   $('sampleRateField').title = globalThis.ARBDRAW_SEQUENCE?.hasSegments()
     ? 'Shared sequence clock. Segment frequency and sample count are linked at this rate.'
-    : 'Not used but saved in the JSON.';
+    : state.type === 'i2c' ? 'Shared SDA/SCL packet sample clock, set by bus speed and samples per bit.'
+      : 'Not used but saved in the JSON.';
   $('samplesField').removeAttribute('title');
   renderAwgTiming();
 }
@@ -298,7 +313,7 @@ function renderAwgTiming() {
     sampleRateType: selectedAwgProfile?.sampleRateType || 'Fixed',
     sampleRateMSa: output.sampleRate,
     sampleCount: output.samples,
-    tsResolutionSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? 1 / (output.sampleRate * 1e6)
+    tsResolutionSeconds: globalThis.ARBDRAW_SEQUENCE?.hasSegments() || output.type === 'i2c' ? 1 / (output.sampleRate * 1e6)
       : output.duration / 1000 / Math.max(1, output.samples - 1),
     highVoltage: output.high,
     lowVoltage: output.low,
