@@ -235,7 +235,7 @@
           <label>N Cycles <div class="unit-input"><input id="cyclesInput" type="number" step="1" min="1" value="1"></div></label>
         </details>
         <details id="serialProperties" class="section serial-section" data-property-panel="serial" open hidden>
-          <summary class="section-title">Serial</summary>
+          <summary class="section-title">UART</summary>
           <label>Protocol <div class="unit-input"><input id="serialProtocol" value="UART" aria-label="Protocol" readonly></div></label>
           <label>Baud <div class="unit-input"><input id="serialBaud" type="number" min="1" step="1" value="115200" list="serialBaudRates"></div></label>
           <label>Word Size <div class="unit-input"><select class="menu-select" id="serialWordSize"><option value="7">7</option><option value="8" selected>8</option></select></div></label>
@@ -247,7 +247,7 @@
           <label>Post Idle <div class="unit-input"><input id="serialPostIdle" type="number" min="0" step="1" value="1"></div></label>
           <label>Stop Bits <div class="unit-input"><select class="menu-select" id="serialStopBits"><option value="1" selected>1</option><option value="2">2</option></select></div></label>
           <label>Payload <div class="unit-input"><input id="serialPayload" type="text" value="0xAA" spellcheck="false"></div></label>
-          <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="Serial binary pattern"></div></label>
+          <label id="serialBinaryControl" hidden>Binary <div class="unit-input"><input id="serialBinaryPattern" type="text" value="" spellcheck="false" aria-label="UART binary pattern"></div></label>
         </details>
         <details class="section filters-section" data-property-panel="filters" open>
           <summary id="filtersSectionTitle" class="section-title">Filters</summary>
@@ -447,7 +447,7 @@
     <button data-wave="square" role="menuitem"><canvas aria-hidden="true"></canvas><span>Square</span></button>
     <button data-wave="triangle" role="menuitem"><canvas aria-hidden="true"></canvas><span>Triangle</span></button>
     <button data-wave="rc" role="menuitem"><canvas aria-hidden="true"></canvas><span>RC</span></button>
-    <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>Serial</span></button>
+    <button data-wave="serial" role="menuitem"><canvas aria-hidden="true"></canvas><span>UART</span></button>
     <button data-wave="i2c" role="menuitem"><canvas aria-hidden="true"></canvas><span>I2C</span></button>
     <button data-wave="pulse" role="menuitem"><canvas aria-hidden="true"></canvas><span>Pulse</span></button>
     <button data-wave="dc" role="menuitem"><canvas aria-hidden="true"></canvas><span>DC</span></button>

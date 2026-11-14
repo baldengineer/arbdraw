@@ -63,7 +63,7 @@ troubleshooting.
 
 ## Features
 
-- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and serial (UART) waveform types
+- Sine, square, pulse, triangle with adjustable symmetry (including rising/falling ramps), RC charging curves, white/pink noise, and UART waveform types
 - Math waveforms from user expressions, with harmonic, damped sine, Gaussian, and other presets
 - Fixed, evenly spaced voltage points (with frequency and period stored as instrument metadata)
 - Generator profiles, including Audio at 48 kHz with 1,000 default points and a 100,000-point maximum
@@ -77,9 +77,9 @@ troubleshooting.
 - Freehand and erase editing within optional selection markers
 - Waveform Viewer (to simulate what you'd see on an oscilloscope)
 - Viewer measurement cursors: independent Time and Voltage pairs with position and signed delta readouts
-- Serial pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
+- UART pulse-train generation from protocol, baud, word size, parity, framing, and payload controls
 - I2C packets with assigned SDA/SCL signals, bus-speed presets, addressing, payload, and framing controls
-- Adjustable rise and fall times for square, pulse, and serial waveforms, with linear ramps limited by the next opposite edge
+- Adjustable rise and fall times for square, pulse, and UART waveforms, with linear ramps limited by the next opposite edge
 
 ## Multiple signals
 

@@ -1141,7 +1141,7 @@ function drawMini(c, type) {
   x.stroke();
 }
 function updateFunctionSelect(type) {
-  const label = { rc: 'RC', dc: 'DC', i2c: 'I2C' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
+  const label = { rc: 'RC', dc: 'DC', serial: 'UART', i2c: 'I2C' }[type] || type.charAt(0).toUpperCase() + type.slice(1),
     button = $('functionSelectBtn');
   button.querySelector('span').textContent = label;
   drawMini(button.querySelector('canvas'), type);

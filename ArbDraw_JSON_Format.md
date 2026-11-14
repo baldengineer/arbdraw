@@ -171,7 +171,7 @@ Unknown top-level fields are ignored.
 | `fallTimeSeconds` | number | s | Linear high-to-low transition time for square and pulse waveforms. `0` means an ideal step. |
 | `noiseColor` | string | — | Noise spectrum used by the `noise` waveform. Allowed values are `white` and `pink`. |
 | `filters` | object | — | Post-processing filter settings. |
-| `serial` | object | — | Serial framing metadata. See **Serial settings** below. |
+| `serial` | object | — | UART framing metadata. See **UART settings** below. |
 | `samplesEdited` | boolean | — | `true` when point editing or selection-scoped generation has made the saved samples differ from a full waveshape regeneration. ArbDraw uses this to warn before replacing those samples. |
 | `sampleCount` | integer | samples | Number of entries expected in `values`. Minimum value is 2. |
 | `values` | array of numbers | V | Ordered sample voltages. Every entry must be a finite JSON number. |
@@ -235,7 +235,7 @@ Generated periodic sources (`sine`, `square`, `pulse`, `triangle`, and `rc`) use
 precedes the next record's first sample by one sample interval; the generator does
 not duplicate the endpoint. For example, 100 cycles in 1,000 points repeat the same
 10 sample phases in each cycle. A selection uses its selected point count in this
-formula. Serial sources retain their payload timing rules. Imported sample arrays
+formula. UART sources retain their payload timing rules. Imported sample arrays
 are preserved as stored, including those created by older versions, until explicitly
 regenerated.
 
@@ -290,9 +290,9 @@ For `math`, `mathExpression` defines a dimensionless periodic function of `x`, w
 
 The removed values `custom` and `free`, along with unknown values, are imported as `sine`. A valid saved `values` array is preserved, marked as edited, and remains the waveform's authoritative sample data.
 
-## Serial settings
+## UART settings
 
-When `type` is `serial`, the `serial` object stores UART framing metadata:
+The waveform is named **UART** in the interface. Its saved `type` remains `serial`, and the `serial` object stores UART framing metadata, preserving compatibility with existing projects:
 
 | Field | Type | Allowed values | Default |
 | --- | --- | --- | --- |
@@ -310,7 +310,7 @@ When `type` is `serial`, the `serial` object stores UART framing metadata:
 | `binaryPattern` | string | A string containing only `0` and `1`, or empty | Empty |
 
 The object remains part of the project document when another waveform type is active, allowing the
-Serial settings to be restored if Serial is selected again.
+UART settings to be restored if UART is selected again.
 
 For UART, ArbDraw emits each payload word in the selected bit order with the enabled start bit and selected number of stop bits,
 and the selected parity bit. Pre Idle and Post Idle add the requested number of high-level bit times
@@ -333,7 +333,7 @@ high-level serial idle state. Frames longer than the available time span are cli
 the buffer.
 
 When `binaryPattern` is nonempty, it is the authoritative bit sequence used for waveform generation.
-Editing another structured Serial control clears this override and rebuilds the sequence from the
+Editing another structured UART control clears this override and rebuilds the sequence from the
 protocol, framing, and payload settings. Its Binary editor is hidden by default; set
 `serial_debug: true` in `js/defaults.js` to show it.
 
