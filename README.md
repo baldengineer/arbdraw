@@ -120,6 +120,8 @@ In **Filters**, enable **Clamp** and set **Minimum** and **Maximum** in volts to
 
 Choose **Math** in the Waveshape menu, then choose a preset to apply it immediately. For a manually typed formula, select **Apply expression** (or press **Ctrl/Command+Enter**). **Escape** restores the applied expression. Expressions participate in undo/redo and are saved in project JSON, browser settings, and individual sequence segments.
 
+Select **Expression reference** for examples, syntax, functions, and voltage scaling in a floating help window. The editor remains usable while it is open. Drag its header to move it, or focus the header and use arrow keys (Shift moves farther). Close it with **×** or press **Escape** while focus is inside the reference.
+
 `x` is cycle position from 0 up to, but excluding, 1. Cycles and Phase work as they do for the other periodic sources; Frequency controls playback timing. For example, `sin(2*pi*x)` is a sine and `exp(-4*x)*sin(8*pi*x)` is a damped oscillation repeated each cycle. In Arbitrary mode, an active selection receives its own complete cycle span; points outside it are preserved.
 
 The result is clipped to −1…1, then converted to volts as **Offset + Amplitude/2 × result**. Filters run afterward. Use `/` to scale a sum of harmonics if you want to avoid clipping. Expressions use radians, constants `pi` and `e`, operators `+ - * / % ^`, and parentheses. Multiplication must be explicit (`2*x`); `^` is exponentiation, with `-2^2 = -4` and `2^3^2 = 512`.

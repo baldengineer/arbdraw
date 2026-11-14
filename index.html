@@ -177,12 +177,11 @@
           <div id="mathProperties" hidden>
             <label for="mathPreset">Preset <select id="mathPreset" class="menu-select"><option value="">Choose a preset…</option></select></label>
             <label class="math-expression-label" for="mathExpressionInput">Expression
-              <textarea id="mathExpressionInput" rows="3" maxlength="512" spellcheck="false" aria-describedby="mathExpressionHelp mathExpressionError"></textarea>
+              <textarea id="mathExpressionInput" rows="3" maxlength="512" spellcheck="false" aria-describedby="mathExpressionError"></textarea>
             </label>
-            <button id="applyMathExpression" type="button" class="ghost">Apply expression</button>
+            <button id="applyMathExpression" type="button" class="primary">Apply expression</button>
             <p id="mathExpressionError" class="math-error" role="status" aria-live="polite"></p>
-            <p id="mathExpressionHelp" class="math-help">x = cycle position, 0 ≤ x &lt; 1. Output is clipped to −1…1, then scaled by Amplitude and Offset. Use * to multiply and ^ for powers. Angles are radians.</p>
-            <details class="math-help"><summary>Functions and constants</summary><p>sin, cos, tan, abs, sqrt, exp, log (natural), floor, ceil, round, sign; min(a,b), max(a,b), pow(a,b). Constants: pi, e. Operators: + − * / % ^ and parentheses.</p></details>
+            <button id="mathReferenceBtn" type="button" class="math-reference-button" aria-haspopup="dialog" aria-controls="mathReferenceDialog" aria-expanded="false">Expression reference ↗</button>
           </div>
           <label id="noiseColorProperty" class="noise-property" hidden>Noise color <div class="unit-input"><select class="menu-select" id="noiseColorSelect" aria-label="Noise color"><option value="white">White</option><option value="pink">Pink</option></select></div></label>
         </details>
@@ -308,6 +307,44 @@
       </div>
     </main>
   </div>
+  <dialog id="mathReferenceDialog" class="math-reference-dialog" aria-labelledby="mathReferenceTitle">
+    <header id="mathReferenceHandle" class="math-reference-heading" tabindex="0" aria-label="Move expression reference with arrow keys" title="Drag to move, or focus this header and use arrow keys">
+      <div><h2 id="mathReferenceTitle">Expression reference</h2><p>Keep this open while you edit. Drag the header to move.</p></div>
+      <button id="closeMathReferenceBtn" type="button" class="icon-btn" aria-label="Close expression reference" autofocus>×</button>
+    </header>
+    <div class="math-reference-body" tabindex="0" aria-label="Expression reference contents">
+      <section aria-labelledby="mathReferenceBasics"><h3 id="mathReferenceBasics">Start here</h3>
+        <dl class="math-reference-basics">
+          <dt><code>x</code></dt><dd>Position within each cycle: <strong>0 ≤ x &lt; 1</strong>. It starts again at 0 each cycle.</dd>
+          <dt>Output</dt><dd>Results are clipped to <strong>−1…1</strong>, then scaled to volts by Amplitude and Offset. Filters run afterward.</dd>
+        </dl>
+        <p class="math-reference-formula">Volts = Offset + (Amplitude ÷ 2) × result</p>
+      </section>
+      <section aria-labelledby="mathReferenceExamples"><h3 id="mathReferenceExamples">Examples</h3>
+        <div class="math-reference-example"><span>Sine · one oscillation per cycle</span><code>sin(2*pi*x)</code></div>
+        <div class="math-reference-example"><span>Rising ramp · −1 toward +1</span><code>2*x-1</code></div>
+        <div class="math-reference-example"><span>Damped sine · four oscillations per cycle</span><code>exp(-4*x)*sin(8*pi*x)</code></div>
+      </section>
+      <section aria-labelledby="mathReferenceSyntax"><h3 id="mathReferenceSyntax">Writing expressions</h3>
+        <ul><li>Write multiplication explicitly: <code>2*x</code>.</li><li>Use <code>^</code> for powers and parentheses to group terms: <code>(x-0.5)^2</code>.</li><li>Angles are in <strong>radians</strong>; one turn is <code>2*pi</code>.</li></ul>
+        <dl class="math-reference-basics"><dt>Operators</dt><dd><code>+ - * / % ^</code> <span class="math-reference-note">(% is remainder)</span></dd><dt>Constants</dt><dd><code>pi</code> ≈ 3.14159 &nbsp; <code>e</code> ≈ 2.71828</dd></dl>
+      </section>
+      <section aria-labelledby="mathReferenceFunctions"><h3 id="mathReferenceFunctions">Functions</h3>
+        <table><thead><tr><th scope="col">Syntax</th><th scope="col">Meaning</th></tr></thead><tbody>
+          <tr><td><code>sin(a), cos(a), tan(a)</code></td><td>Trigonometry (radians)</td></tr>
+          <tr><td><code>abs(a)</code></td><td>Absolute value</td></tr>
+          <tr><td><code>sqrt(a)</code></td><td>Square root</td></tr>
+          <tr><td><code>exp(a), log(a)</code></td><td>e to a power; natural logarithm</td></tr>
+          <tr><td><code>floor(a), ceil(a)</code></td><td>Round down; round up</td></tr>
+          <tr><td><code>round(a)</code></td><td>Nearest integer (ties toward +∞)</td></tr>
+          <tr><td><code>sign(a)</code></td><td>−1, 0, or +1</td></tr>
+          <tr><td><code>min(a,b), max(a,b)</code></td><td>Smaller; larger value</td></tr>
+          <tr><td><code>pow(a,b)</code></td><td>a raised to b; same as <code>a^b</code></td></tr>
+        </tbody></table>
+      </section>
+      <section aria-labelledby="mathReferenceApply"><h3 id="mathReferenceApply">Apply your changes</h3><p>Select <strong>Apply expression</strong> or press <strong>Ctrl/⌘ + Enter</strong> in the expression field. Press <strong>Escape</strong> in that field to restore the applied expression.</p><p class="math-reference-note">Expressions must produce finite values at every sample. Use up to 512 characters; JavaScript and implicit multiplication are not supported.</p></section>
+    </div>
+  </dialog>
   <dialog id="basicModeConfirmDialog" class="open-dialog mode-confirm-dialog" aria-labelledby="basicModeConfirmTitle">
     <form method="dialog">
       <div class="dialog-heading"><div><span class="eyebrow">EDITING MODE</span><h2 id="basicModeConfirmTitle">Switch to Basic?</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
@@ -435,6 +472,7 @@
   <script src="js/waveform-shapes.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/waveform-editor.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/math-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
+  <script src="js/math-reference.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/filters.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/serial-properties.js?v=__ARBDRAW_BUILD_SHA__"></script>
   <script src="js/scope-view.js?v=__ARBDRAW_BUILD_SHA__"></script>
