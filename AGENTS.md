@@ -138,6 +138,8 @@ Commit completed changes to Git automatically after the relevant checks pass; no
 
 Read the relevant source and tests before editing. Preserve direct-from-disk operation and classic-script loading order; the browser app has no required build step. Keep waveform calculations separate from UI behavior, and keep instrument-specific code in its adapter repository. Do not alter unrelated samples or saved settings to make an example work.
 
+For UI controls, reuse the shared styles in `includes/menus.css` and `includes/fields.css`. Every native dropdown must use `menu-select`; its option list must inherit the shared theme foreground and opaque background. Run `tests/menu-styles.test.js` when adding or changing controls. When browser access is available, inspect the dropdown open as well as closed in Dark, Light, and High Contrast themes, including keyboard focus and selected options. Static checks do not verify an OS-rendered popup; report when visual verification is unavailable.
+
 Run the relevant existing checks from the checkout:
 
 ```sh

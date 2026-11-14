@@ -22,6 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test web app before publishing
+        run: node --test tests/*.test.js
       - name: Build stamped site
         run: node scripts/build-pages.js "$GITHUB_SHA" _site
       - name: Configure Pages

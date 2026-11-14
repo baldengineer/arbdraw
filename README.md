@@ -236,6 +236,8 @@ The defaults use a JavaScript object rather than fetched JSON so that the app al
 
 Run the JavaScript regression suite with `node --test tests/*.test.js` and the bridge suite with `python -m unittest discover -s tests -p test_python_bridge.py`.
 
+The **Web app checks** workflow runs the JavaScript suite on branch pushes and pull requests. Pages publication also runs it before building, so a failing check stops deployment. Shared menu checks require every native dropdown to use `menu-select` and require option text/background colors to follow the theme. They explicitly reject the missing option styling that caused unreadable I2C menus. For UI changes, also inspect open dropdowns in Dark, Light, and High Contrast when browser access is available; static style checks cannot verify native OS popup rendering.
+
 ## License
 
 ArbDraw is available under the [MIT License](LICENSE).
