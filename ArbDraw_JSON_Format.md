@@ -74,7 +74,7 @@ An I2C output uses `waveform.type = "i2c"` and a `waveform.i2c` recipe. Each gen
 
 Generated outputs share a sample rate of `busHz * samplesPerBit`, equal counts, and one packet per record (`cycles = 1`). As with sequences, sample `i` occurs at `i / sampleRateHz` and `AWG.tsResolutionSeconds = 1 / sampleRateHz`. The record frequency is `sampleRateHz / sampleCount`. I2C cannot contain sequence segments. Imports require the recipe and complete finite samples, preserving arbitrary edits rather than regenerating the packet.
 
-Assignments are project signal IDs, not hardware channels. A removed signal or single-output import may leave an unresolved ID; the UI offers a new signal for that assignment. Selecting Generate creates/resolves destinations and writes the updated recipe to both outputs. Duplication clears both assignments to avoid overwriting the original pair. Cross-signal undo transactions are transient and are not serialized.
+Assignments are project signal IDs, not hardware channels. A removed signal or single-output import may leave an unresolved ID; the UI offers a new signal for that assignment. Valid property edits immediately create/resolve destinations and write the updated recipe to both outputs. Invalid drafts leave the last valid samples and recipe unchanged. Duplication clears both assignments to avoid overwriting the original pair. Cross-signal undo transactions and in-progress field drafts are transient and are not serialized.
 
 ## Complete legacy version 1 example
 

@@ -205,7 +205,6 @@
           <label>Logic low (V) <div class="unit-input"><input id="i2cLow" type="number" step="0.1" value="0"></div></label>
           <label>Samples / bit <div class="unit-input"><select id="i2cResolution" class="menu-select"><option value="20">20</option><option value="40">40</option><option value="80">80</option></select></div></label>
           <p class="i2c-help">START is included. Write then Read uses a repeated START. Read data and ACK/NACK are generated response levels, not live bus responses. Both outputs use the same sample clock; export one signal at a time.</p>
-          <div class="i2c-actions"><button id="generateI2cBtn" class="primary" type="button">Generate packet</button><button id="cancelI2cBtn" class="ghost" type="button">Cancel</button></div>
           <p id="i2cError" class="i2c-error" role="alert"></p>
           <output id="i2cSummary" class="i2c-help" aria-live="polite"></output>
         </details>

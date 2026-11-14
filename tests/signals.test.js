@@ -11,13 +11,16 @@ const slice = (file, from, to) => {
 
 function harness(defaults = {}) {
   const elements = new Map();
-  const createElement = () => ({ value: '', children: [], attributes: {},
+  const createElement = () => ({ value: '', children: [], attributes: {}, listeners: {},
     classList: { contains: () => true },
     setAttribute(key, value) { this.attributes[key] = value; }, removeAttribute() {},
-    replaceChildren() { this.children = []; }, addEventListener() {},
+    replaceChildren(...children) { this.children = children; },
+    addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); },
+    dispatch(name, event = {}) { for (const callback of this.listeners[name] || []) callback({ target: this, ...event }); },
     append(...children) { for (const child of children) { child.parent = this; this.children.push(child); } },
     remove() { this.parent.children = this.parent.children.filter(child => child !== this); },
-    focus() { context.document.activeElement = this; }, blur() { context.document.activeElement = null; },
+    focus() { context.document.activeElement = this; },
+    blur() { context.document.activeElement = null; this.dispatch('blur'); },
     getContext: () => ({ clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} }),
   });
   const element = id => {
@@ -263,6 +266,96 @@ test('canceling I2C selection on an edited waveform preserves the original signa
   assert.equal(run('ARBDRAW_I2C_UI.open()'), false);
   assert.equal(run('JSON.stringify(projectDocument)'), before);
   assert.equal(element('i2cProperties').hidden, true);
+});
+
+test('I2C inputs update both outputs live while preserving focus, draft text, selected SCL, and zoom', () => {
+  const { run, element, context } = i2cHarness();
+  run('ARBDRAW_I2C_UI.open(); activateSignal("signal-2");');
+  Object.assign(context.editorViewport, { start: 10, pointsPerScreen: 100, total: 500 });
+  const before = run('JSON.stringify(projectDocument)');
+  const historyLength = run('state.history.length');
+  const address = element('i2cAddress');
+  address.focus(); address.selectionStart = 1;
+  for (const value of ['0x', '0x2', '0x2a']) {
+    address.value = value; address.dispatch('input');
+    assert.equal(address.value, value);
+    assert.equal(context.document.activeElement, address);
+  }
+  assert.equal(run('projectDocument.activeSignalId'), 'signal-2');
+  assert.equal(run('projectDocument.signals.every(s => s.waveform.i2c.address === 42)'), true);
+  assert.equal(address.selectionStart, 1);
+  assert.equal(context.editorViewport.start, 10);
+  assert.equal(context.editorViewport.pointsPerScreen, 100);
+  assert.equal(run('state.history.length'), historyLength + 1);
+  const after = run('JSON.stringify(projectDocument)');
+  address.blur(); run('undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+  run('redoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), after);
+  assert.doesNotMatch(read('index.html'), /generateI2cBtn|cancelI2cBtn/);
+});
+
+test('I2C live controls apply speeds, payload, levels, idle, framing, and read visibility', () => {
+  const { run, element } = i2cHarness();
+  run('ARBDRAW_I2C_UI.open();');
+  for (const [id, value, event, key, expected] of [
+    ['i2cSpeed', '400000', 'change', 'busHz', 400000],
+    ['i2cPayload', 'A5 FF ', 'input', 'payload', 'A5 FF '],
+    ['i2cHigh', '5', 'input', 'high', 5],
+    ['i2cPreIdle', '3', 'input', 'preIdle', 3],
+    ['i2cResolution', '40', 'change', 'samplesPerBit', 40],
+    ['i2cOperation', 'read', 'change', 'operation', 'read'],
+    ['i2cReadPayload', '42 53', 'input', 'readPayload', '42 53'],
+  ]) {
+    element(id).value = value; element(id).dispatch(event);
+    assert.equal(run(`projectDocument.signals.every(s => s.waveform.i2c.${key} === ${JSON.stringify(expected)})`), true, id);
+  }
+  assert.equal(element('i2cPayloadField').hidden, true);
+  assert.equal(element('i2cReadPayloadField').hidden, false);
+  element('i2cStop').checked = false; element('i2cStop').dispatch('change');
+  assert.equal(run('projectDocument.signals.every(s => !s.waveform.i2c.stop)'), true);
+  assert.equal(run('projectDocument.signals.every(s => s.waveform.sampleRateMSa === 16)'), true);
+});
+
+test('invalid live I2C drafts keep the last valid pair and recover without an apply button', () => {
+  const { run, element } = i2cHarness();
+  run('ARBDRAW_I2C_UI.open();');
+  const before = run('JSON.stringify(projectDocument)');
+  element('i2cPayload').value = 'GG'; element('i2cPayload').dispatch('input');
+  assert.equal(run('JSON.stringify(projectDocument)'), before);
+  assert.match(element('i2cError').textContent, /hexadecimal/);
+  element('i2cPayload').value = 'AB'; element('i2cPayload').dispatch('input');
+  assert.equal(run('projectDocument.signals.every(s => s.waveform.i2c.payload === "AB")'), true);
+  assert.equal(element('i2cError').textContent, '');
+  const valid = run('JSON.stringify(projectDocument)');
+  element('i2cSclSignal').value = 'signal-1'; element('i2cSclSignal').dispatch('change');
+  assert.equal(run('JSON.stringify(projectDocument)'), valid);
+  assert.match(element('i2cError').textContent, /different signals/);
+  element('i2cSclSignal').value = ''; element('i2cSclSignal').dispatch('change');
+  assert.equal(run('projectDocument.signals.length'), 3);
+  assert.equal(element('i2cSclSignal').value, 'signal-3');
+  element('i2cSpeed').value = '1000000'; element('i2cSpeed').dispatch('change');
+  assert.equal(run('projectDocument.signals.length'), 3);
+  run('undoWaveform(); undoWaveform();');
+  assert.equal(run('JSON.stringify(projectDocument)'), valid);
+});
+
+test('live I2C edits separate undo groups on blur and protect edited peer samples on canceled overwrite', () => {
+  const { run, element, context } = i2cHarness();
+  run('ARBDRAW_I2C_UI.open();');
+  const before = run('JSON.stringify(projectDocument)');
+  const payload = element('i2cPayload');
+  payload.value = 'FF'; payload.dispatch('input'); payload.blur();
+  const first = run('JSON.stringify(projectDocument)');
+  payload.value = 'FF 00'; payload.dispatch('input'); payload.blur();
+  run('undoWaveform();'); assert.equal(run('JSON.stringify(projectDocument)'), first);
+  run('undoWaveform();'); assert.equal(run('JSON.stringify(projectDocument)'), before);
+  run('activateSignal("signal-2"); state.data[0] = 1.5; state.samplesEdited = true; pushHistory(); activateSignal("signal-1");');
+  const edited = run('JSON.stringify(projectDocument)');
+  context.window.confirm = () => false;
+  element('i2cSpeed').value = '400000'; element('i2cSpeed').dispatch('change');
+  assert.equal(run('JSON.stringify(projectDocument)'), edited);
+  assert.equal(element('i2cSpeed').value, 100000);
 });
 
 test('I2C creates a synchronized pair, switches outputs, and undoes/redoes the whole packet', () => {

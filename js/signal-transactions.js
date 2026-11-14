@@ -7,20 +7,39 @@
   function sessionFor(signal) {
     return signalSessions.get(signal) || { history: [cloneWaveform(signal.waveform)], redo: [], activeSegment: null, mode: 'basic' };
   }
-  function commit(changes, selectedId) {
-    finishSignalEdit();
+  function commit(changes, selectedId, { live = false, group = null } = {}) {
+    if (!live) finishSignalEdit();
     rememberSignalSession();
     const owner = activeSignal();
     // Keep an undo anchor even when both destinations are newly created signals.
     if (!changes.some(change => change.signal === owner))
       changes = [...changes, { signal: owner, waveform: owner.waveform, AWG: owner.AWG }];
-    const transaction = { project: projectDocument, beforeActive: owner.id, afterActive: selectedId, records: [] };
+    const previous = entries.get(state.history.at(-1));
+    if (group && previous?.group === group && previous.project === projectDocument
+      && previous.records.length === changes.length && previous.records.every(record =>
+        changes.some(change => change.signal === record.signal && !change.isNew)
+        && sessionFor(record.signal).history.at(-1) === record.entry
+        && JSON.stringify(record.signal.waveform) === JSON.stringify(record.after.waveform))) {
+      for (const record of previous.records) {
+        const change = changes.find(change => change.signal === record.signal);
+        record.after = { name: change.name ?? record.signal.name,
+          waveform: cloneWaveform(change.waveform), AWG: { ...change.AWG } };
+        record.entry = cloneWaveform(change.waveform);
+        record.afterSession.history[record.afterSession.history.length - 1] = record.entry;
+        entries.set(record.entry, previous);
+      }
+      previous.afterActive = selectedId;
+      apply(previous, false);
+      return;
+    }
+    const transaction = { project: projectDocument, group, beforeActive: owner.id, afterActive: selectedId, records: [] };
     for (const change of changes) {
       const { signal, isNew = false } = change;
       const beforeSession = isNew ? null : copySession(sessionFor(signal));
       const entry = cloneWaveform(change.waveform);
       const afterSession = { history: [...(beforeSession?.history || []).slice(-29), entry], redo: [],
-        activeSegment: null, mode: 'basic', viewport: { start: 0, pointsPerScreen: null, total: null } };
+        activeSegment: null, mode: 'basic', viewport: live && beforeSession?.viewport
+          ? { ...beforeSession.viewport } : { start: 0, pointsPerScreen: null, total: null } };
       transaction.records.push({ signal, isNew, entry, beforeSession, afterSession,
         before: isNew ? null : { name: signal.name, waveform: cloneWaveform(signal.waveform), AWG: { ...signal.AWG } },
         after: { name: change.name ?? signal.name, waveform: cloneWaveform(change.waveform), AWG: { ...change.AWG } } });

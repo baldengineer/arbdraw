@@ -322,4 +322,3 @@ button { color:inherit; }
 .i2c-help { color:var(--muted); }
 .i2c-error { color:#e25b5b; }
 .i2c-error:empty { display:none; }
-.i2c-actions { display:flex; gap:6px; margin:10px 0; }

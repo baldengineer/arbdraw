@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 James Lewis <james@baldengineer.com>
-// Explicit packet generation routes the two outputs atomically to signal IDs.
+// Live packet properties route both outputs atomically to signal IDs.
 (() => {
   const fields = { busHz: 'i2cSpeed', addressBits: 'i2cAddressBits', address: 'i2cAddress',
     operation: 'i2cOperation', payload: 'i2cPayload', readPayload: 'i2cReadPayload',
@@ -10,6 +10,7 @@
   const booleans = new Set(['addressAck', 'dataAck', 'finalReadNack', 'stop']);
   const numbers = new Set(['busHz', 'addressBits', 'preIdle', 'postIdle', 'high', 'low', 'samplesPerBit']);
   let draftOwner = null;
+  let liveRendering = false, editing = null;
   const lockedControls = new Map();
 
   function error(message = '') { $('i2cError').textContent = message; }
@@ -31,6 +32,9 @@
   function render(type = state.type) {
     $('i2cProperties').hidden = type !== 'i2c';
     draftOwner = type === 'i2c' ? activeSignal().id : null;
+    // A live redraw must not rewrite the draft, move its caret, or blur the field.
+    if (liveRendering) { lockControls(); return; }
+    editing = null;
     if (type === 'i2c') {
       const settings = { ...ARBDRAW_I2C.defaults,
         ...(state.type === 'i2c' ? projectDocument.waveform.i2c : {}) };
@@ -44,7 +48,7 @@
       $('i2cProperties').open = true;
       $('i2cSummary').textContent = state.type === 'i2c'
         ? `${state.samples.toLocaleString()} samples · ${(state.cycles / state.frequency * 1e6).toPrecision(6)} µs per record · selected output ${settings.role.toUpperCase()}`
-        : 'Choose two different outputs, then generate the packet.';
+        : 'Choose two different outputs. Valid changes update the packet immediately.';
       error(); updateVisibility();
     }
     lockControls();
@@ -106,7 +110,7 @@
       periodSeconds: packet.durationSeconds, tsResolutionSeconds: 1 / packet.sampleRateHz,
       highVoltage: packet.settings.high, lowVoltage: packet.settings.low } };
   }
-  function apply() {
+  function apply({ live = false, group = null } = {}) {
     try {
       const settings = read(), reserved = new Set(projectDocument.signals.map(signal => signal.id));
       const destinations = ['sda', 'scl'].map(role => {
@@ -123,6 +127,10 @@
           AWG: { ...activeSignal().AWG }, waveform: createDefaultDocument().waveform }, isNew: true };
       });
       if (destinations[0].signal === destinations[1].signal) throw new Error('SDA and SCL must use different signals.');
+      if (live && destinations.every(({ signal, isNew }) => !isNew && signal.waveform.type === 'i2c'
+        && !signal.waveform.samplesEdited && Object.keys(fields).every(key => signal.waveform.i2c?.[key] === settings[key]))) {
+        error(); return true;
+      }
       const limit = Math.min(...destinations.map(({ signal }) => {
         const profile = profileById(signal.AWG.profileId);
         if (!profile) throw new Error(`Choose a supported profile for ${signal.name}.`);
@@ -133,21 +141,33 @@
       const overwritten = destinations.filter(({ signal, isNew }) => !isNew &&
         (signal.waveform.samplesEdited || signal.waveform.segments ||
           (signal !== activeSignal() && ![oldSettings?.sdaSignalId, oldSettings?.sclSignalId].includes(signal.id))));
-      if (overwritten.length && !window.confirm(`Generate I2C and replace the records in ${overwritten.map(item => item.signal.name).join(', ')}? Undo restores both outputs.`)) return false;
+      if (overwritten.length && !window.confirm(`Update I2C and replace the records in ${overwritten.map(item => item.signal.name).join(', ')}? Undo restores both outputs.`)) {
+        if (live) render('i2c');
+        return false;
+      }
       const changes = destinations.map((destination, index) => ({
         ...outputFor(destination.signal, packet, index === 0 ? 'sda' : 'scl'), isNew: destination.isNew,
         name: /^(Signal \d+|I2C (SDA|SCL))$/.test(destination.signal.name)
           ? `I2C ${index === 0 ? 'SDA' : 'SCL'}` : destination.signal.name }));
       draftOwner = null;
-      ARBDRAW_SIGNAL_TRANSACTIONS.commit(changes, settings.sdaSignalId);
+      const selectedId = live && destinations.some(({ signal }) => signal.id === projectDocument.activeSignalId)
+        ? projectDocument.activeSignalId : settings.sdaSignalId;
+      liveRendering = live;
+      ARBDRAW_SIGNAL_TRANSACTIONS.commit(changes, selectedId, { live, group });
+      liveRendering = false;
       refreshScopeTime();
-      render('i2c');
+      if (live) {
+        fillSignalSelect('i2cSdaSignal', settings.sdaSignalId);
+        fillSignalSelect('i2cSclSignal', settings.sclSignalId);
+        error(); updateVisibility();
+      } else render('i2c');
       $('i2cSummary').textContent = `${packet.sda.length.toLocaleString()} samples per signal · `
         + `${(packet.durationSeconds * 1e6).toPrecision(6)} µs · `
         + packet.transfers.slice(0, 16).map(byte => `${byte.value.toString(16).padStart(2, '0').toUpperCase()} ${byte.ack ? 'ACK' : 'NACK'}`).join(' · ')
         + (packet.transfers.length > 16 ? ' …' : '');
       return true;
     } catch (problem) { error(problem.message); return false; }
+    finally { liveRendering = false; }
   }
   function regenerate(recordHistory = true) {
     try {
@@ -161,8 +181,22 @@
     } catch (problem) { showToast(problem.message); return false; }
   }
   globalThis.ARBDRAW_I2C_UI = { open, render, lockControls, unlockControls, apply, regenerate,
-    reset() { draftOwner = null; for (const [control, disabled] of lockedControls) control.disabled = disabled; lockedControls.clear(); } };
-  $('generateI2cBtn').onclick = apply;
-  $('cancelI2cBtn').onclick = () => { draftOwner = null; renderDocument(); };
-  $('i2cOperation').addEventListener('change', updateVisibility);
+    reset() { draftOwner = null; editing = null; liveRendering = false; for (const [control, disabled] of lockedControls) control.disabled = disabled; lockedControls.clear(); } };
+  const selects = new Set(['busHz', 'addressBits', 'operation', 'samplesPerBit', 'sdaSignalId', 'sclSignalId']);
+  for (const [key, id] of Object.entries(fields)) {
+    const input = $(id), discrete = booleans.has(key) || selects.has(key);
+    input.addEventListener(discrete ? 'change' : 'input', () => {
+      if (liveRendering || draftOwner !== projectDocument.activeSignalId) return;
+      updateVisibility();
+      if (!editing || editing.input !== input || editing.owner !== projectDocument.activeSignalId || discrete)
+        editing = { input, owner: projectDocument.activeSignalId, group: {} };
+      apply({ live: true, group: editing.group });
+      if (discrete) editing = null;
+    });
+    input.addEventListener('blur', () => { editing = null; });
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); render('i2c'); }
+      if (event.key === 'Enter' && input.tagName !== 'TEXTAREA') { editing = null; input.blur(); }
+    });
+  }
 })();
