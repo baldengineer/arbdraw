@@ -134,6 +134,8 @@ For direct REST clients, use `/api/v1/health` to check the service, then follow 
 
 ## If the task includes changing ArbDraw
 
+Commit completed changes to Git automatically after the relevant checks pass; no separate commit request is needed. Keep distinct requested changes in separate commits and stage only files belonging to each change.
+
 Read the relevant source and tests before editing. Preserve direct-from-disk operation and classic-script loading order; the browser app has no required build step. Keep waveform calculations separate from UI behavior, and keep instrument-specific code in its adapter repository. Do not alter unrelated samples or saved settings to make an example work.
 
 Run the relevant existing checks from the checkout:
