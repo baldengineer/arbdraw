@@ -212,6 +212,8 @@ test('selecting I2C from DC immediately creates a default packet in two signals 
   assert.equal(run('state.type'), 'i2c');
   assert.equal(run('projectDocument.signals.length'), 2);
   assert.equal(run('projectDocument.waveform.i2c.busHz'), 100000);
+  assert.deepEqual(Array.from(run('projectDocument.signals.map(s => s.name)')), ['I2C SDA', 'I2C SCL']);
+  assert.equal(element('signalSelect').children[0].textContent, 'I2C SDA');
   assert.equal(run('projectDocument.waveform.i2c.address'), 0x50);
   assert.equal(run('projectDocument.waveform.i2c.payload'), '00 A5');
   assert.equal(run('projectDocument.waveform.i2c.sdaSignalId'), 'signal-1');
@@ -236,6 +238,21 @@ test('reselecting I2C preserves an existing pair and arbitrary edits', () => {
   assert.equal(run('ARBDRAW_I2C_UI.open()'), true);
   assert.equal(run('JSON.stringify(projectDocument)'), before);
   assert.equal(run('state.history.length'), historyLength);
+});
+
+test('I2C routing updates automatic role names and preserves custom signal names', () => {
+  const { run, element } = i2cHarness();
+  run('ARBDRAW_I2C_UI.open();');
+  element('i2cSdaSignal').value = 'signal-2';
+  element('i2cSclSignal').value = 'signal-1';
+  assert.equal(run('ARBDRAW_I2C_UI.apply()'), true);
+  assert.deepEqual(Array.from(run('projectDocument.signals.map(s => s.name)')), ['I2C SCL', 'I2C SDA']);
+  run('undoWaveform();');
+  assert.deepEqual(Array.from(run('projectDocument.signals.map(s => s.name)')), ['I2C SDA', 'I2C SCL']);
+  run('renameSignal("Sensor data"); ARBDRAW_I2C_UI.apply(); undoWaveform(); undoWaveform();');
+  assert.equal(run('activeSignal().name'), 'Sensor data');
+  run('redoWaveform();');
+  assert.equal(run('activeSignal().name'), 'Sensor data');
 });
 
 test('canceling I2C selection on an edited waveform preserves the original signal and properties', () => {

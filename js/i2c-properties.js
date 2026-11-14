@@ -135,7 +135,9 @@
           (signal !== activeSignal() && ![oldSettings?.sdaSignalId, oldSettings?.sclSignalId].includes(signal.id))));
       if (overwritten.length && !window.confirm(`Generate I2C and replace the records in ${overwritten.map(item => item.signal.name).join(', ')}? Undo restores both outputs.`)) return false;
       const changes = destinations.map((destination, index) => ({
-        ...outputFor(destination.signal, packet, index === 0 ? 'sda' : 'scl'), isNew: destination.isNew }));
+        ...outputFor(destination.signal, packet, index === 0 ? 'sda' : 'scl'), isNew: destination.isNew,
+        name: /^(Signal \d+|I2C (SDA|SCL))$/.test(destination.signal.name)
+          ? `I2C ${index === 0 ? 'SDA' : 'SCL'}` : destination.signal.name }));
       draftOwner = null;
       ARBDRAW_SIGNAL_TRANSACTIONS.commit(changes, settings.sdaSignalId);
       refreshScopeTime();

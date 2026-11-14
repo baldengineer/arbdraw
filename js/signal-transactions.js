@@ -22,8 +22,8 @@
       const afterSession = { history: [...(beforeSession?.history || []).slice(-29), entry], redo: [],
         activeSegment: null, mode: 'basic', viewport: { start: 0, pointsPerScreen: null, total: null } };
       transaction.records.push({ signal, isNew, entry, beforeSession, afterSession,
-        before: isNew ? null : { waveform: cloneWaveform(signal.waveform), AWG: { ...signal.AWG } },
-        after: { waveform: cloneWaveform(change.waveform), AWG: { ...change.AWG } } });
+        before: isNew ? null : { name: signal.name, waveform: cloneWaveform(signal.waveform), AWG: { ...signal.AWG } },
+        after: { name: change.name ?? signal.name, waveform: cloneWaveform(change.waveform), AWG: { ...change.AWG } } });
       entries.set(entry, transaction);
     }
     apply(transaction, false);
@@ -41,6 +41,9 @@
       }
       if (!projectDocument.signals.includes(signal)) projectDocument.signals.push(signal);
       const snapshot = undo ? record.before : record.after;
+      // Reverse automatic naming with the packet, while retaining later user renames.
+      const previousName = (undo ? record.after : record.before)?.name;
+      if (signal.name === previousName) signal.name = snapshot.name;
       signal.waveform = cloneWaveform(snapshot.waveform);
       signal.AWG = { ...snapshot.AWG };
       const session = copySession(undo ? record.beforeSession : record.afterSession);
