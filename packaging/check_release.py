@@ -20,19 +20,22 @@ VERIFY = """
 import json
 import threading
 import sys
+import secrets
 from pathlib import Path
 from importlib.resources import files
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
+import afg31252
+import afg31252_advanced
 import python_bridge
 import tekscope_arb_adapter
 from python_bridge.server import BridgeService, create_server, discover_adapters
 
-for package in (python_bridge, tekscope_arb_adapter):
+for package in (python_bridge, tekscope_arb_adapter, afg31252, afg31252_advanced):
     assert Path(package.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()), (
         f'{package.__name__} was imported from outside the release environment'
     )
 adapters = discover_adapters()
-expected = {'owon-xdg3000', 'rigol-dg1022', 'tekscope-mso2', 'tekscope-mso6'}
+expected = {'owon-xdg3000', 'rigol-dg1022', 'tekscope-mso2', 'tekscope-mso6', 'tek-afg31252'}
 assert expected <= adapters.keys(), f'Missing adapters: {expected - adapters.keys()}'
 assert all(callable(adapters[name]) for name in expected)
 for package, resource in (
@@ -43,11 +46,14 @@ for package, resource in (
     ('rigol_dg1022', 'specs.toml'),
 ):
     assert files(package).joinpath(resource).is_file(), f'Missing {package}/{resource}'
-server = create_server('127.0.0.1', 0, BridgeService(adapters=adapters))
+token = secrets.token_urlsafe(32)
+server = create_server('127.0.0.1', 0, BridgeService(adapters=adapters), api_token=token)
 thread = threading.Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
-    with urlopen(f'http://127.0.0.1:{server.server_port}/api/v1/adapters', timeout=5) as response:
+    request = Request(f'http://127.0.0.1:{server.server_port}/api/v1/adapters',
+                      headers={'X-ArbDraw-Token': token})
+    with urlopen(request, timeout=5) as response:
         listed = {adapter['id'] for adapter in json.load(response)['adapters']}
     assert expected <= listed, f'Adapter endpoint omitted: {expected - listed}'
 finally:

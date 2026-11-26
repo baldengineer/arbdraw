@@ -63,10 +63,11 @@ def main() -> None:
     parser.add_argument("--owon-source", required=True, type=Path)
     parser.add_argument("--rigol-source", required=True, type=Path)
     parser.add_argument("--tekscope-source", required=True, type=Path)
+    parser.add_argument("--afg31252-source", required=True, type=Path)
     parser.add_argument("--output", default=ROOT / "dist", type=Path)
     parser.add_argument("--no-isolation", action="store_true", help="Use installed build dependencies.")
     args = parser.parse_args()
-    for name in ("owon", "rigol", "tekscope"):
+    for name in ("owon", "rigol", "tekscope", "afg31252"):
         source = getattr(args, f"{name}_source").resolve()
         if not (source / "pyproject.toml").is_file():
             parser.error(f"--{name}-source must contain pyproject.toml: {source}")
@@ -79,10 +80,12 @@ def main() -> None:
         owon = staging / "owon"
         rigol = staging / "rigol"
         tekscope = staging / "tekscope"
+        afg31252 = staging / "afg31252"
         copy_source(ROOT, bridge)
         copy_source(args.owon_source.resolve(), owon)
         copy_source(args.rigol_source.resolve(), rigol)
         copy_source(args.tekscope_source.resolve(), tekscope)
+        copy_source(args.afg31252_source.resolve(), afg31252)
 
         metadata = owon / "pyproject.toml"
         contents = metadata.read_text(encoding="utf-8")
@@ -96,10 +99,11 @@ def main() -> None:
         build(owon, output, args.no_isolation)
         build(rigol, output, args.no_isolation)
         build(tekscope, output, args.no_isolation)
+        build(afg31252, output, args.no_isolation)
 
     wheels = sorted(output.glob("*.whl"))
-    if len(wheels) != 4:
-        raise SystemExit(f"Expected four wheels; found {[wheel.name for wheel in wheels]}")
+    if len(wheels) != 5:
+        raise SystemExit(f"Expected five wheels; found {[wheel.name for wheel in wheels]}")
     bundle = output / f"arbdraw-bridge-with-adapters-{__version__}.zip"
     with ZipFile(bundle, "w", compression=ZIP_DEFLATED) as archive:
         archive.write(ROOT / "packaging" / "install_release.py", "install.py")

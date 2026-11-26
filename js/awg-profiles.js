@@ -39,6 +39,35 @@ globalThis.ARBDRAW_AWG_PROFILES = Object.freeze({
       // send_end: true,
     }),
   }),
+  tekAfg31252: Object.freeze({
+    id: 'tek-afg31252',
+    name: 'Tektronix AFG31252 (Basic mode)',
+    vid: '0x0699',
+    pid: '0x035E',
+    identification: Object.freeze([
+      { manufacturer: /^TEKTRONIX$/i, model: /^AFG31252$/i },
+    ]),
+    sampleRateType: 'Fixed',
+    sampleRateMSa: 2000, // Basic-mode DAC clock through 16,384 points, then 250 MSa/s.
+    sampleRateForPoints: count => count > 16_384 ? 250 : 2000,
+    sampleDepth: Object.freeze({ default: 1000, max: 131_072 }),
+    frequencyHz: Object.freeze({ min: 0.001, max: 125_000_000 }),
+    amplitudeVppByLoad: Object.freeze({
+      HIGHZ: Object.freeze({ min: 0.002, max: 10 }),
+      FIFTY: Object.freeze({ min: 0.001, max: 5 }),
+    }),
+    transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
+    preferredBackend: 'tek-afg31252',
+  }),
+  tekAfg31252Advanced: Object.freeze({
+    id: 'tek-afg31252-advanced',
+    name: 'Tektronix AFG31252 (Advanced mode)',
+    sampleRateType: 'Variable',
+    sampleRateMSa: 2000,
+    sampleDepth: Object.freeze({ default: 1000, max: 134_217_728 }),
+    transitionTimeSeconds: Object.freeze({ min: 0, max: 0 }),
+    preferredBackend: 'tek-afg31252',
+  }),
   tekscopeMso2: Object.freeze({
     id: 'tekscope-mso2',
     legacyIds: Object.freeze(['tekscope-files']),

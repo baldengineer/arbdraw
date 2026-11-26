@@ -58,7 +58,7 @@
       this.baseUrl = parsed.toString().replace(/\/$/, '');
     }
 
-    async request(path, { method = 'GET', body, timeoutMs = this.timeoutMs } = {}) {
+    async request(path, { method = 'GET', body, binary = false, timeoutMs = this.timeoutMs } = {}) {
       if (globalScope.location?.protocol === 'file:') {
         throw new BridgeRequestError('Open ArbDraw at http://127.0.0.1:8876 after starting the bridge with --serve-app .; file:// pages cannot control instruments.', {
           code: 'origin_not_allowed',
@@ -70,8 +70,8 @@
       try {
         response = await this.fetchImpl(`${this.baseUrl}${path}`, {
           method,
-          headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-          body: body === undefined ? undefined : JSON.stringify(body),
+          headers: body === undefined ? undefined : { 'Content-Type': binary ? 'application/octet-stream' : 'application/json' },
+          body: body === undefined || binary ? body : JSON.stringify(body),
           signal: controller.signal,
         });
         text = await response.text();
@@ -115,8 +115,15 @@
       return this.request('/api/v1/health');
     }
 
+    discover(path) {
+      // Same-origin GET omits Origin in browsers. JSON POST carries it through
+      // the bridge's normal admission checks when the bridge serves the app.
+      const local = globalScope.location?.origin === new URL(this.baseUrl).origin;
+      return local ? this.request(path, { method: 'POST', body: {} }) : this.request(path);
+    }
+
     async listResources() {
-      const payload = await this.request('/api/v1/visa/resources');
+      const payload = await this.discover('/api/v1/visa/resources');
       if (!Array.isArray(payload?.resources)) {
         throw new BridgeRequestError('The bridge resource response is malformed.', {
           code: 'invalid_bridge_response',
@@ -126,7 +133,7 @@
     }
 
     async listAdapters() {
-      const payload = await this.request('/api/v1/adapters');
+      const payload = await this.discover('/api/v1/adapters');
       if (!Array.isArray(payload?.adapters)) {
         throw new BridgeRequestError('The bridge adapter response is malformed.', { code: 'invalid_bridge_response' });
       }
@@ -153,6 +160,22 @@
         ),
         timeoutMs: timeoutMs + queryDelayMilliseconds(pyvisaOptions) + 1000,
       });
+    }
+
+    sendPackedWaveform(resource, file, { adapter, channel, enable, rate, low, high, profileId }) {
+      const count = file.size / 2;
+      if (!Number.isInteger(count) || count < 168 || count > 134217728)
+        throw new BridgeRequestError('Select a signed 16-bit little-endian file with 168 to 134,217,728 samples.');
+      if (!Number.isFinite(rate) || rate < 0.000001 || rate > 2e9 ||
+          !Number.isFinite(low) || !Number.isFinite(high) || low < -5 || high > 5 || low > high)
+        throw new BridgeRequestError('Enter a valid playback sample rate and voltage interval.');
+      const metadata = { resource: normalizeVisaResource(resource), adapter, sample_encoding: 's16le',
+        options: { channel, enable_output: enable },
+        waveform: { schema: 'arbdraw.waveform', version: 1,
+          AWG: { profileId, sampleCount: count, frequencyHz: rate / count },
+          waveform: { sampleCount: count, highVoltage: high, lowVoltage: low } } };
+      return this.request('/api/v1/waveforms/send-packed', { method: 'POST', binary: true,
+        body: new Blob([JSON.stringify(metadata) + '\n', file]), timeoutMs: 1800000 });
     }
 
     sendWaveform(

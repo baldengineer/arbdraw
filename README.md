@@ -40,6 +40,16 @@ This replaces direct `file://` instrument access: browsers give local files an o
 
 The [hosted ArbDraw app](https://baldengineer.github.io/arbdraw/) remains supported with the usual `python -m python_bridge` command or tray/menu-bar launcher; it does not require `--serve-app`. Other web servers require an explicit trusted `--allow-origin` including the port. See the [bridge connection instructions](python_bridge/README.md#connect-arbdraw).
 
+### Tektronix AFG31252
+
+Select **Tektronix AFG31252 (Basic mode)** to send up to 131,072 points to
+either output over LAN (VXI-11) or USB. Install the adapter in the bridge's
+Python environment using the [AFG31252 setup and transfer guide](https://github.com/baldengineer/tek-afg31252-arbdraw-adapter#readme).
+For deeper records, select **Tektronix AFG31252 (Advanced mode)**. In **File → Send
+to AWG**, choose **16 Mpoints** or **128 Mpoints** to interpolate an editor drawing
+over the full playback memory. To supply every hardware sample independently,
+choose a signed 16-bit little-endian file in the same dialog.
+
 ### TekScope MSO2 and MSO6
 
 The shared TekScope package registers separate `tekscope-mso2` and

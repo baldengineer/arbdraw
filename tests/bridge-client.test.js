@@ -7,6 +7,30 @@ function response(payload, { ok = true, status = 200 } = {}) {
   return { ok, status, text: async () => JSON.stringify(payload) };
 }
 
+test('packed upload preserves file bytes and derives repetition from the whole record', async () => {
+  let sent;
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
+    fetchImpl: async (url, options) => { sent = { url, options }; return response({ status: 'sent' }); },
+  });
+  const data = Uint8Array.from({ length: 336 }, (_, i) => i % 256);
+  const settings = { adapter: 'tek-afg31252', channel: 2, enable: false, rate: 168000,
+    low: -1, high: 2, profileId: 'tek-afg31252-advanced' };
+  await client.sendPackedWaveform('192.0.2.1', new Blob([data]), settings);
+  assert.match(sent.url, /\/send-packed$/);
+  assert.equal(sent.options.headers['Content-Type'], 'application/octet-stream');
+  const body = new Uint8Array(await sent.options.body.arrayBuffer());
+  const separator = body.indexOf(10);
+  const header = JSON.parse(new TextDecoder().decode(body.slice(0, separator)));
+  assert.deepEqual(body.slice(separator + 1), data);
+  assert.equal(header.waveform.AWG.frequencyHz, 1000);
+  assert.equal(header.waveform.waveform.sampleCount, 168);
+  assert.equal(header.options.channel, 2);
+  assert.equal(header.resource, 'TCPIP0::192.0.2.1::INSTR');
+  for (const size of [335, 337, 2 ** 28 + 2]) {
+    assert.throws(() => client.sendPackedWaveform('host', { size }, settings), /16-bit/);
+  }
+});
+
 test('normalizes the bridge URL and lists resources', async () => {
   const calls = [];
   const client = new ArbDrawBridge.BridgeClient('http://127.0.0.1:8876/', {
@@ -33,6 +57,26 @@ test('sends IDN through the dedicated endpoint', async () => {
     resource: 'TCPIP0::host::INSTR',
     timeout_ms: 1000,
   });
+});
+
+test('locally served discovery uses JSON POST so the browser supplies Origin', async () => {
+  const calls = [];
+  const client = new ArbDrawBridge.BridgeClient('http://localhost:8876', {
+    fetchImpl: async (url, options) => {
+      calls.push(options);
+      return response(url.endsWith('/resources') ? { resources: [] } : { adapters: [] });
+    },
+  });
+  const previous = globalThis.location;
+  try {
+    globalThis.location = new URL('http://localhost:8876/index.html');
+    await client.listResources();
+    await client.listAdapters();
+  } finally {
+    if (previous === undefined) delete globalThis.location;
+    else globalThis.location = previous;
+  }
+  assert.deepEqual(calls.map(call => [call.method, call.body]), [['POST', '{}'], ['POST', '{}']]);
 });
 
 test('passes profile PyVISA options to IDN and waveform requests', async () => {

@@ -27,6 +27,29 @@
   const directoryInput = $('instrumentDirectory');
   const overwriteCheckbox = $('instrumentOverwrite');
   const enableOutputCheckbox = $('instrumentEnableOutput');
+  const advancedFile = $('advancedRecordFile');
+  const targetPoints = $('advancedTargetPoints');
+  function updateAdvancedRecord() {
+    const active = adapterSelect.value === 'tek-afg31252' && selectedAwgProfile?.id === 'tek-afg31252-advanced';
+    $('advancedRecordOptions').hidden = !active;
+    if (!active) {
+      advancedFile.value = '';
+      targetPoints.value = '';
+    }
+    const file = advancedFile.files?.[0];
+    $('advancedRecordLevels').hidden = !file;
+    $('advancedEditorOptions').hidden = !!file;
+    $('advancedRecordSummary').textContent = file
+      ? `${file.name} · ${(file.size / 2).toLocaleString()} points. Sends the file to the selected hardware channel.`
+      : 'Leave empty to send the selected editor waveform.';
+    const target = Number(targetPoints.value);
+    $('advancedDepthHelp').textContent = target
+      ? `Interpolates the editor waveform to ${target.toLocaleString()} points. The record must be at least ${(target / 2e6).toFixed(6)} ms long at the 2 GSa/s clock limit.`
+      : 'Original points preserve the exact editor samples and record duration.';
+  }
+  advancedFile.addEventListener('change', updateAdvancedRecord);
+  targetPoints.addEventListener('change', updateAdvancedRecord);
+  $('advancedClearFile').addEventListener('click', () => { advancedFile.value = ''; updateAdvancedRecord(); });
   const statusElement = $('bridgeStatus');
   const resultElement = $('bridgeResult');
   const errorHelpElement = $('bridgeErrorHelp');
@@ -52,6 +75,7 @@
   function updateBackendControls() {
     const tekScope = isTekScopeBackend();
     fileOptions.hidden = !tekScope;
+    updateAdvancedRecord();
     channelSelect.disabled = tekScope;
     if (tekScope) channelSelect.value = '1';
     const profile = selectedAwgProfile?.name || selectedAwgProfile?.id || 'Selected profile';
@@ -350,6 +374,7 @@
 
   function openSendToAwgDialog() {
     closeFileMenu();
+    updateBackendControls();
     const signalName = globalThis.ARBDRAW_SIGNALS?.active()?.name;
     $('bridgeSignalSummary').textContent = signalName
       ? `Source: ${signalName}. Sends this signal’s full record to one hardware channel.` : '';
@@ -430,19 +455,33 @@
     runBridgeAction(async ({ client, isCurrent }) => {
       if (!hasSelectedAdapter()) throw new Error('Select an installed waveform backend before sending.');
       const resource = selectedResource();
+      if (!$('advancedRecordOptions').hidden && advancedFile.files?.[0]) {
+        const file = advancedFile.files[0];
+        setResult(`Sending ${(file.size / 2).toLocaleString()} file samples to ${resource}…`);
+        const response = await client.sendPackedWaveform(resource, file, { adapter: adapterSelect.value,
+          channel: Number(channelSelect.value), enable: enableOutputCheckbox.checked, profileId: selectedAwgProfile.id,
+          rate: $('advancedRecordRate').valueAsNumber, low: $('advancedRecordLow').valueAsNumber,
+          high: $('advancedRecordHigh').valueAsNumber });
+        if (isCurrent()) { setResult(response.message, false, true); showToast(response.message); }
+        return;
+      }
       globalThis.ARBDRAW_SEQUENCE?.sync();
       if (globalThis.ARBDRAW_SEQUENCE?.hasSegments()) renderAwgTiming();
       const sampleCount = globalThis.ARBDRAW_SEQUENCE?.hasSegments() ? recordState().samples : state.data.length;
-      setResult(`Sending ${sampleCount.toLocaleString()} samples to ${resource}…`);
+      const advanced = !$('advancedRecordOptions').hidden;
+      const target = advanced && Number(targetPoints.value);
+      setResult(`Sending ${(target || sampleCount).toLocaleString()} samples to ${resource}…`);
       const response = await client.sendWaveform(
         resource,
         JSON.parse(JSON.stringify(selectedSignalDocument())),
         {
           adapter: adapterSelect.value,
           pyvisaOptions: selectedPyVisaOptions(),
+          ...(advanced ? { timeoutMs: 1800000 } : {}),
           options: {
             channel: isTekScopeBackend() ? 1 : Number(channelSelect.value),
             enable_output: enableOutputCheckbox.checked,
+            ...(target ? { target_points: target } : {}),
             ...(isTekScopeBackend() ? {
               directory: directoryInput.value.trim(),
               overwrite: overwriteCheckbox.checked,

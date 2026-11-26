@@ -14,12 +14,14 @@ WHEEL_PREFIXES = {
     "owon-xdg3000": "owon_multicomp_awg_python_waveform_importer-",
     "rigol-dg1022": "rigol_dg1022_arbdraw_adapter-",
     "tekscope": "tekscope_arbdraw_adapter-",
+    "tek-afg31252": "tek_afg31252_arbdraw_adapter-",
 }
 
 EXPECTED_ENTRY_POINTS = {
     "owon-xdg3000": {"owon-xdg3000"},
     "rigol-dg1022": {"rigol-dg1022"},
     "tekscope": {"tekscope-mso2", "tekscope-mso6"},
+    "tek-afg31252": {"tek-afg31252"},
 }
 
 
@@ -34,7 +36,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--adapter",
-        choices=("all", "owon-xdg3000", "rigol-dg1022", "tekscope"),
+        choices=("all", *EXPECTED_ENTRY_POINTS),
         default="all",
         help="Install all supported adapters (default) or one instrument family.",
     )
@@ -44,7 +46,7 @@ def main() -> None:
 
     wheels = Path(__file__).resolve().parent / "wheels"
     selected = (
-        ("owon-xdg3000", "rigol-dg1022", "tekscope")
+        tuple(EXPECTED_ENTRY_POINTS)
         if args.adapter == "all"
         else (args.adapter,)
     )

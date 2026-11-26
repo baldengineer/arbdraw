@@ -78,7 +78,7 @@ class PythonBridgeTests(unittest.TestCase):
         self.assertEqual(body["api_version"], "1")
         self.assertEqual(body["service"], "arbdraw-python-bridge")
         self.assertEqual(body["pid"], os.getpid())
-        self.assertEqual(body["version"], "0.1.6")
+        self.assertEqual(body["version"], "0.1.7")
         self.assertEqual(body["adapters"], ["default"])
 
         _, headers, _ = self.request("/api/v1/health", origin="https://untrusted.example")
@@ -86,6 +86,8 @@ class PythonBridgeTests(unittest.TestCase):
 
     def test_admission_precedes_every_instrument_endpoint(self):
         routes = {
+            "/api/v1/adapters": {},
+            "/api/v1/visa/resources": {},
             "/api/v1/visa/query": {"resource": "FAKE", "command": "*IDN?"},
             "/api/v1/visa/idn": {"resource": "FAKE"},
             "/api/v1/waveforms/send": {"resource": "FAKE", "waveform": {"schema": "arbdraw.waveform"}},
@@ -121,7 +123,9 @@ class PythonBridgeTests(unittest.TestCase):
                             status = error.code
                             error.close()
                         self.assertEqual(status, expected)
-                        self.assertEqual(len(self.visa.queries) + len(self.sent) - before, int(expected == 200))
+                        sends_or_queries = route not in {"/api/v1/adapters", "/api/v1/visa/resources"}
+                        self.assertEqual(len(self.visa.queries) + len(self.sent) - before,
+                                         int(expected == 200 and sends_or_queries))
                 for origin, expected in [(self.base_url, 204), ("null", 403), ("https://untrusted.example", 403)]:
                     request = Request(self.base_url + route, method="OPTIONS", headers={
                         "Origin": origin, "Access-Control-Request-Method": "POST",
@@ -167,6 +171,44 @@ class PythonBridgeTests(unittest.TestCase):
         status, _, body = self.request("/api/v1/visa/idn", {})
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "invalid_request")
+
+    def test_packed_upload_admission_and_exact_stream(self):
+        received = []
+
+        def packed_handler(payload):
+            received.append(payload["packed_samples"].read())
+            return {"status": "sent"}
+
+        packed_handler.packed_sample_formats = ("s16le",)
+        metadata = {"adapter": "packed-test", "resource": "USB0::INSTR", "sample_encoding": "s16le",
+                    "waveform": {"schema": "arbdraw.waveform", "waveform": {"sampleCount": 3}}}
+        samples = bytes.fromhex("0080 0a00 ff7f")
+        binary = json.dumps(metadata).encode() + b"\n" + samples
+        url = self.base_url + "/api/v1/waveforms/send-packed"
+        service = self.server.RequestHandlerClass.service
+        with patch.dict(service.adapters, {"packed-test": packed_handler}):
+            for body, mime, origin, expected in [
+                (binary, "application/octet-stream", self.base_url, 200),
+                (binary[:-1], "application/octet-stream", self.base_url, 400),
+                (binary + b"x", "application/octet-stream", self.base_url, 400),
+                (binary.replace(b"packed-test", b"default"), "application/octet-stream", self.base_url, 400),
+                (b"x" * 17000, "application/octet-stream", self.base_url, 400),
+                (binary, "application/json", self.base_url, 415),
+                (binary, "application/octet-stream", "null", 403),
+                (binary, "application/octet-stream", None, 401),
+            ]:
+                headers = {"Content-Type": mime}
+                if origin:
+                    headers["Origin"] = origin
+                with self.subTest(expected=expected, size=len(body)):
+                    try:
+                        with urlopen(Request(url, data=body, headers=headers), timeout=2) as response:
+                            status = response.status
+                    except HTTPError as error:
+                        status = error.code
+                        error.close()
+                    self.assertEqual(status, expected)
+        self.assertEqual(received, [samples])
 
     def test_adapter_collision_error_reaches_the_http_client(self):
         class AdapterCollisionError(RuntimeError):
