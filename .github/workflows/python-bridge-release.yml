@@ -45,13 +45,20 @@ jobs:
           ref: dec4bc24882a8ccb5c5a421832eefa11632f4da4
           path: adapter-sources/tekscope
 
+      - name: Check out Tektronix AFG31252 adapter
+        uses: actions/checkout@v7
+        with:
+          repository: baldengineer/tek-afg31252-arbdraw-adapter
+          ref: b06b46471d10cc2ba24e0951b7df615949e51866
+          path: adapter-sources/afg31252
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install bridge, TekScope adapter, and build tools
-        run: python -m pip install build -e . -e adapter-sources/tekscope
+      - name: Install bridge, Tektronix adapters, and build tools
+        run: python -m pip install build -e . -e adapter-sources/tekscope -e adapter-sources/afg31252
 
       - name: Validate tag and package version
         if: github.ref_type == 'tag'
@@ -76,6 +83,9 @@ jobs:
       - name: Test TekScope adapter
         run: python -m unittest discover -s adapter-sources/tekscope/tests -p "test_*.py"
 
+      - name: Test AFG31252 adapter
+        run: python -m unittest discover -s adapter-sources/afg31252/tests
+
       - name: Test web app and documentation
         run: node --test tests/*.test.js
 
@@ -85,6 +95,7 @@ jobs:
           --owon-source adapter-sources/owon
           --rigol-source adapter-sources/rigol
           --tekscope-source adapter-sources/tekscope
+          --afg31252-source adapter-sources/afg31252
 
       - name: Check distributions
         run: |

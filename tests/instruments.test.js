@@ -310,6 +310,25 @@ test('profile changes also apply single-channel controls', async () => {
   assert.equal($('instrumentChannel').disabled, true);
 });
 
+test('Advanced depth choices apply only to the matching generator and profile', async () => {
+  const f = createHarness({ preferredBackend: 'tek-afg31252', adapters: ['tek-afg31252'] });
+  f.context.selectedAwgProfile.id = 'tek-afg31252-advanced';
+  await f.connect();
+  const target = f.$('advancedTargetPoints');
+  assert.equal(f.$('advancedRecordOptions').hidden, false);
+  target.value = '134217728';
+  target.listeners.change();
+  assert.match(f.$('advancedDepthHelp').textContent, /67\.108864 ms/);
+  await f.$('sendWaveformBtn').listeners.click();
+  assert.equal(f.sends.at(-1).options.target_points, 134217728);
+  f.context.selectedAwgProfile.id = 'tek-afg31252';
+  f.context.ARBDRAW_INSTRUMENTS.syncProfile();
+  assert.equal(f.$('advancedRecordOptions').hidden, true);
+  assert.equal(target.value, '');
+  await f.$('sendWaveformBtn').listeners.click();
+  assert.equal(f.sends.at(-1).options.target_points, undefined);
+});
+
 test('path and overwrite are saved locally and restored in a fresh UI', async () => {
   const storage = new Map([['arbdraw-settings', JSON.stringify({ includeCsvTimestamps: false })]]);
   const first = createHarness({ storage });

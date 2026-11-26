@@ -15,6 +15,7 @@ import math
 import os
 import secrets
 import threading
+from tempfile import TemporaryFile
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import AddressValueError, IPv4Address
@@ -22,8 +23,11 @@ from typing import Any, Callable, Protocol
 from urllib.parse import urlsplit
 
 API_VERSION = "1"
-BRIDGE_VERSION = "0.1.6"
+BRIDGE_VERSION = "0.1.7"
 MAX_REQUEST_BYTES = 64 * 1024 * 1024
+PACKED_SEND_PATH = "/api/v1/waveforms/send-packed"
+MAX_PACKED_POINTS = 128 * 1024 * 1024
+MAX_PACKED_HEADER = 16 * 1024
 
 
 class BridgeError(Exception):
@@ -171,9 +175,9 @@ class BridgeService:
                     "adapters": bool(self.adapters),
                 },
             }
-        if method == "GET" and path == "/api/v1/adapters":
+        if method in {"GET", "POST"} and path == "/api/v1/adapters":
             return HTTPStatus.OK, {"adapters": [{"id": key, "name": key} for key in self.adapters]}
-        if method == "GET" and path == "/api/v1/visa/resources":
+        if method in {"GET", "POST"} and path == "/api/v1/visa/resources":
             with self._visa_operation_lock:
                 return HTTPStatus.OK, {"resources": self.visa.list_resources()}
         if method == "POST" and path == "/api/v1/visa/idn":
@@ -352,6 +356,10 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
     def _handle_request(self) -> None:
         try:
             self._admit_request()
+            if self.command == "POST" and urlsplit(self.path).path == PACKED_SEND_PATH:
+                status, response = self._send_packed()
+                self._send_json(status, response)
+                return
             payload = self._read_json() if self.command == "POST" else None
             status, response = self.service.dispatch(
                 self.command, urlsplit(self.path).path.rstrip("/") or "/", payload
@@ -382,8 +390,46 @@ class BridgeRequestHandler(SimpleHTTPRequestHandler):
             headers = {part.strip().lower() for part in self.headers.get("Access-Control-Request-Headers", "").split(",") if part.strip()}
             if method not in {"GET", "POST"} or not headers <= {"content-type", "x-arbdraw-token"}:
                 raise BridgeError(HTTPStatus.FORBIDDEN, "preflight_not_allowed", "Unsupported method or headers.")
-        elif self.command == "POST" and self.headers.get_content_type() != "application/json":
-            raise BridgeError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "json_required", "Content-Type must be application/json.")
+        elif self.command == "POST":
+            required = "application/octet-stream" if urlsplit(self.path).path == PACKED_SEND_PATH else "application/json"
+            if self.headers.get_content_type() != required:
+                raise BridgeError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "json_required" if required == "application/json"
+                                  else "packed_required", f"Content-Type must be {required}.")
+
+    def _send_packed(self):
+        """A bounded JSON metadata line followed by exactly N signed little-endian words."""
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length <= 0 or length > MAX_PACKED_HEADER + 2 * MAX_PACKED_POINTS:
+            raise BridgeError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "invalid_size", "Invalid packed request length.")
+        line = self.rfile.readline(min(length, MAX_PACKED_HEADER))
+        try:
+            payload = json.loads(line)
+            waveform = payload["waveform"]["waveform"]
+            count = waveform["sampleCount"]
+            valid = (line.endswith(b"\n") and type(count) is int and 2 <= count <= MAX_PACKED_POINTS
+                     and length - len(line) == count * 2 and "values" not in waveform
+                     and payload["sample_encoding"] == "s16le" and isinstance(payload["adapter"], str))
+        except (TypeError, ValueError, KeyError):
+            valid = False
+        if not valid:
+            raise BridgeError(HTTPStatus.BAD_REQUEST, "invalid_packed_record", "Packed header and file length must agree.")
+        handler = self.service.adapters.get(payload["adapter"])
+        if "s16le" not in getattr(handler, "packed_sample_formats", ()):
+            raise BridgeError(HTTPStatus.BAD_REQUEST, "unsupported_encoding", "The selected adapter does not accept packed samples.")
+        with TemporaryFile() as samples:
+            remaining = count * 2
+            while remaining:
+                block = self.rfile.read(min(remaining, 512 * 1024))
+                if not block:
+                    raise BridgeError(HTTPStatus.BAD_REQUEST, "short_file", "Packed sample file ended early.")
+                samples.write(block)
+                remaining -= len(block)
+            samples.seek(0)
+            payload["packed_samples"] = samples
+            return self.service.dispatch("POST", "/api/v1/waveforms/send", payload)
 
     def _read_json(self) -> dict[str, Any]:
         try:

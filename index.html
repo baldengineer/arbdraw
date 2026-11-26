@@ -412,6 +412,28 @@
           <label for="instrumentChannel">Channel<select class="menu-select" id="instrumentChannel"><option value="1" selected>1</option><option value="2">2</option></select></label>
           <label class="bridge-output-option" for="instrumentEnableOutput"><input id="instrumentEnableOutput" type="checkbox" checked>Enable output</label>
         </div>
+        <fieldset id="advancedRecordOptions" class="bridge-control-group" hidden>
+          <legend>Advanced-mode record</legend>
+          <label class="save-filename-label">External samples (optional, signed 16-bit little-endian)
+            <input id="advancedRecordFile" type="file" accept=".s16le,.pcm,.bin">
+          </label>
+          <p class="bridge-backend-help" id="advancedRecordSummary">Leave empty to send the selected editor waveform.</p>
+          <div id="advancedEditorOptions">
+            <label class="save-filename-label" for="advancedTargetPoints">Editor upload depth</label>
+            <select class="menu-select status-select" id="advancedTargetPoints" aria-describedby="advancedDepthHelp">
+              <option value="">Original points</option>
+              <option value="16777216">16 Mpoints (standard)</option>
+              <option value="134217728">128 Mpoints (expanded)</option>
+            </select>
+            <p class="bridge-backend-help" id="advancedDepthHelp">Original points preserve the exact editor samples and record duration.</p>
+          </div>
+          <div id="advancedRecordLevels" hidden>
+            <label class="save-filename-label">File sample rate (Sa/s)<input id="advancedRecordRate" type="number" min="0.000001" max="2000000000" step="any" value="1000000"></label>
+            <label class="save-filename-label">Voltage at −32768 (V)<input id="advancedRecordLow" type="number" min="-5" max="5" step="any" value="-0.5"></label>
+            <label class="save-filename-label">Voltage at +32767 (V)<input id="advancedRecordHigh" type="number" min="-5" max="5" step="any" value="0.5"></label>
+            <button type="button" id="advancedClearFile" class="ghost">Use editor waveform</button>
+          </div>
+        </fieldset>
         <div id="instrumentFileOptions" class="bridge-file-options" hidden>
           <label class="save-filename-label" for="instrumentDirectory">Path<input id="instrumentDirectory" type="text" value="C:/baldee/" spellcheck="false" autocomplete="off"></label>
           <label class="save-name-option" for="instrumentOverwrite"><input id="instrumentOverwrite" type="checkbox">Overwrite waveform file</label>

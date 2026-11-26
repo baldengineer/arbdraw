@@ -116,6 +116,14 @@ test('every AWG profile declares zero transition-time limits', () => {
   }
 });
 
+test('AFG31252 Basic mode uses the DAC clock for the complete record length', () => {
+  const profile = globalThis.ARBDRAW_AWG_PROFILES.tekAfg31252;
+  assert.deepEqual(profile.sampleDepth, { default: 1000, max: 131072 });
+  assert.equal(profile.sampleRateForPoints(16384), 2000);
+  assert.equal(profile.sampleRateForPoints(16385), 250);
+  assert.equal(profile.preferredBackend, 'tek-afg31252');
+});
+
 test('Rigol profile provides documented PyVISA option hooks', () => {
   const profile = globalThis.ARBDRAW_AWG_PROFILES.rigolDg1022;
   const source = fs.readFileSync(path.join(__dirname, '../js/awg-profiles.js'), 'utf8');

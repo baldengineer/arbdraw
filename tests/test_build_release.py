@@ -28,14 +28,15 @@ class BuildReleaseTests(unittest.TestCase):
             root = Path(directory)
             (root / 'pyproject.toml').write_text('[project]\nname = "fixture"\n')
             args = ['build_release.py', '--owon-source', str(root), '--rigol-source', str(root),
-                    '--tekscope-source', str(root / 'missing'), '--output', str(root / 'out')]
+                    '--tekscope-source', str(root / 'missing'), '--afg31252-source', str(root),
+                    '--output', str(root / 'out')]
             with patch('sys.argv', args), contextlib.redirect_stderr(io.StringIO()) as errors:
                 with self.assertRaises(SystemExit):
                     release.main()
             self.assertIn('--tekscope-source must contain pyproject.toml', errors.getvalue())
             self.assertFalse((root / 'out').exists())
 
-    def test_external_tekscope_source_is_staged_and_bundled(self):
+    def test_external_adapter_sources_are_staged_and_bundled(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bridge = root / 'bridge-source'
@@ -47,7 +48,7 @@ class BuildReleaseTests(unittest.TestCase):
                 (bridge / name).mkdir()
                 (bridge / name / 'unwanted').write_text('fixture')
             adapters = {}
-            for name in ('owon', 'rigol', 'tekscope'):
+            for name in ('owon', 'rigol', 'tekscope', 'afg31252'):
                 adapters[name] = root / f'external-{name}'
                 adapters[name].mkdir()
                 (adapters[name] / 'pyproject.toml').write_text(
@@ -70,8 +71,9 @@ class BuildReleaseTests(unittest.TestCase):
                 args.extend([f'--{name}-source', str(path)])
             with patch.object(release, 'ROOT', bridge), patch.object(release, 'build', fake_build), patch('sys.argv', args):
                 release.main()
-            self.assertEqual(calls, ['bridge', 'owon', 'rigol', 'tekscope'])
+            self.assertEqual(calls, ['bridge', 'owon', 'rigol', 'tekscope', 'afg31252'])
             with ZipFile(next((root / 'out').glob('*.zip'))) as archive:
                 wheels = [name for name in archive.namelist() if name.startswith('wheels/')]
-                self.assertEqual(len(wheels), 4)
+                self.assertEqual(len(wheels), 5)
+                self.assertIn('wheels/afg31252-0.1-py3-none-any.whl', wheels)
                 self.assertIn('wheels/tekscope-0.1-py3-none-any.whl', wheels)

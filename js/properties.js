@@ -97,7 +97,6 @@ function applyAwgProfile(profile) {
   }
   selectedAwgProfile = profile;
   globalThis.ARBDRAW_INSTRUMENTS?.syncProfile();
-  if (Number.isFinite(profile.sampleRateMSa)) state.sampleRate = profile.sampleRateMSa;
   if (!preserveSamples && Number.isFinite(profile.sampleDepth?.default))
     state.samples = profile.sampleDepth.default;
   if (Number.isFinite(profile.sampleDepth?.max)) {
@@ -106,6 +105,8 @@ function applyAwgProfile(profile) {
   } else {
     $('samplesEdit').removeAttribute('max');
   }
+  const dacRate = profile.sampleRateForPoints?.(state.samples) ?? profile.sampleRateMSa;
+  if (Number.isFinite(dacRate)) state.sampleRate = dacRate;
   state.duration = state.samples / (state.sampleRate * 1000);
   renderTiming();
   if (preserveSamples) {

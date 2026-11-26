@@ -11,6 +11,7 @@ test('identification matches supported manufacturer/model fields exactly, ignori
     [' RIGOL TECHNOLOGIES , DG1022 ,SN,FW\r\n', 'rigol-dg1022'],
     ['rigol,dg1022,SN,FW', 'rigol-dg1022'],
     ['OWON,XDG3102,SN,FW', 'owon-xdg3000'],
+    ['TEKTRONIX,AFG31252,SN,FW', 'tek-afg31252'],
     ['Newark,MP750290,2025332,SCPI:99.0 FV:V2.7.0', 'owon-xdg3000'],
     ['Multicomp Pro,MP750290,SN,FW', 'owon-xdg3000'],
     ...['MSO22', 'MSO24', 'MSO22-EDU', 'MSO24-EDU'].map(model => [`TEKTRONIX,${model},SN,FW`, 'tekscope-mso2']),

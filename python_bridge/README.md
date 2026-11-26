@@ -91,7 +91,7 @@ path from your Python environment in **System Settings → General → Login
 Items**. Keep that environment installed at the same path.
 
 To install only one instrument family, use `python .\install.py --adapter
-owon-xdg3000`, `--adapter rigol-dg1022`, or `--adapter tekscope`. The TekScope
+owon-xdg3000`, `--adapter rigol-dg1022`, `--adapter tekscope`, or (from 0.1.7) `--adapter tek-afg31252`. The TekScope
 package registers separate `tekscope-mso2` and `tekscope-mso6` backends. The release also
 contains individual `.whl` assets. For an existing bridge installation, install
 the desired adapter wheel with **the same interpreter** that installed the
@@ -337,6 +337,18 @@ for supported models, setup, CLI usage, and limitations. The authoritative
 [TekScope file-command skill](https://github.com/baldengineer/tekscope-arbdraw-adapter/blob/main/skills/tekscope-file-commands/SKILL.md)
 is maintained with that source.
 
+### Tektronix AFG31252 adapter
+
+From the ArbDraw checkout, install the independent package in the bridge
+environment and restart the bridge to discover `tek-afg31252`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install "git+https://github.com/baldengineer/tek-afg31252-arbdraw-adapter.git@b06b46471d10cc2ba24e0951b7df615949e51866"
+```
+
+Both AFG31252 profiles use that backend. For depth limits, LAN and USB
+setup, and bench verification, see the [AFG31252 adapter guide](https://github.com/baldengineer/tek-afg31252-arbdraw-adapter#readme).
+
 ### Build a release bundle from source
 
 Check out each adapter at the full commit SHA recorded in
@@ -345,12 +357,12 @@ directory. Release CI fetches each independent repository at those pins:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install build twine
-.\.venv\Scripts\python.exe packaging/build_release.py --owon-source .\local_adapters\owon-multicomp-awg-python-waveform-importer --rigol-source .\local_adapters\rigol-awg-python-importer --tekscope-source .\local_adapters\tekscope-arbdraw-adapter
+.\.venv\Scripts\python.exe packaging/build_release.py --owon-source .\local_adapters\owon-multicomp-awg-python-waveform-importer --rigol-source .\local_adapters\rigol-awg-python-importer --tekscope-source .\local_adapters\tekscope-arbdraw-adapter --afg31252-source .\local_adapters\tek-afg31252-arbdraw-adapter
 .\.venv\Scripts\python.exe packaging/check_release.py dist
 ```
 
 The bridge has no mandatory adapter dependency. The release bundle contains
-four separately built wheels: bridge, OWON, Rigol, and TekScope.
+five separately built wheels: bridge, OWON, Rigol, TekScope, and AFG31252.
 
 ### Remove an adapter
 
@@ -388,9 +400,10 @@ Returning `None` uses a generic success message. Raise an exception to return an
 ## REST API v1
 
 - `GET /api/v1/health`
-- `GET /api/v1/visa/resources`
+- `GET /api/v1/visa/resources` and `GET /api/v1/adapters`. The locally served browser app uses their JSON `POST` forms with an empty object so the browser supplies its Origin.
 - `POST /api/v1/visa/idn` with `resource` and optional `timeout_ms`
 - `POST /api/v1/visa/query` with `resource`, `command`, and optional `timeout_ms`
 - `POST /api/v1/waveforms/send` with `resource`, complete `waveform` document, and optional `options`
+- `POST /api/v1/waveforms/send-packed` with Content-Type `application/octet-stream` and a known Content-Length. Send a UTF-8 JSON header ending in LF (up to 16 KiB including LF), followed by exactly two bytes per sample. The header contains the usual send fields plus explicit `adapter` and `sample_encoding: "s16le"`. Omit `waveform.waveform.values`, supply `waveform.waveform.sampleCount`, and include the timing and level fields required by the adapter. The bridge spools the binary section to a temporary file and passes the open stream as `request["packed_samples"]` to handlers advertising `packed_sample_formats = ("s16le",)`. The upload limit is 134,217,728 samples. The same origin and token checks apply.
 
-Errors use `{ "error": { "code": "...", "message": "..." }`. Origin checks run before API dispatch, and command POSTs require `application/json`. Other local web servers need an explicit `--allow-origin` including the port. Origin-less REST clients must send `X-ArbDraw-Token` matching a strong secret set in the bridge process environment as `ARBDRAW_BRIDGE_TOKEN`; without that configuration they are denied. The read-only health endpoint and direct `--idn`/`--list-resources` CLI commands need no token. Keep the token private; do not put it in URLs. This is a browser-origin boundary, not authentication against clients that can forge an approved Origin: keep the bridge on loopback.
+Errors use `{ "error": { "code": "...", "message": "..." }`. Origin checks run before API dispatch. All other command POSTs require `application/json`. Other local web servers need an explicit `--allow-origin` including the port. Origin-less REST clients must send `X-ArbDraw-Token` matching a strong secret set in the bridge process environment as `ARBDRAW_BRIDGE_TOKEN`; without that configuration they are denied. The read-only health endpoint and direct `--idn`/`--list-resources` CLI commands need no token. Keep the token private; do not put it in URLs. This is a browser-origin boundary, not authentication against clients that can forge an approved Origin: keep the bridge on loopback.
